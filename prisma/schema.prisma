@@ -1,0 +1,1044 @@
+// NutreLuma - Prisma schema
+// Όλες οι ημερομηνίες αποθηκεύονται σε UTC (timestamptz).
+// Βάρος/ύψος: Decimal (decimal-safe). Θερμίδες: Int.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum Goal {
+  LOSE
+  MAINTAIN
+  GAIN
+}
+
+enum Units {
+  METRIC
+  IMPERIAL
+}
+
+enum MealType {
+  BREAKFAST
+  MORNING_SNACK
+  LUNCH
+  AFTERNOON_SNACK
+  DINNER
+  OTHER
+}
+
+/**
+ * Κατάσταση της ΑΝΑΛΥΣΗΣ. Διατηρείται όπως ήταν για συμβατότητα — περιγράφει
+ * μόνο το αν το AI απάντησε, όχι τον κύκλο ζωής του γεύματος.
+ */
+enum AnalysisStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+/**
+ * Κύκλος ζωής του ΓΕΥΜΑΤΟΣ. Μόνο τα CONFIRMED μετρούν στα ημερήσια σύνολα.
+ */
+enum MealStatus {
+  PENDING
+  ANALYZING
+  REVIEW_REQUIRED
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+/** Πηγή της εγγραφής — χρησιμοποιείται και για στατιστικά ακρίβειας. */
+enum MealSource {
+  AI_IMAGE
+  MANUAL
+  BARCODE
+  NUTRITION_LABEL
+  SAVED_MEAL
+  RECIPE
+}
+
+/** Πώς προέκυψε ο στόχος: αυτόματη πρόταση ή χειροκίνητη επιλογή. */
+enum GoalSource {
+  AUTO
+  MANUAL
+}
+
+enum AiCallStatus {
+  SUCCESS
+  INVALID_RESPONSE
+  PROVIDER_ERROR
+  NO_FOOD_DETECTED
+  TIMEOUT
+}
+
+enum AiMealPlanStatus {
+  GENERATING
+  READY
+  FAILED
+  EXPIRED
+  ACCEPTED
+  PARTIALLY_ACCEPTED
+}
+
+// --- Στόχοι / Milestones / Achievements (goals feature) ---
+
+enum MilestoneType {
+  TARGET_WEIGHT
+  WEIGHT_LOSS_AMOUNT
+  WEIGHT_GAIN_AMOUNT
+  MEAL_LOGGING_DAYS
+  MEAL_LOGGING_STREAK
+  WEIGH_IN_FREQUENCY
+  CALORIE_TARGET_DAYS
+  PROTEIN_TARGET_DAYS
+  WATER_TARGET_DAYS
+  STEP_TARGET_DAYS
+  ACTIVITY_TARGET
+  CUSTOM_NUMERIC
+  MAINTENANCE_DAYS_IN_RANGE
+  MAINTENANCE_DURATION_DAYS
+  STABLE_WEEKS
+}
+
+enum MilestoneStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  MISSED
+  CANCELLED
+  PAUSED
+}
+
+enum BadgeTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum AchievementCategory {
+  LOGGING
+  WEIGHT
+  NUTRITION
+  HYDRATION
+  ACTIVITY
+  MILESTONE
+  MAINTENANCE
+}
+
+// --- Λειτουργία στόχου / Συντήρηση βάρους (maintenance mode) ---
+
+enum GoalMode {
+  LOSS
+  MAINTENANCE
+  GAIN
+}
+
+/**
+ * Κατάσταση συντήρησης — υπολογίζεται on-read (δεν αποθηκεύεται). Το enum
+ * υπάρχει μόνο για τύπους/σαφήνεια στον κώδικα και τα API.
+ */
+enum MaintenanceStatus {
+  WITHIN_RANGE
+  NEAR_UPPER
+  NEAR_LOWER
+  ABOVE_RANGE
+  BELOW_RANGE
+  INSUFFICIENT_DATA
+}
+
+enum MaintenanceAlertType {
+  APPROACHING_UPPER
+  ABOVE_RANGE_SUSTAINED
+  BELOW_RANGE_SUSTAINED
+  INSUFFICIENT_WEIGH_INS
+  PERSISTENT_UPWARD_TREND
+  PERSISTENT_DOWNWARD_TREND
+}
+
+enum MaintenanceAlertSeverity {
+  INFO
+  ATTENTION
+}
+
+enum AlertSensitivity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum NotificationType {
+  MILESTONE_DEADLINE
+  MILESTONE_COMPLETED
+  MILESTONE_MISSED
+  MILESTONE_PROGRESS
+  ACHIEVEMENT_UNLOCKED
+  BADGE_UNLOCKED
+}
+
+enum ActivityKind {
+  WORKOUT
+  WALK
+  RUN
+  CYCLE
+  OTHER
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String
+  displayName      String
+  role             Role      @default(USER)
+  consentAcceptedAt DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  /**
+   * Χρησιμοποιείται για ακύρωση ΟΛΩΝ των ενεργών συνεδριών: κάθε JWT που
+   * εκδόθηκε πριν από αυτή τη στιγμή απορρίπτεται. Χωρίς αυτό, όποιος έχει
+   * κλέψει session cookie θα κρατούσε πρόσβαση ακόμη και μετά την επαναφορά
+   * κωδικού από τον νόμιμο κάτοχο.
+   */
+  passwordChangedAt DateTime?
+
+  healthProfile  HealthProfile?
+  meals          Meal[]
+  weightEntries  WeightEntry[]
+  aiUsageLogs    AiUsageLog[]
+  subscription   Subscription?
+  payments       Payment[]
+  nutritionGoals NutritionGoal[]
+  passwordResets PasswordResetToken[]
+  favoriteMeals  FavoriteMeal[]
+  milestones       Milestone[]
+  userAchievements UserAchievement[]
+  userBadges       UserBadge[]
+  notifications    Notification[]
+  waterEntries     WaterEntry[]
+  activityEntries  ActivityEntry[]
+  calibrationFacts UserCalibrationFact[]
+  mealCorrections MealCorrection[]
+  energyEstimates PersonalEnergyEstimate[]
+  patterns UserPattern[]
+  plateProfiles PlateProfile[]
+  explicitMealSkips ExplicitMealSkip[]
+  intelligenceSettings PersonalIntelligenceSettings?
+  weeklyBudgets WeeklyBudget[]
+  recipePreference RecipePreference?
+  pantryItems PantryItem[]
+  mealPlans AiMealPlan[]
+  recipeFeedback RecipeFeedback[]
+  savedRecipes SavedRecipe[]
+  goalMode              UserGoalMode?
+  goalModeHistory       GoalModeHistory[]
+  maintenanceProfile    MaintenanceProfile?
+  maintenanceRangeHistory MaintenanceRangeHistory[]
+  maintenanceAlerts     MaintenanceAlert[]
+
+  @@map("users")
+}
+
+/**
+ * Κουπόνι επαναφοράς κωδικού.
+ *
+ * Αποθηκεύεται ΜΟΝΟ το SHA-256 του token, ποτέ το ίδιο το token: αν διαρρεύσει
+ * η βάση, κανείς δεν μπορεί να κατασκευάσει έγκυρο σύνδεσμο επαναφοράς.
+ * Είναι μιας χρήσης (`usedAt`) και λήγει σύντομα (`expiresAt`).
+ */
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model HealthProfile {
+  id                 String        @id @default(cuid())
+  userId             String        @unique
+  firstName          String
+  lastName           String?
+  birthDate          DateTime      @db.Date
+  gender             Gender        @default(UNDISCLOSED)
+  heightCm           Decimal       @db.Decimal(5, 2)
+  currentWeightKg    Decimal       @db.Decimal(6, 2)
+  targetWeightKg     Decimal?      @db.Decimal(6, 2)
+  activityLevel      ActivityLevel @default(MODERATE)
+  goal               Goal          @default(MAINTAIN)
+  dailyCalorieTarget Int?
+  preferredUnits     Units         @default(METRIC)
+  timezone           String        @default("Europe/Athens")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("health_profiles")
+}
+
+model Meal {
+  id                  String         @id @default(cuid())
+  userId              String
+  mealType            MealType       @default(OTHER)
+  title               String?
+  notes               String?
+  imagePath           String?
+  thumbPath           String?
+  imageMimeType       String?
+  mealDateTime        DateTime
+  aiEstimatedCalories Int?
+  finalCalories       Int?
+  aiConfidence        Float?
+  aiModel             String?
+  aiProvider          String?
+  aiAnalyzedAt        DateTime?
+  aiRawResponse       Json?
+  aiErrorCode         String?
+  analysisStatus      AnalysisStatus @default(PENDING)
+  wasManuallyEdited   Boolean        @default(false)
+  requestKey          String?        @unique
+  mealFingerprint     String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // --- Κύκλος ζωής & προέλευση ---
+  // Default CONFIRMED ώστε κάθε παλιά εγγραφή να συνεχίσει να μετρά κανονικά.
+  status      MealStatus @default(CONFIRMED)
+  source      MealSource @default(AI_IMAGE)
+  confirmedAt DateTime?
+
+  // --- Εύρος εκτίμησης θερμίδων (μόνο AI) ---
+  aiMinCalories Int?
+  aiMaxCalories Int?
+  calibratedAiCalories Int?
+  dataConfidence Float?
+  confidenceFactors Json?
+  beforeImagePath String?
+  afterImagePath String?
+  beforeEstimateCalories Int?
+  remainingEstimateCalories Int?
+  estimatedConsumedPercent Float?
+  estimatedConsumedCalories Int?
+  finalConfirmedConsumedCalories Int?
+  beforeAfterConfidence Float?
+
+  // --- Μακροθρεπτικά συστατικά. Decimal για ακρίβεια, nullable = άγνωστο. ---
+  proteinGrams      Decimal? @db.Decimal(7, 2)
+  carbohydrateGrams Decimal? @db.Decimal(7, 2)
+  fatGrams          Decimal? @db.Decimal(7, 2)
+  fiberGrams        Decimal? @db.Decimal(7, 2)
+  sugarGrams        Decimal? @db.Decimal(7, 2)
+  saturatedFatGrams Decimal? @db.Decimal(7, 2)
+  sodiumMg          Int?
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          MealItem[]
+  clarifications MealClarification[]
+  corrections    MealCorrection[]
+
+  @@index([userId])
+  @@index([mealDateTime])
+  @@index([userId, mealDateTime])
+  // Τα ημερήσια σύνολα φιλτράρουν πάντα σε status — χωρίς index γίνεται seq scan.
+  @@index([userId, status, mealDateTime])
+  // Ομαδοποίηση συχνών/πρόσφατων γευμάτων ανά fingerprint (meal-history feature).
+  @@index([userId, mealFingerprint])
+  @@map("meals")
+}
+
+/**
+ * Διευκρινιστική ερώτηση που έθεσε το AI επειδή η φωτογραφία δεν αρκεί
+ * (π.χ. ποσότητα λαδιού). Οι απαντήσεις τροφοδοτούν το refinement.
+ */
+model MealClarification {
+  id         String    @id @default(cuid())
+  mealId     String
+  questionId String
+  question   String
+  options    Json
+  answer     String?
+  answeredAt DateTime?
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@unique([mealId, questionId])
+  @@index([mealId])
+  @@map("meal_clarifications")
+}
+
+model MealItem {
+  id                  String   @id @default(cuid())
+  mealId              String
+  name                String
+  estimatedQuantity   String?
+  aiEstimatedCalories Int?
+  finalCalories       Int?
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  aiMinCalories Int?
+  aiMaxCalories Int?
+  baseQuantity String?
+  calibratedQuantity String?
+  consumedPercent Float?
+
+  proteinGrams      Decimal? @db.Decimal(7, 2)
+  carbohydrateGrams Decimal? @db.Decimal(7, 2)
+  fatGrams          Decimal? @db.Decimal(7, 2)
+  fiberGrams        Decimal? @db.Decimal(7, 2)
+  sugarGrams        Decimal? @db.Decimal(7, 2)
+  saturatedFatGrams Decimal? @db.Decimal(7, 2)
+  sodiumMg          Int?
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@index([mealId])
+  @@map("meal_items")
+}
+
+/**
+ * Ημερήσιοι στόχοι με ιστορικό. Ο στόχος μιας ημέρας είναι η πιο πρόσφατη
+ * εγγραφή με `effectiveFrom <= ημέρα`, ώστε αλλαγή του σημερινού στόχου να
+ * ΜΗΝ αλλοιώνει αναδρομικά παλιές αναφορές.
+ */
+model NutritionGoal {
+  id            String     @id @default(cuid())
+  userId        String
+  effectiveFrom DateTime   @db.Date
+  source        GoalSource @default(AUTO)
+
+  calorieTarget     Int
+  proteinGrams      Decimal? @db.Decimal(6, 2)
+  carbohydrateGrams Decimal? @db.Decimal(6, 2)
+  fatGrams          Decimal? @db.Decimal(6, 2)
+  fiberGrams        Decimal? @db.Decimal(6, 2)
+  waterMl           Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, effectiveFrom])
+  @@index([userId, effectiveFrom])
+  @@map("nutrition_goals")
+}
+
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  weightKg  Decimal  @db.Decimal(6, 2)
+  entryDate DateTime @db.Date
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entryDate])
+  @@index([userId, entryDate])
+  @@map("weight_entries")
+}
+
+// ============================================================
+//  Maintenance mode: goal mode, μητρώο συντήρησης, alerts
+// ============================================================
+
+/** Ενεργό goal mode — source of truth. Το HealthProfile.goal μένει συγχρονισμένο. */
+model UserGoalMode {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  mode        GoalMode @default(LOSS)
+  activatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_goal_modes")
+}
+
+/** Ιστορικό μεταβάσεων mode ώστε παλιές αναφορές να μη μεταβάλλονται. */
+model GoalModeHistory {
+  id             String    @id @default(cuid())
+  userId         String
+  mode           GoalMode
+  startDate      DateTime  @db.Date
+  endDate        DateTime? @db.Date
+  targetWeightKg Decimal?  @db.Decimal(6, 2)
+  calorieTarget  Int?
+  reason         String?
+  createdAt      DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate])
+  @@map("goal_mode_history")
+}
+
+/** Ρυθμίσεις συντήρησης. Ένα ανά χρήστη· το ενεργό εύρος & στόχοι. */
+model MaintenanceProfile {
+  id                String           @id @default(cuid())
+  userId            String           @unique
+  targetWeightKg    Decimal          @db.Decimal(6, 2)
+  lowerBoundaryKg   Decimal          @db.Decimal(6, 2)
+  upperBoundaryKg   Decimal          @db.Decimal(6, 2)
+  toleranceKg       Decimal          @default(1.5) @db.Decimal(4, 2)
+  weighInsPerWeek   Int              @default(3)
+  calorieTarget     Int
+  proteinGrams      Decimal?         @db.Decimal(6, 2)
+  carbohydrateGrams Decimal?         @db.Decimal(6, 2)
+  fatGrams          Decimal?         @db.Decimal(6, 2)
+  weeklyCalorieMin  Int?
+  weeklyCalorieMax  Int?
+  alertSensitivity  AlertSensitivity @default(MEDIUM)
+  activatedAt       DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_profiles")
+}
+
+/** Ιστορικό αλλαγών εύρους συντήρησης. */
+model MaintenanceRangeHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  targetWeightKg  Decimal  @db.Decimal(6, 2)
+  lowerBoundaryKg Decimal  @db.Decimal(6, 2)
+  upperBoundaryKg Decimal  @db.Decimal(6, 2)
+  effectiveFrom   DateTime @db.Date
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, effectiveFrom])
+  @@map("maintenance_range_history")
+}
+
+/**
+ * Ουδέτερο alert. `dedupeKey` (π.χ. above:2026-08-08) αποτρέπει διπλά.
+ * Παράγεται backend-side από ντετερμινιστικούς κανόνες, ποτέ από μία μέτρηση.
+ */
+model MaintenanceAlert {
+  id          String                   @id @default(cuid())
+  userId      String
+  type        MaintenanceAlertType
+  severity    MaintenanceAlertSeverity @default(INFO)
+  message     String
+  dedupeKey   String
+  createdAt   DateTime                 @default(now())
+  dismissedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, createdAt])
+  @@map("maintenance_alerts")
+}
+
+model AiUsageLog {
+  id         String       @id @default(cuid())
+  userId     String
+  mealId     String?
+  provider   String
+  model      String
+  status     AiCallStatus
+  durationMs Int
+  requestId  String?
+  errorCode  String?
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_usage_logs")
+}
+
+enum SubscriptionProvider {
+  STRIPE
+  PAYPAL
+  MANUAL
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+model Subscription {
+  id            String                @id @default(cuid())
+  userId        String                @unique
+  status        SubscriptionStatus    @default(TRIALING)
+  provider      SubscriptionProvider?
+  accessUntil   DateTime
+  autoRenew     Boolean               @default(false)
+  externalId    String?               @unique
+  cancelledAt   DateTime?
+  lastSyncedAt  DateTime?
+  lastSyncError String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accessUntil])
+  @@map("subscriptions")
+}
+
+/**
+ * Αγαπημένο γεύμα ως αυτόνομο template ανά fingerprint. Κρατά snapshot της
+ * σύνθεσης ώστε να επιβιώνει ακόμη κι αν διαγραφούν τα αρχικά γεύματα.
+ */
+model FavoriteMeal {
+  id          String   @id @default(cuid())
+  userId      String
+  fingerprint String
+  title       String?
+  mealType    MealType
+  calories    Int?
+  proteinGrams      Decimal? @db.Decimal(7, 2)
+  carbohydrateGrams Decimal? @db.Decimal(7, 2)
+  fatGrams          Decimal? @db.Decimal(7, 2)
+  fiberGrams        Decimal? @db.Decimal(7, 2)
+  sugarGrams        Decimal? @db.Decimal(7, 2)
+  saturatedFatGrams Decimal? @db.Decimal(7, 2)
+  sodiumMg          Int?
+  items       Json
+  thumbKey    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprint])
+  @@index([userId])
+  @@map("favorite_meals")
+}
+
+model Payment {
+  id          String               @id @default(cuid())
+  userId      String
+  provider    SubscriptionProvider
+  externalId  String?              @unique
+  amountCents Int
+  currency    String               @default("EUR")
+  paidAt      DateTime
+  note        String?
+  createdAt   DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, paidAt])
+  @@map("payments")
+}
+
+// ============================================================
+//  Goals feature: milestones, achievements, badges, logging
+// ============================================================
+
+/**
+ * Μικρός χρονικός στόχος. `currentValue` υπολογίζεται ΠΑΝΤΑ στον backend από
+ * πραγματικά δεδομένα — ο frontend δεν ολοκληρώνει ποτέ milestone.
+ * `dailyThreshold`: ημερήσιο κατώφλι για STEP_TARGET_DAYS (τα υπόλοιπα «X ημέρες»
+ * παίρνουν κατώφλι από το NutritionGoal). `progressMethod`: ποια μέθοδος έδωσε
+ * την τελευταία τιμή (π.χ. moving_avg_7d).
+ */
+model Milestone {
+  id             String          @id @default(cuid())
+  userId         String
+  title          String
+  description    String?
+  type           MilestoneType
+  unit           String?
+  startValue     Decimal?        @db.Decimal(10, 2)
+  targetValue    Decimal         @db.Decimal(10, 2)
+  currentValue   Decimal         @default(0) @db.Decimal(10, 2)
+  dailyThreshold Decimal?        @db.Decimal(10, 2)
+  startDate      DateTime        @db.Date
+  endDate        DateTime?       @db.Date
+  status         MilestoneStatus @default(ACTIVE)
+  completedAt    DateTime?
+  progressMethod String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progress MilestoneProgress[]
+
+  @@index([userId, status])
+  @@index([userId, endDate])
+  @@map("milestones")
+}
+
+/** Ιστορικό/audit των υπολογισμένων τιμών προόδου + ποια μέθοδος χρησιμοποιήθηκε. */
+model MilestoneProgress {
+  id          String   @id @default(cuid())
+  milestoneId String
+  value       Decimal  @db.Decimal(10, 2)
+  method      String
+  recordedAt  DateTime @default(now())
+
+  milestone Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+
+  @@index([milestoneId, recordedAt])
+  @@map("milestone_progress")
+}
+
+/** Κατάλογος achievements — source of truth στον κώδικα, seed idempotent στη βάση. */
+model AchievementDefinition {
+  id          String              @id @default(cuid())
+  code        String              @unique
+  name        String
+  description String
+  category    AchievementCategory
+  icon        String
+  threshold   Int?
+  badgeCode   String?
+  sortOrder   Int                 @default(0)
+
+  @@map("achievement_definitions")
+}
+
+model UserAchievement {
+  id              String   @id @default(cuid())
+  userId          String
+  achievementCode String
+  unlockedAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementCode])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+/** Κατάλογος badges. ΔΕΝ αποθηκεύονται εικόνες — μόνο `iconKey`. */
+model BadgeDefinition {
+  id          String              @id @default(cuid())
+  code        String              @unique
+  name        String
+  description String
+  iconKey     String
+  category    AchievementCategory
+  tier        BadgeTier
+  criteria    String
+  sortOrder   Int                 @default(0)
+
+  @@map("badge_definitions")
+}
+
+model UserBadge {
+  id         String   @id @default(cuid())
+  userId     String
+  badgeCode  String
+  unlockedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeCode])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+/** In-app notification. `dedupeKey` αποτρέπει διπλά (π.χ. milestone:{id}:progress:50). */
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  body        String
+  readAt      DateTime?
+  milestoneId String?
+  dedupeKey   String?
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+/** Καταγραφή νερού. Πολλές εγγραφές ανά ημέρα· αθροίζονται. */
+model WaterEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  entryDate DateTime @db.Date
+  volumeMl  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, entryDate])
+  @@map("water_entries")
+}
+
+/** Καταγραφή δραστηριότητας/βημάτων. `steps` για STEP_TARGET_DAYS, entries για ACTIVITY_TARGET. */
+model ActivityEntry {
+  id          String       @id @default(cuid())
+  userId      String
+  entryDate   DateTime     @db.Date
+  kind        ActivityKind @default(OTHER)
+  steps       Int?
+  durationMin Int?
+  note        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, entryDate])
+  @@map("activity_entries")
+}
+
+model UserCalibrationFact {
+  id String @id @default(cuid())
+  userId String
+  key String
+  valueJson Json
+  confidence Float @default(0)
+  sampleCount Int @default(0)
+  firstObservedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, key])
+  @@index([userId, updatedAt])
+  @@map("user_calibration_facts")
+}
+
+model MealCorrection {
+  id String @id @default(cuid())
+  userId String
+  mealId String
+  originalJson Json
+  finalJson Json
+  calorieDifference Int
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+  @@index([userId, mealId])
+  @@map("meal_corrections")
+}
+
+model PersonalIntelligenceSettings {
+  id String @id @default(cuid())
+  userId String @unique
+  personalCalibration Boolean @default(true)
+  useMealHistory Boolean @default(true)
+  useWeightHistory Boolean @default(true)
+  useBehaviorPatterns Boolean @default(true)
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("personal_intelligence_settings")
+}
+
+model PersonalEnergyEstimate {
+  id String @id @default(cuid())
+  userId String
+  startDate DateTime @db.Date
+  endDate DateTime @db.Date
+  estimatedCalories Int
+  formulaCalories Int?
+  confidence Float
+  weightSamples Int
+  completeDays Int
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, endDate])
+  @@map("personal_energy_estimates")
+}
+
+model UserPattern {
+  id String @id @default(cuid())
+  userId String
+  type String
+  title String
+  message String
+  dateRange Json
+  sampleCount Int
+  confidence Float
+  completeness Float
+  deterministic Boolean @default(true)
+  generatedAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, generatedAt])
+  @@map("user_patterns")
+}
+
+model PlateProfile {
+  id String @id @default(cuid())
+  userId String
+  name String
+  diameterMm Int
+  shape String @default("round")
+  imagePath String?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("plate_profiles")
+}
+
+model ExplicitMealSkip {
+  id String @id @default(cuid())
+  userId String
+  mealType MealType
+  entryDate DateTime @db.Date
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, mealType, entryDate])
+  @@index([userId, entryDate])
+  @@map("explicit_meal_skips")
+}
+
+model WeeklyBudget {
+  id String @id @default(cuid())
+  userId String
+  weekStart DateTime @db.Date
+  enabled Boolean @default(false)
+  totalCalories Int
+  dailyPlan Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, weekStart])
+  @@map("weekly_budgets")
+}
+
+model RecipePreference {
+  id String @id @default(cuid())
+  userId String @unique
+  mealsPerDay Int @default(3)
+  breakfastPercent Int @default(25)
+  lunchPercent Int @default(40)
+  dinnerPercent Int @default(35)
+  cuisines Json?
+  likedFoods Json?
+  dislikedFoods Json?
+  allergies Json?
+  intolerances Json?
+  maxPrepMinutes Int @default(45)
+  difficulty String @default("EASY")
+  budgetLevel String?
+  vegetarianDays Json?
+  highProtein Boolean @default(false)
+  lowPreparation Boolean @default(false)
+  equipment Json?
+  preferredUnits Units @default(METRIC)
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("recipe_preferences")
+}
+
+model PantryItem {
+  id String @id @default(cuid())
+  userId String
+  name String
+  quantity String?
+  expiresAt DateTime? @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+  @@map("pantry_items")
+}
+
+model AiMealPlan {
+  id String @id @default(cuid())
+  userId String
+  planDate DateTime @db.Date
+  status AiMealPlanStatus @default(GENERATING)
+  requestFingerprint String
+  payload Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipes AiMealPlanRecipe[]
+  @@unique([userId, planDate, requestFingerprint])
+  @@index([userId, planDate, status])
+  @@map("ai_meal_plans")
+}
+
+model AiMealPlanRecipe {
+  id String @id @default(cuid())
+  planId String
+  mealType MealType
+  title String
+  payload Json
+  createdAt DateTime @default(now())
+  plan AiMealPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  @@index([planId, mealType])
+  @@map("ai_meal_plan_recipes")
+}
+
+model RecipeFeedback {
+  id String @id @default(cuid())
+  userId String
+  planRecipeId String
+  kind String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, planRecipeId])
+  @@map("recipe_feedback")
+}
+
+model SavedRecipe {
+  id          String   @id @default(cuid())
+  userId      String
+  fingerprint String
+  title       String
+  mealType    MealType
+  payload     Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprint])
+  @@index([userId, createdAt])
+  @@map("saved_recipes")
+}

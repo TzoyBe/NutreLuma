@@ -1,0 +1,98 @@
+name: nutreluma
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nutreluma-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nutreluma_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-nutreluma_app}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nutreluma_user} -d ${POSTGRES_DB:-nutreluma_app}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    # Η βάση δεν εκτίθεται εκτός του compose network by default.
+    # Ξεσχολίασε για τοπική πρόσβαση με psql/GUI:
+    # ports:
+    #   - '5432:5432'
+    networks:
+      - nutreluma
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nutreluma-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://nutreluma_user:change_me@db:5432/nutreluma_app}
+      AUTH_SECRET: ${AUTH_SECRET}
+      SESSION_MAX_AGE_DAYS: ${SESSION_MAX_AGE_DAYS:-30}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_API_BASE_URL: ${AI_API_BASE_URL:-https://api.anthropic.com}
+      AI_MODEL: ${AI_MODEL:-claude-sonnet-5}
+      AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-60000}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-10}
+      MAX_AI_REQUESTS_PER_HOUR: ${MAX_AI_REQUESTS_PER_HOUR:-20}
+      MAX_UPLOADS_PER_DAY: ${MAX_UPLOADS_PER_DAY:-50}
+      MAX_LOGIN_ATTEMPTS_PER_15MIN: ${MAX_LOGIN_ATTEMPTS_PER_15MIN:-8}
+      BILLING_ENABLED: ${BILLING_ENABLED:-true}
+      TRIAL_DAYS: ${TRIAL_DAYS:-3}
+      SUBSCRIPTION_GRACE_DAYS: ${SUBSCRIPTION_GRACE_DAYS:-3}
+      SUBSCRIPTION_PRICE_CENTS: ${SUBSCRIPTION_PRICE_CENTS:-300}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_PLAN_ID: ${PAYPAL_PLAN_ID:-}
+      PAYPAL_ENV: ${PAYPAL_ENV:-sandbox}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-log}
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-NutreLuma}
+      PASSWORD_RESET_TTL_MINUTES: ${PASSWORD_RESET_TTL_MINUTES:-60}
+      DEFAULT_DAILY_WATER_TARGET_ML: ${DEFAULT_DAILY_WATER_TARGET_ML:-2500}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-el}
+      DEFAULT_TIMEZONE: ${DEFAULT_TIMEZONE:-Europe/Athens}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RUN_SEED: ${RUN_SEED:-false}
+      SEED_DEMO_EMAIL: ${SEED_DEMO_EMAIL:-demo@nutreluma.local}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    volumes:
+      - uploads_data:${UPLOAD_DIR:-/app/uploads}
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1:3000/api/health || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - nutreluma
+
+volumes:
+  db_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  nutreluma:
+    driver: bridge
