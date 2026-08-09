@@ -109,30 +109,35 @@ export function AppNav({ displayName }: { displayName: string }) {
         Bottom navigation για κινητά. Ο αριθμός των στηλών ΠΡΕΠΕΙ να ταιριάζει
         με το πλήθος των links — αλλιώς σπάει σε δεύτερη σειρά.
       */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:hidden">
       <nav
         aria-label={t('nav.menu')}
-        className="glass fixed inset-x-0 bottom-0 z-30 rounded-none border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="liquid-mobile-nav pointer-events-auto mx-auto max-w-md"
       >
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-5 gap-1 p-1.5">
           {links.map(({ href, label, Icon, match }) => (
-            <li key={href}>
+            <li key={href} className="min-w-0">
               <Link
                 href={href}
                 aria-current={isActive(match) ? 'page' : undefined}
+                data-active={isActive(match) ? 'true' : undefined}
                 className={cn(
                   // min-h-[3.25rem]: άνετο σημείο αφής ακόμη κι όταν η ετικέτα
                   // είναι μονόλεκτη.
-                  'flex min-h-[3.25rem] flex-col items-center justify-center gap-1 px-0.5 py-2 text-[10.5px] font-medium leading-none transition-colors',
-                  isActive(match) ? 'text-primary' : 'text-muted-foreground',
+                  'liquid-nav-link flex min-h-[3.7rem] flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-semibold leading-none transition-[color,transform] duration-200',
+                  isActive(match) ? 'text-foreground' : 'text-muted-foreground',
                 )}
               >
-                <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span className="liquid-nav-icon grid h-8 w-8 place-items-center rounded-full">
+                  <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                </span>
                 <span className="w-full truncate text-center">{label}</span>
               </Link>
             </li>
           ))}
         </ul>
       </nav>
+      </div>
 
       <ConfirmDialog
         open={confirming}

@@ -168,6 +168,83 @@
     border: 1px solid hsl(var(--glass-border) / calc(var(--glass-border-opacity) * 0.7));
   }
 
+  .liquid-mobile-nav {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 2rem;
+    background:
+      linear-gradient(135deg, hsl(var(--glass-border) / 0.46), transparent 28%),
+      linear-gradient(180deg, hsl(var(--glass-bg) / 0.84), hsl(var(--glass-bg) / 0.62));
+    -webkit-backdrop-filter: blur(30px) saturate(190%) contrast(104%);
+    backdrop-filter: blur(30px) saturate(190%) contrast(104%);
+    border: 1px solid hsl(var(--glass-border) / 0.62);
+    box-shadow:
+      0 1px 0 hsl(var(--glass-border) / 0.72) inset,
+      0 -1px 0 hsl(var(--foreground) / 0.06) inset,
+      0 18px 48px -20px hsl(var(--glass-shadow) / 0.48),
+      0 8px 22px -14px hsl(var(--glass-shadow) / 0.42);
+  }
+
+  .liquid-mobile-nav::before,
+  .liquid-mobile-nav::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .liquid-mobile-nav::before {
+    z-index: -1;
+    background:
+      radial-gradient(80% 120% at 18% 0%, hsl(var(--glass-border) / 0.44), transparent 48%),
+      radial-gradient(70% 100% at 88% 18%, hsl(var(--primary) / 0.13), transparent 55%);
+  }
+
+  .liquid-mobile-nav::after {
+    box-shadow:
+      0 0 0 1px hsl(var(--glass-border) / 0.2) inset,
+      0 10px 26px -18px hsl(var(--foreground) / 0.28) inset;
+  }
+
+  .liquid-nav-link {
+    position: relative;
+    border-radius: 1.45rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .liquid-nav-link:active {
+    transform: scale(0.96);
+  }
+
+  .liquid-nav-link[data-active='true'] {
+    background: linear-gradient(180deg, hsl(var(--glass-border) / 0.2), hsl(var(--primary) / 0.08));
+    box-shadow:
+      0 1px 0 hsl(var(--glass-border) / 0.48) inset,
+      0 8px 18px -14px hsl(var(--primary) / 0.72);
+  }
+
+  .liquid-nav-icon {
+    color: currentColor;
+    transition:
+      background-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  .liquid-nav-link[data-active='true'] .liquid-nav-icon {
+    color: hsl(var(--primary));
+    background-color: hsl(var(--primary) / 0.16);
+    box-shadow:
+      0 1px 0 hsl(var(--glass-border) / 0.58) inset,
+      0 8px 18px -12px hsl(var(--primary) / 0.62);
+  }
+
+  .liquid-nav-link:hover .liquid-nav-icon {
+    background-color: hsl(var(--glass-border) / 0.18);
+  }
+
   /**
    * Προσβασιμότητα: όποιος έχει ζητήσει λιγότερη διαφάνεια (iOS/macOS
    * "Reduce Transparency", Windows) παίρνει συμπαγείς επιφάνειες. Το blur
