@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { api, ApiClientError } from '@/lib/api-client';
 import { loginSchema } from '@/lib/validation/auth';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,9 @@ import { Field, fieldAria, Input } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: { nextPath?: string }) {
   const t = useT();
   const router = useRouter();
-  const params = useSearchParams();
   const toast = useToast();
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState(false);
@@ -42,9 +41,7 @@ export function LoginForm() {
     setLoading(true);
     try {
       const result = await api.post<{ needsProfile: boolean }>('/api/auth/login', parsed.data);
-      const next = params.get('next');
-      const destination = result.needsProfile ? '/onboarding' : (next ?? '/dashboard');
-      // Δεχόμαστε μόνο εσωτερικά paths (open redirect protection).
+      const destination = result.needsProfile ? '/onboarding' : (nextPath ?? '/dashboard');
       router.replace(destination.startsWith('/') ? destination : '/dashboard');
       router.refresh();
     } catch (error) {

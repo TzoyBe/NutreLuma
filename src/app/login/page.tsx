@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Suspense } from 'react';
 import { LoginForm } from '@/components/forms/login-form';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/misc';
 import { LogoMark } from '@/components/brand/logo';
 import { getT } from '@/i18n/locale';
 
@@ -12,12 +10,16 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('auth.loginTitle') };
 }
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
   const t = await getT();
+  const params = await searchParams;
 
   return (
     <main id="main" className="container flex min-h-dvh max-w-md flex-col justify-center py-10">
-      {/* Το λογότυπο αντικαθιστά τίτλο και υπότιτλο: λέει τα ίδια με λιγότερα. */}
       <Link href="/" aria-label={t('app.name')} className="mb-7 flex flex-col items-center gap-3">
         <LogoMark className="h-16 w-16" title={t('app.name')} />
         <span className="text-lg font-semibold tracking-tight">
@@ -27,12 +29,9 @@ export default async function LoginPage() {
 
       <Card>
         <CardContent>
-          <Suspense fallback={<Skeleton className="h-64" />}>
-            <LoginForm />
-          </Suspense>
+          <LoginForm nextPath={params.next} />
         </CardContent>
       </Card>
-
     </main>
   );
 }
