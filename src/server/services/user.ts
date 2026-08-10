@@ -1,5 +1,6 @@
 import 'server-only';
-import { Prisma } from '@prisma/client';
+import { Prisma, type AuthProvider } from '@prisma/client';
+import { randomBytes } from 'node:crypto';
 import { prisma } from '../db/prisma';
 import { hashPassword, verifyPassword } from '../auth/password';
 import { ApiError } from '../errors';
@@ -39,6 +40,91 @@ export async function findUserByEmail(email: string) {
     where: { email: email.toLowerCase() },
     select: { id: true, email: true, displayName: true, role: true, passwordHash: true },
   });
+}
+
+export async function findUserByAuthIdentity(provider: AuthProvider, providerAccountId: string) {
+  return prisma.authIdentity.findUnique({
+    where: {
+      provider_providerAccountId: { provider, providerAccountId },
+    },
+    select: {
+      user: {
+        select: { id: true, email: true, displayName: true, role: true },
+      },
+    },
+  });
+}
+
+export interface GoogleIdentityProfile {
+  sub: string;
+  email: string;
+  emailVerified: boolean;
+  name?: string | null;
+}
+
+function fallbackDisplayName(email: string): string {
+  const local = email.split('@')[0]?.trim() || 'User';
+  return local.slice(0, 60);
+}
+
+export async function findOrCreateUserFromGoogle(profile: GoogleIdentityProfile) {
+  if (!profile.emailVerified) {
+    throw new ApiError('FORBIDDEN', 'Google did not confirm this email address.');
+  }
+
+  const existingIdentity = await findUserByAuthIdentity('GOOGLE', profile.sub);
+  if (existingIdentity?.user) return existingIdentity.user;
+
+  const email = profile.email.toLowerCase();
+  const displayName = (profile.name?.trim() || fallbackDisplayName(email)).slice(0, 60);
+  const placeholderPassword = await hashPassword(randomBytes(24).toString('hex'));
+
+  try {
+    const user = await prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, displayName: true, role: true },
+      });
+
+      if (existingUser) {
+        await tx.authIdentity.create({
+          data: {
+            userId: existingUser.id,
+            provider: 'GOOGLE',
+            providerAccountId: profile.sub,
+            providerEmail: email,
+          },
+        });
+        return existingUser;
+      }
+
+      const created = await tx.user.create({
+        data: {
+          email,
+          displayName,
+          passwordHash: placeholderPassword,
+          consentAcceptedAt: new Date(),
+          authIdentities: {
+            create: {
+              provider: 'GOOGLE',
+              providerAccountId: profile.sub,
+              providerEmail: email,
+            },
+          },
+        },
+        select: { id: true, email: true, displayName: true, role: true },
+      });
+      await createTrialForUser(tx, created.id);
+      return created;
+    });
+    logger.info('google_auth_success', { userId: user.id });
+    return user;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new ApiError('CONFLICT', 'A login account already exists for this Google identity.');
+    }
+    throw error;
+  }
 }
 
 export async function changePassword(

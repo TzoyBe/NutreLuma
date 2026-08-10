@@ -20,6 +20,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(16, 'AUTH_SECRET πρέπει να έχει τουλάχιστον 16 χαρακτήρες'),
   SESSION_MAX_AGE_DAYS: intFromEnv(30),
+  GOOGLE_CLIENT_ID: z.string().optional().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
 
   AI_PROVIDER: z.enum(['anthropic', 'openai', 'gemini', 'mock']).default('mock'),
   AI_API_KEY: z.string().optional().default(''),
@@ -88,6 +90,8 @@ function load() {
       process.env.AUTH_SECRET ||
       (process.env.NODE_ENV !== 'production' ? 'dev-only-insecure-secret-value' : undefined),
     SESSION_MAX_AGE_DAYS: process.env.SESSION_MAX_AGE_DAYS,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     AI_PROVIDER: process.env.AI_PROVIDER,
     AI_API_KEY: process.env.AI_API_KEY,
     AI_API_BASE_URL: process.env.AI_API_BASE_URL,
@@ -143,6 +147,8 @@ export const env = load();
 
 export const isProduction = env.NODE_ENV === 'production';
 export const maxUploadBytes = env.MAX_UPLOAD_SIZE_MB * 1024 * 1024;
+export const googleAuthConfigured =
+  env.GOOGLE_CLIENT_ID.length > 0 && env.GOOGLE_CLIENT_SECRET.length > 0;
 
 /** true μόνο όταν υπάρχουν όλα όσα χρειάζεται μια κλήση Stripe. */
 export const stripeConfigured =

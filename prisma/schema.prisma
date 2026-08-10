@@ -16,6 +16,10 @@ enum Role {
   ADMIN
 }
 
+enum AuthProvider {
+  GOOGLE
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -236,6 +240,7 @@ model User {
   payments       Payment[]
   nutritionGoals NutritionGoal[]
   passwordResets PasswordResetToken[]
+  authIdentities AuthIdentity[]
   favoriteMeals  FavoriteMeal[]
   milestones       Milestone[]
   userAchievements UserAchievement[]
@@ -263,6 +268,22 @@ model User {
   maintenanceAlerts     MaintenanceAlert[]
 
   @@map("users")
+}
+
+model AuthIdentity {
+  id                String       @id @default(cuid())
+  userId            String
+  provider          AuthProvider
+  providerAccountId String
+  providerEmail     String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("auth_identities")
 }
 
 /**

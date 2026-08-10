@@ -3,14 +3,24 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Chrome } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { loginSchema } from '@/lib/validation/auth';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Field, fieldAria, Input } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
+import { cn } from '@/lib/utils';
 
-export function LoginForm({ nextPath }: { nextPath?: string }) {
+export function LoginForm({
+  nextPath,
+  googleEnabled,
+  initialError,
+}: {
+  nextPath?: string;
+  googleEnabled?: boolean;
+  initialError?: string;
+}) {
   const t = useT();
   const router = useRouter();
   const toast = useToast();
@@ -52,43 +62,70 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
     }
   }
 
+  const googleHref = nextPath
+    ? `/api/auth/google?next=${encodeURIComponent(nextPath)}`
+    : '/api/auth/google';
+
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-4">
-      <Field label={t('auth.email')} htmlFor="email" error={errors.email} required>
-        <Input
-          {...fieldAria('email', errors.email)}
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          required
-        />
-      </Field>
+    <div className="space-y-4">
+      {initialError ? (
+        <p role="alert" className="rounded-2xl border border-destructive/35 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {initialError}
+        </p>
+      ) : null}
 
-      <Field label={t('auth.password')} htmlFor="password" error={errors.password} required>
-        <Input
-          {...fieldAria('password', errors.password)}
-          type="password"
-          autoComplete="current-password"
-          required
-        />
-      </Field>
+      {googleEnabled ? (
+        <>
+          <Link
+            href={googleHref}
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg', block: true }))}
+          >
+            <Chrome className="h-4 w-4" aria-hidden="true" />
+            {t('auth.continueWithGoogle')}
+          </Link>
+          <p className="text-center text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            {t('auth.orUseEmail')}
+          </p>
+        </>
+      ) : null}
 
-      <Button type="submit" size="lg" block loading={loading}>
-        {t('auth.submitLogin')}
-      </Button>
+      <form onSubmit={onSubmit} noValidate className="space-y-4">
+        <Field label={t('auth.email')} htmlFor="email" error={errors.email} required>
+          <Input
+            {...fieldAria('email', errors.email)}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            required
+          />
+        </Field>
 
-      <p className="text-center text-sm">
-        <Link href="/forgot-password" className="text-primary underline underline-offset-4">
-          {t('auth.forgotLink')}
-        </Link>
-      </p>
+        <Field label={t('auth.password')} htmlFor="password" error={errors.password} required>
+          <Input
+            {...fieldAria('password', errors.password)}
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+        </Field>
 
-      <p className="text-center text-sm text-muted-foreground">
-        {t('auth.noAccount')}{' '}
-        <Link href="/register" className="text-primary underline underline-offset-4">
-          {t('auth.submitRegister')}
-        </Link>
-      </p>
-    </form>
+        <Button type="submit" size="lg" block loading={loading}>
+          {t('auth.submitLogin')}
+        </Button>
+
+        <p className="text-center text-sm">
+          <Link href="/forgot-password" className="text-primary underline underline-offset-4">
+            {t('auth.forgotLink')}
+          </Link>
+        </p>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {t('auth.noAccount')}{' '}
+          <Link href="/register" className="text-primary underline underline-offset-4">
+            {t('auth.submitRegister')}
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }

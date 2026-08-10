@@ -4,6 +4,7 @@ import { RegisterForm } from '@/components/forms/register-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Disclaimer } from '@/components/ui/misc';
 import { getT } from '@/i18n/locale';
+import { googleAuthConfigured } from '@/server/env';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -23,7 +24,7 @@ export default async function RegisterPage() {
           <CardDescription>{t('auth.registerSubtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RegisterForm />
+          <RegisterForm googleEnabled={googleAuthConfigured} />
           <Disclaimer text={t('app.disclaimer')} />
         </CardContent>
       </Card>
