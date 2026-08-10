@@ -4,62 +4,62 @@
 
 @layer base {
   :root {
-    --background: 188 42% 97%;
-    --foreground: 172 24% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 172 24% 11%;
-    --primary: 171 78% 29%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 188 42% 93%;
-    --secondary-foreground: 178 37% 18%;
-    --muted: 188 28% 92%;
-    --muted-foreground: 176 13% 34%;
-    --accent: 22 94% 58%;
-    --accent-foreground: 0 0% 100%;
+    --background: 190 34% 10%;
+    --foreground: 184 28% 94%;
+    --card: 190 27% 14%;
+    --card-foreground: 184 28% 94%;
+    --primary: 169 72% 48%;
+    --primary-foreground: 190 42% 8%;
+    --secondary: 190 24% 18%;
+    --secondary-foreground: 184 24% 91%;
+    --muted: 190 20% 19%;
+    --muted-foreground: 184 14% 76%;
+    --accent: 24 88% 61%;
+    --accent-foreground: 190 42% 8%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 184 23% 84%;
-    --input: 184 23% 84%;
-    --ring: 171 78% 29%;
+    --border: 190 17% 25%;
+    --input: 190 17% 25%;
+    --ring: 169 72% 48%;
     --radius: 1.25rem;
 
-    --glass-bg: 0 0% 100%;
-    --glass-tint: 185 70% 96%;
-    --glass-opacity: 0.68;
-    --glass-border: 0 0% 100%;
-    --glass-border-opacity: 0.72;
-    --glass-shadow: 176 45% 16%;
+    --glass-bg: 190 25% 17%;
+    --glass-tint: 188 32% 21%;
+    --glass-opacity: 0.72;
+    --glass-border: 184 48% 78%;
+    --glass-border-opacity: 0.22;
+    --glass-shadow: 190 62% 2%;
     --glass-blur: 26px;
     --glass-saturate: 190%;
-    --liquid-edge: 192 90% 88%;
-    --liquid-depth: 210 60% 44%;
+    --liquid-edge: 178 80% 64%;
+    --liquid-depth: 212 78% 54%;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 190 35% 7%;
-      --foreground: 185 22% 94%;
-      --card: 190 26% 11%;
-      --card-foreground: 185 22% 94%;
-      --primary: 170 72% 52%;
+      --background: 190 38% 8%;
+      --foreground: 185 24% 95%;
+      --card: 190 28% 12%;
+      --card-foreground: 185 24% 95%;
+      --primary: 170 74% 50%;
       --primary-foreground: 190 42% 8%;
-      --secondary: 190 22% 15%;
-      --secondary-foreground: 185 22% 90%;
-      --muted: 190 20% 16%;
-      --muted-foreground: 184 10% 67%;
+      --secondary: 190 24% 16%;
+      --secondary-foreground: 185 24% 92%;
+      --muted: 190 22% 16%;
+      --muted-foreground: 184 13% 76%;
       --accent: 24 91% 61%;
       --accent-foreground: 190 42% 8%;
       --destructive: 0 62% 52%;
       --destructive-foreground: 0 0% 100%;
-      --border: 190 17% 22%;
-      --input: 190 17% 23%;
+      --border: 190 17% 24%;
+      --input: 190 17% 24%;
       --ring: 170 72% 52%;
 
-      --glass-bg: 190 24% 13%;
-      --glass-tint: 190 30% 18%;
-      --glass-opacity: 0.64;
+      --glass-bg: 190 26% 14%;
+      --glass-tint: 190 32% 18%;
+      --glass-opacity: 0.72;
       --glass-border: 185 52% 82%;
-      --glass-border-opacity: 0.18;
+      --glass-border-opacity: 0.2;
       --glass-shadow: 190 60% 2%;
       --liquid-edge: 180 82% 68%;
       --liquid-depth: 210 74% 57%;
@@ -72,6 +72,7 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    color-scheme: dark;
   }
 
   body {
@@ -79,10 +80,12 @@
     min-height: 100dvh;
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    font-feature-settings: 'kern' 1, 'liga' 1, 'tnum' 0;
+    text-rendering: optimizeLegibility;
     background:
-      linear-gradient(115deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.85) 42%, hsl(var(--background)) 100%),
-      linear-gradient(180deg, hsl(var(--primary) / 0.06), transparent 34%),
-      linear-gradient(90deg, hsl(var(--accent) / 0.045), transparent 45%, hsl(var(--liquid-depth) / 0.06));
+      linear-gradient(115deg, hsl(190 42% 7%) 0%, hsl(var(--background)) 38%, hsl(196 34% 9%) 100%),
+      linear-gradient(180deg, hsl(var(--primary) / 0.11), transparent 36%),
+      linear-gradient(90deg, hsl(var(--accent) / 0.055), transparent 46%, hsl(var(--liquid-depth) / 0.08));
   }
 
   body::before {
@@ -91,10 +94,10 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    opacity: 0.55;
+    opacity: 0.26;
     background-image:
-      linear-gradient(hsl(var(--foreground) / 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--foreground) / 0.03) 1px, transparent 1px);
+      linear-gradient(hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.04) 1px, transparent 1px);
     background-size: 44px 44px;
     mask-image: linear-gradient(to bottom, transparent, black 16%, black 78%, transparent);
   }

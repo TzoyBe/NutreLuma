@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const controlClasses =
-  'liquid-control w-full rounded-2xl px-3 py-2 text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
+  'liquid-control w-full rounded-2xl px-3 py-2 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => (
@@ -33,7 +33,7 @@ export const Label = React.forwardRef<
   HTMLLabelElement,
   React.LabelHTMLAttributes<HTMLLabelElement>
 >(({ className, children, ...props }, ref) => (
-  <label ref={ref} className={cn('text-sm font-medium text-foreground', className)} {...props}>
+  <label ref={ref} className={cn('text-sm font-semibold text-foreground', className)} {...props}>
     {children}
   </label>
 ));
