@@ -245,6 +245,9 @@ export const en: Translations = {
     highCaloriesAck: 'Yes, the value is correct.',
     fileTooLarge: 'The file is too large.',
     fileTypeInvalid: 'Only JPEG, PNG, WebP and HEIC are allowed.',
+    preparingPhoto: 'Preparing photo for upload...',
+    heicConversionFailed:
+      'This HEIC photo could not be prepared for upload. Try choosing a JPEG photo instead.',
     noPhoto: 'Please select a photo first.',
     savedManual: 'This value was edited by you.',
     savedAi: 'This value came from AI analysis.',

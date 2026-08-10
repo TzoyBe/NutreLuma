@@ -253,6 +253,9 @@ export const el = {
     highCaloriesAck: 'Ναι, η τιμή είναι σωστή.',
     fileTooLarge: 'Το αρχείο είναι πολύ μεγάλο.',
     fileTypeInvalid: 'Επιτρέπονται μόνο JPEG, PNG, WebP και HEIC.',
+    preparingPhoto: 'Ετοιμάζουμε τη φωτογραφία για upload...',
+    heicConversionFailed:
+      'Η φωτογραφία HEIC δεν μπόρεσε να ετοιμαστεί για upload. Δοκίμασε μια JPEG φωτογραφία.',
     noPhoto: 'Επίλεξε πρώτα φωτογραφία.',
     savedManual: 'Η τιμή τροποποιήθηκε από εσένα.',
     savedAi: 'Η τιμή προήλθε από την ανάλυση AI.',

@@ -31,6 +31,17 @@ function defaultMealType(): (typeof MEAL_TYPES)[number] {
   return 'OTHER';
 }
 
+function isHeicLikeFile(file: File): boolean {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return (
+    type === 'image/heic' ||
+    type === 'image/heif' ||
+    name.endsWith('.heic') ||
+    name.endsWith('.heif')
+  );
+}
+
 export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
   const t = useT();
   const router = useRouter();
@@ -47,6 +58,7 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
   const [notes, setNotes] = React.useState('');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState(false);
+  const [preparingImage, setPreparingImage] = React.useState(false);
 
   React.useEffect(() => {
     if (!file) {
@@ -58,12 +70,8 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  function selectFile(selected: File | undefined) {
+  async function selectFile(selected: File | undefined) {
     if (!selected) return;
-    // Ο έλεγχος τύπου είναι σκόπιμα χαλαρός: το iOS Safari δίνει συχνά ΚΕΝΟ
-    // MIME για φωτογραφίες της κάμερας, οπότε ένας αυστηρός έλεγχος θα
-    // απέρριπτε έγκυρες λήψεις. Απορρίπτουμε μόνο ό,τι δηλώνεται ρητά μη-εικόνα·
-    // ο αυθεντικός έλεγχος (magic bytes) γίνεται στον server.
     if (selected.type && !selected.type.startsWith('image/')) {
       setErrors({ image: t('meal.fileTypeInvalid') });
       return;
@@ -72,10 +80,42 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
       setErrors({ image: `${t('meal.fileTooLarge')} (max ${maxUploadMb} MB)` });
       return;
     }
-    setErrors({});
-    setFile(selected);
-    // Νέα φωτογραφία = νέα υποβολή, άρα νέο κλειδί idempotency.
-    requestKeyRef.current = generateRequestKey();
+
+    setPreparingImage(true);
+    try {
+      let normalizedFile = selected;
+
+      if (isHeicLikeFile(selected)) {
+        const { default: heic2any } = await import('heic2any');
+        const converted = await heic2any({
+          blob: selected,
+          toType: 'image/jpeg',
+          quality: 0.9,
+        });
+        const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
+        if (!(convertedBlob instanceof Blob)) {
+          throw new Error('HEIC conversion did not return a Blob.');
+        }
+        normalizedFile = new File(
+          [convertedBlob],
+          selected.name.replace(/\.(heic|heif)$/i, '.jpg'),
+          { type: 'image/jpeg', lastModified: selected.lastModified },
+        );
+      }
+
+      if (normalizedFile.size > maxUploadMb * 1024 * 1024) {
+        setErrors({ image: `${t('meal.fileTooLarge')} (max ${maxUploadMb} MB)` });
+        return;
+      }
+
+      setErrors({});
+      setFile(normalizedFile);
+      requestKeyRef.current = generateRequestKey();
+    } catch {
+      setErrors({ image: t('meal.heicConversionFailed') });
+    } finally {
+      setPreparingImage(false);
+    }
   }
 
   function clearFile() {
@@ -86,7 +126,7 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (loading) return; // αποτροπή διπλής υποβολής
+    if (loading || preparingImage) return;
     if (!file) {
       setErrors({ image: t('meal.noPhoto') });
       return;
@@ -119,9 +159,6 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
       } else {
         toast.push(t('errors.generic'), 'error');
       }
-      // ΔΕΝ αλλάζουμε το requestKey: σε σφάλμα δικτύου δεν ξέρουμε αν ο server
-      // πρόλαβε να δημιουργήσει το γεύμα. Κρατώντας το ίδιο κλειδί, μια δεύτερη
-      // προσπάθεια επιστρέφει το ίδιο γεύμα αντί να φτιάξει διπλότυπο.
       setLoading(false);
     }
   }
@@ -133,7 +170,6 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
 
         {previewUrl ? (
           <div className="relative overflow-hidden rounded-xl border border-border">
-            {/* unoptimized: blob URL τοπικής προεπισκόπησης */}
             <Image
               src={previewUrl}
               alt={t('meal.preview')}
@@ -157,6 +193,7 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
               type="button"
               variant="outline"
               size="lg"
+              disabled={preparingImage || loading}
               onClick={() => fileInputRef.current?.click()}
             >
               <ImagePlus className="h-4 w-4" aria-hidden="true" />
@@ -166,6 +203,7 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
               type="button"
               variant="outline"
               size="lg"
+              disabled={preparingImage || loading}
               onClick={() => cameraInputRef.current?.click()}
             >
               <Camera className="h-4 w-4" aria-hidden="true" />
@@ -181,7 +219,7 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
           type="file"
           accept={IMAGE_ACCEPT_ATTR}
           className="sr-only"
-          onChange={(e) => selectFile(e.target.files?.[0])}
+          onChange={(e) => void selectFile(e.target.files?.[0])}
           aria-label={t('meal.choosePhoto')}
         />
         <input
@@ -190,7 +228,7 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
           accept="image/*"
           capture="environment"
           className="sr-only"
-          onChange={(e) => selectFile(e.target.files?.[0])}
+          onChange={(e) => void selectFile(e.target.files?.[0])}
           aria-label={t('meal.takePhoto')}
         />
 
@@ -200,7 +238,7 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            JPEG, PNG, WebP, HEIC · max {maxUploadMb} MB
+            {preparingImage ? t('meal.preparingPhoto') : `JPEG, PNG, WebP, HEIC · max ${maxUploadMb} MB`}
           </p>
         )}
       </div>
@@ -252,13 +290,19 @@ export function MealUploadForm({ maxUploadMb }: { maxUploadMb: number }) {
 
       <Disclaimer text={t('app.disclaimer')} />
 
-      <Button type="submit" size="lg" block loading={loading} disabled={!file}>
+      <Button
+        type="submit"
+        size="lg"
+        block
+        loading={loading || preparingImage}
+        disabled={!file || preparingImage}
+      >
         {loading ? t('meal.analyzing') : t('meal.analyze')}
       </Button>
 
-      {loading ? (
+      {loading || preparingImage ? (
         <p className="text-center text-sm text-muted-foreground" aria-live="polite">
-          {t('meal.analyzingHint')}
+          {preparingImage ? t('meal.preparingPhoto') : t('meal.analyzingHint')}
         </p>
       ) : null}
     </form>
