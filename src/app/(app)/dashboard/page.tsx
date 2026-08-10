@@ -188,6 +188,22 @@ export default async function DashboardPage({
         </CardContent>
       </Card>
 
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('dashboard.meals')}
+        </h2>
+
+        {meals.length === 0 ? (
+          <EmptyState
+            icon={<Utensils className="h-7 w-7" aria-hidden="true" />}
+            title={t('dashboard.emptyTitle')}
+            body={t('dashboard.emptyBody')}
+          />
+        ) : (
+          <div className="space-y-2">{meals.map((meal) => mealCard(meal))}</div>
+        )}
+      </section>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle>{t('goals.achievementsTitle')}</CardTitle>
@@ -236,22 +252,6 @@ export default async function DashboardPage({
           <div className="space-y-2">{drafts.map((meal) => mealCard(meal))}</div>
         </section>
       ) : null}
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('dashboard.meals')}
-        </h2>
-
-        {meals.length === 0 ? (
-          <EmptyState
-            icon={<Utensils className="h-7 w-7" aria-hidden="true" />}
-            title={t('dashboard.emptyTitle')}
-            body={t('dashboard.emptyBody')}
-          />
-        ) : (
-          <div className="space-y-2">{meals.map((meal) => mealCard(meal))}</div>
-        )}
-      </section>
 
       <Disclaimer text={t('app.disclaimer')} />
     </>
