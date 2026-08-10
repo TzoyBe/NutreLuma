@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { addDaysISO } from '@/lib/dates';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/field';
 import { useT } from '@/i18n/client';
 
 /** Πλοήγηση ανά ημέρα + date picker. Ενημερώνει το ?date= του server component. */
@@ -27,27 +28,28 @@ export function DateNav({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-2">
       <Button
         variant="outline"
         size="icon"
         onClick={() => go(addDaysISO(date, -1))}
         aria-label={t('dashboard.prevDay')}
+        className="shrink-0"
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
       </Button>
 
-      <div className="flex-1">
+      <div className="min-w-0">
         <label htmlFor="date-picker" className="sr-only">
           {t('dashboard.pickDate')}
         </label>
-        <input
+        <Input
           id="date-picker"
           type="date"
           value={date}
           max={maxDate}
           onChange={(event) => event.target.value && go(event.target.value)}
-          className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+          className="h-10 rounded-xl text-sm sm:text-base"
           aria-describedby="date-label"
         />
         <span id="date-label" className="sr-only">
@@ -61,6 +63,7 @@ export function DateNav({
         onClick={() => go(addDaysISO(date, 1))}
         disabled={date >= maxDate}
         aria-label={t('dashboard.nextDay')}
+        className="shrink-0"
       >
         <ChevronRight className="h-4 w-4" aria-hidden="true" />
       </Button>

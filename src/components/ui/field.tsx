@@ -4,9 +4,25 @@ import { cn } from '@/lib/utils';
 const controlClasses =
   'liquid-control w-full rounded-2xl px-3 py-2 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
 
+function isCalendarInput(
+  type: React.InputHTMLAttributes<HTMLInputElement>['type'],
+): type is 'date' | 'datetime-local' {
+  return type === 'date' || type === 'datetime-local';
+}
+
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
-    <input ref={ref} className={cn(controlClasses, 'h-11', className)} {...props} />
+  ({ className, type, ...props }, ref) => (
+    <input
+      ref={ref}
+      type={type}
+      className={cn(
+        controlClasses,
+        'h-11 min-w-0',
+        isCalendarInput(type) && 'liquid-date-input tabular-nums',
+        className,
+      )}
+      {...props}
+    />
   ),
 );
 Input.displayName = 'Input';

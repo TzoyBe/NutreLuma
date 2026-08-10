@@ -265,6 +265,37 @@
       0 10px 24px -20px hsl(var(--glass-shadow) / 0.42);
   }
 
+  .liquid-date-input {
+    padding-right: 3rem;
+    color-scheme: dark;
+  }
+
+  .liquid-date-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin-left: 0.5rem;
+    opacity: 0.92;
+  }
+
+  .liquid-date-input::-webkit-date-and-time-value {
+    min-height: 1.25rem;
+    text-align: left;
+  }
+
+  .liquid-date-input::-webkit-datetime-edit,
+  .liquid-date-input::-webkit-datetime-edit-fields-wrapper,
+  .liquid-date-input::-webkit-datetime-edit-text,
+  .liquid-date-input::-webkit-datetime-edit-hour-field,
+  .liquid-date-input::-webkit-datetime-edit-minute-field,
+  .liquid-date-input::-webkit-datetime-edit-day-field,
+  .liquid-date-input::-webkit-datetime-edit-month-field,
+  .liquid-date-input::-webkit-datetime-edit-year-field {
+    min-width: 0;
+  }
+
+  .liquid-date-input::-webkit-datetime-edit {
+    padding-right: 0.125rem;
+  }
+
   @media (prefers-reduced-transparency: reduce) {
     .glass,
     .glass-subtle,

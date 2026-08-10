@@ -89,11 +89,11 @@ export function HistoryFilters({ initial }: { initial: HistoryFilterValues }) {
         />
       </Field>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Button type="submit" className="flex-1">
           {t('common.apply')}
         </Button>
-        <Button type="button" variant="outline" onClick={reset}>
+        <Button type="button" variant="outline" onClick={reset} className="sm:w-auto">
           {t('common.reset')}
         </Button>
       </div>
