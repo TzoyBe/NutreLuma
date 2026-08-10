@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CreditCard, Scale, UserCog } from 'lucide-react';
+import { CreditCard, Database, Scale, UserCog, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
 
@@ -12,21 +12,22 @@ const TABS = [
   { href: '/profile/billing', labelKey: 'profile.tabBilling', Icon: CreditCard },
 ] as const;
 
-/**
- * Υπο-μενού του προφίλ. Οριζόντια κύλιση σε στενές οθόνες αντί για αναδίπλωση,
- * ώστε το ύψος του header να μένει σταθερό.
- */
-export function ProfileTabs() {
+const ADMIN_TABS = [
+  { href: '/admin/users', labelKey: 'admin.usersTitle', Icon: Users },
+  { href: '/admin/db', labelKey: 'admin.dbTitle', Icon: Database },
+] as const;
+
+export function ProfileTabs({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const t = useT();
+  const tabs = isAdmin ? [...TABS, ...ADMIN_TABS] : TABS;
 
   return (
     <nav
       aria-label={t('profile.title')}
       className="glass -mx-1 flex gap-1 overflow-x-auto rounded-full p-1"
     >
-      {TABS.map(({ href, labelKey, Icon }) => {
-        // Το /profile είναι ενεργό μόνο ακριβώς — αλλιώς θα ήταν πάντα ενεργό.
+      {tabs.map(({ href, labelKey, Icon }) => {
         const active = href === '/profile' ? pathname === href : pathname.startsWith(href);
         return (
           <Link
