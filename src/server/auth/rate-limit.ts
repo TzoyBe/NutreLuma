@@ -4,8 +4,8 @@ import { env } from '../env';
 import { ApiError } from '../errors';
 
 /**
- * In-memory sliding window. Αρκεί για single-instance deployment (MVP).
- * Για multi-instance αντικαθίσταται με Redis χωρίς αλλαγή στα call sites.
+ * In-memory sliding window for low-risk UI throttles.
+ * Sensitive auth flows use the database-backed helpers below.
  */
 const buckets = new Map<string, number[]>();
 
@@ -15,21 +15,54 @@ export function hitLimit(key: string, limit: number, windowMs: number): boolean 
   hits.push(now);
   buckets.set(key, hits);
 
-  // Απλό housekeeping ώστε να μη μεγαλώνει απεριόριστα το map.
   if (buckets.size > 5000) {
-    for (const [k, v] of buckets) {
-      if (v.every((t) => now - t >= windowMs)) buckets.delete(k);
+    for (const [bucketKey, values] of buckets) {
+      if (values.every((t) => now - t >= windowMs)) buckets.delete(bucketKey);
     }
   }
   return hits.length > limit;
 }
 
-export function assertLoginRateLimit(ip: string, email: string): void {
+async function hitPersistentLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + windowMs);
+
+  const count = await prisma.$transaction(async (tx) => {
+    const current = await tx.rateLimitBucket.findUnique({
+      where: { key },
+      select: { count: true, expiresAt: true },
+    });
+
+    if (!current || current.expiresAt <= now) {
+      await tx.rateLimitBucket.upsert({
+        where: { key },
+        create: { key, count: 1, expiresAt },
+        update: { count: 1, expiresAt },
+      });
+      return 1;
+    }
+
+    const updated = await tx.rateLimitBucket.update({
+      where: { key },
+      data: { count: { increment: 1 } },
+      select: { count: true },
+    });
+    return updated.count;
+  });
+
+  void prisma.rateLimitBucket
+    .deleteMany({ where: { expiresAt: { lt: now } } })
+    .catch(() => undefined);
+
+  return count > limit;
+}
+
+export async function assertLoginRateLimit(ip: string, email: string): Promise<void> {
   const windowMs = 15 * 60 * 1000;
   const limit = env.MAX_LOGIN_ATTEMPTS_PER_15MIN;
   const exceeded =
-    hitLimit(`login:ip:${ip}`, limit * 3, windowMs) ||
-    hitLimit(`login:id:${email.toLowerCase()}`, limit, windowMs);
+    (await hitPersistentLimit(`login:ip:${ip}`, limit * 3, windowMs)) ||
+    (await hitPersistentLimit(`login:id:${email.toLowerCase()}`, limit, windowMs));
   if (exceeded) {
     throw new ApiError(
       'RATE_LIMITED',
@@ -38,24 +71,17 @@ export function assertLoginRateLimit(ip: string, email: string): void {
   }
 }
 
-export function assertRegisterRateLimit(ip: string): void {
-  if (hitLimit(`register:ip:${ip}`, 10, 60 * 60 * 1000)) {
+export async function assertRegisterRateLimit(ip: string): Promise<void> {
+  if (await hitPersistentLimit(`register:ip:${ip}`, 10, 60 * 60 * 1000)) {
     throw new ApiError('RATE_LIMITED', 'Πολλές εγγραφές από αυτή τη σύνδεση. Δοκίμασε αργότερα.');
   }
 }
 
-/**
- * Όριο αιτήσεων επαναφοράς κωδικού.
- *
- * Δύο κλειδιά με διαφορετικό σκοπό:
- *  - ανά IP: εμποδίζει σάρωση της φόρμας για απαρίθμηση λογαριασμών
- *  - ανά email: εμποδίζει να «βομβαρδιστεί» το γραμματοκιβώτιο τρίτου
- */
-export function assertPasswordResetRateLimit(ip: string, email: string): void {
+export async function assertPasswordResetRateLimit(ip: string, email: string): Promise<void> {
   const windowMs = 60 * 60 * 1000;
   const exceeded =
-    hitLimit(`reset:ip:${ip}`, 15, windowMs) ||
-    hitLimit(`reset:id:${email.toLowerCase()}`, 5, windowMs);
+    (await hitPersistentLimit(`reset:ip:${ip}`, 15, windowMs)) ||
+    (await hitPersistentLimit(`reset:id:${email.toLowerCase()}`, 5, windowMs));
   if (exceeded) {
     throw new ApiError(
       'RATE_LIMITED',
@@ -64,14 +90,12 @@ export function assertPasswordResetRateLimit(ip: string, email: string): void {
   }
 }
 
-/** Όριο προσπαθειών εξαργύρωσης token — αποτρέπει μαντεψιά με τη βία. */
-export function assertResetAttemptRateLimit(ip: string): void {
-  if (hitLimit(`reset-attempt:ip:${ip}`, 20, 60 * 60 * 1000)) {
+export async function assertResetAttemptRateLimit(ip: string): Promise<void> {
+  if (await hitPersistentLimit(`reset-attempt:ip:${ip}`, 20, 60 * 60 * 1000)) {
     throw new ApiError('RATE_LIMITED', 'Πολλές προσπάθειες. Δοκίμασε ξανά σε λίγη ώρα.');
   }
 }
 
-/** Όριο AI κλήσεων ανά χρήστη ανά ώρα (μετράει τα πραγματικά logs στη βάση). */
 export async function assertAiRateLimit(userId: string): Promise<void> {
   const since = new Date(Date.now() - 60 * 60 * 1000);
   const count = await prisma.aiUsageLog.count({
@@ -85,7 +109,6 @@ export async function assertAiRateLimit(userId: string): Promise<void> {
   }
 }
 
-/** Όριο uploads ανά χρήστη ανά 24 ώρες. */
 export async function assertUploadRateLimit(userId: string): Promise<void> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const count = await prisma.meal.count({
@@ -99,14 +122,12 @@ export async function assertUploadRateLimit(userId: string): Promise<void> {
   }
 }
 
-/** Όριο quick-pick δημιουργιών ανά χρήστη (in-memory sliding window). */
 export function assertQuickPickRateLimit(userId: string): void {
   if (hitLimit(`quickpick:${userId}`, 60, 60 * 1000)) {
     throw new ApiError('RATE_LIMITED', 'Πολλές γρήγορες προσθήκες. Δοκίμασε ξανά σε λίγο.');
   }
 }
 
-/** Μόνο για tests. */
 export function __resetRateLimits(): void {
   buckets.clear();
 }

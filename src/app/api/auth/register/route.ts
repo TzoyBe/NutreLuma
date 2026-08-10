@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export const POST = withErrorHandling(async (request: Request) => {
   assertSameOrigin(request);
-  assertRegisterRateLimit(clientIp(request));
+  await assertRegisterRateLimit(clientIp(request));
 
   const body = await request.json();
   const input = registerSchema.parse(body);

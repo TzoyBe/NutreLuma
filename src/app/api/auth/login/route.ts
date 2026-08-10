@@ -16,7 +16,7 @@ export const POST = withErrorHandling(async (request: Request) => {
   const body = await request.json();
   const input = loginSchema.parse(body);
 
-  assertLoginRateLimit(clientIp(request), input.email);
+  await assertLoginRateLimit(clientIp(request), input.email);
 
   const user = await findUserByEmail(input.email);
   if (!user) {

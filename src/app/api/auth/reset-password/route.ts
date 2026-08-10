@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withErrorHandling(async (request: Request) => {
   assertSameOrigin(request);
-  assertResetAttemptRateLimit(clientIp(request));
+  await assertResetAttemptRateLimit(clientIp(request));
 
   const input = resetPasswordSchema.parse(await request.json());
   await resetPassword(input.token, input.password);

@@ -19,7 +19,7 @@ export const POST = withErrorHandling(async (request: Request) => {
   assertSameOrigin(request);
 
   const input = forgotPasswordSchema.parse(await request.json());
-  assertPasswordResetRateLimit(clientIp(request), input.email);
+  await assertPasswordResetRateLimit(clientIp(request), input.email);
 
   const locale = await getLocale();
   await requestPasswordReset(input.email, locale);
