@@ -23,6 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return { title: t('dashboard.title') };
 }
+
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage({
@@ -46,11 +47,29 @@ export default async function DashboardPage({
     listMilestones(user.id, { status: 'ACTIVE', limit: 3 }),
     listAchievements(user.id),
   ]);
+
   const isToday = date === today;
   const hasMacroTargets =
     macros.protein.target !== null ||
     macros.carbohydrate.target !== null ||
     macros.fat.target !== null;
+  const latestAchievement = achievements.find((achievement) => achievement.unlocked);
+
+  const mealCard = (meal: (typeof meals)[number] | (typeof drafts)[number]) => (
+    <MealCard
+      key={meal.id}
+      meal={{
+        id: meal.id,
+        title: meal.title ?? t(`mealType.${meal.mealType}` as never),
+        mealTypeLabel: t(`mealType.${meal.mealType}` as never),
+        timeLabel: formatTimeInTz(new Date(meal.mealDateTime), profile.timezone),
+        calories: meal.finalCalories,
+        thumbUrl: meal.thumbUrl,
+        analysisStatus: meal.analysisStatus,
+        wasManuallyEdited: meal.wasManuallyEdited,
+      }}
+    />
+  );
 
   return (
     <>
@@ -62,10 +81,34 @@ export default async function DashboardPage({
         }
       />
 
-      <div className="flex flex-col gap-3">
-        <h1 className="text-xl font-semibold">{t('dashboard.title')}</h1>
+      <div className="space-y-3">
+        <h1 className="sr-only">{t('dashboard.title')}</h1>
         <DateNav date={date} maxDate={today} label={formatDayISOHuman(date)} />
       </div>
+
+      {access.canWrite ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Link
+            href="/meals/add"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.42)_inset,0_12px_26px_-14px_hsl(var(--primary)/0.95)] transition-colors hover:bg-primary/90"
+          >
+            <Plus className="h-5 w-5" aria-hidden="true" />
+            {t('dashboard.addMeal')}
+          </Link>
+          <Link
+            href="/meals/manual"
+            className="liquid-control flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition-colors hover:bg-[hsl(var(--glass-bg)/0.72)]"
+          >
+            <Pencil className="h-5 w-5" aria-hidden="true" />
+            {t('dashboard.addManual')}
+          </Link>
+        </div>
+      ) : (
+        <div className="liquid-control flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold text-muted-foreground">
+          <Plus className="h-5 w-5" aria-hidden="true" />
+          {t('billing.lockedAction')}
+        </div>
+      )}
 
       <Card>
         <CardContent className="space-y-4">
@@ -107,10 +150,7 @@ export default async function DashboardPage({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle>{t('dashboard.macros')}</CardTitle>
-          <Link
-            href="/goals"
-            className="shrink-0 text-sm font-medium text-primary hover:underline"
-          >
+          <Link href="/goals" className="shrink-0 text-sm font-medium text-primary hover:underline">
             {t('dashboard.setGoals')}
           </Link>
         </CardHeader>
@@ -167,11 +207,16 @@ export default async function DashboardPage({
           ) : (
             <p className="text-sm text-muted-foreground">{t('achievements.noMilestones')}</p>
           )}
-          {achievements.find((achievement) => achievement.unlocked) ? (
+          {latestAchievement ? (
             <p className="text-sm text-muted-foreground">
               {t('achievements.latestAchievement')}:{' '}
               <span className="font-medium text-foreground">
-                {(() => { const latest = achievements.find((achievement) => achievement.unlocked); return latest ? localizeAchievement(latest, t('achievements.achievements') === 'Achievements').name : null; })()}
+                {
+                  localizeAchievement(
+                    latestAchievement,
+                    t('achievements.achievements') === 'Achievements',
+                  ).name
+                }
               </span>
             </p>
           ) : null}
@@ -179,20 +224,6 @@ export default async function DashboardPage({
       </Card>
 
       <MaintenanceDashboardCard userId={user.id} />
-
-      <Card>
-        <CardContent className="flex items-center justify-between gap-3 py-4">
-          <div><p className="font-medium">{t('insights.title')}</p><p className="text-sm text-muted-foreground">{t('insights.subtitle')}</p></div>
-          <Link href="/insights" className="shrink-0 text-sm font-medium text-primary hover:underline">{t('common.view')}</Link>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="flex items-center justify-between gap-3 py-4">
-          <div><p className="font-medium">{t('recipes.title')}</p><p className="text-sm text-muted-foreground">{t('recipes.description')}</p></div>
-          <Link href="/recipes" className="shrink-0 text-sm font-medium text-primary hover:underline">{t('common.open')}</Link>
-        </CardContent>
-      </Card>
 
       {drafts.length > 0 ? (
         <section className="space-y-3">
@@ -202,50 +233,9 @@ export default async function DashboardPage({
             </h2>
             <p className="text-xs text-muted-foreground">{t('dashboard.draftsBody')}</p>
           </div>
-          <div className="space-y-2">
-            {drafts.map((meal) => (
-              <MealCard
-                key={meal.id}
-                meal={{
-                  id: meal.id,
-                  title: meal.title ?? t(`mealType.${meal.mealType}` as never),
-                  mealTypeLabel: t(`mealType.${meal.mealType}` as never),
-                  timeLabel: formatTimeInTz(new Date(meal.mealDateTime), profile.timezone),
-                  calories: meal.finalCalories,
-                  thumbUrl: meal.thumbUrl,
-                  analysisStatus: meal.analysisStatus,
-                  wasManuallyEdited: meal.wasManuallyEdited,
-                }}
-              />
-            ))}
-          </div>
+          <div className="space-y-2">{drafts.map((meal) => mealCard(meal))}</div>
         </section>
       ) : null}
-
-      {access.canWrite ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Link
-            href="/meals/add"
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-          >
-            <Plus className="h-5 w-5" aria-hidden="true" />
-            {t('dashboard.addMeal')}
-          </Link>
-          <Link
-            href="/meals/manual"
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card text-base font-semibold transition-colors hover:bg-muted"
-          >
-            <Pencil className="h-5 w-5" aria-hidden="true" />
-            {t('dashboard.addManual')}
-          </Link>
-        </div>
-      ) : (
-        // Ο χρήστης μαθαίνει ΕΔΩ ότι έληξε, όχι αφού αποτύχει το ανέβασμα.
-        <div className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-muted text-base font-semibold text-muted-foreground">
-          <Plus className="h-5 w-5" aria-hidden="true" />
-          {t('billing.lockedAction')}
-        </div>
-      )}
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -259,23 +249,7 @@ export default async function DashboardPage({
             body={t('dashboard.emptyBody')}
           />
         ) : (
-          <div className="space-y-2">
-            {meals.map((meal) => (
-              <MealCard
-                key={meal.id}
-                meal={{
-                  id: meal.id,
-                  title: meal.title ?? t(`mealType.${meal.mealType}` as never),
-                  mealTypeLabel: t(`mealType.${meal.mealType}` as never),
-                  timeLabel: formatTimeInTz(new Date(meal.mealDateTime), profile.timezone),
-                  calories: meal.finalCalories,
-                  thumbUrl: meal.thumbUrl,
-                  analysisStatus: meal.analysisStatus,
-                  wasManuallyEdited: meal.wasManuallyEdited,
-                }}
-              />
-            ))}
-          </div>
+          <div className="space-y-2">{meals.map((meal) => mealCard(meal))}</div>
         )}
       </section>
 
