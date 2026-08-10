@@ -20,7 +20,9 @@ export function Card({
     <div
       className={cn(
         'rounded-[--radius] text-card-foreground',
-        solid ? 'border border-border bg-card shadow-sm' : 'glass glass-specular',
+        solid
+          ? 'border border-border bg-card/95 shadow-[0_10px_28px_-24px_hsl(var(--glass-shadow)/0.5)]'
+          : 'glass glass-specular',
         className,
       )}
       {...props}
@@ -29,7 +31,7 @@ export function Card({
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('space-y-1 p-5 pb-3', className)} {...props} />;
+  return <div className={cn('space-y-1 p-5 pb-3 sm:p-6 sm:pb-3', className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -53,9 +55,9 @@ export function CardDescription({
  * αυτόματα, ώστε καμία σελίδα να μη χρειάζεται να θυμάται `pt-5`.
  */
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-5 pt-0 [&:first-child]:pt-5', className)} {...props} />;
+  return <div className={cn('p-5 pt-0 sm:p-6 sm:pt-0 [&:first-child]:pt-5 sm:[&:first-child]:pt-6', className)} {...props} />;
 }
 
 export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex items-center gap-2 p-5 pt-0', className)} {...props} />;
+  return <div className={cn('flex items-center gap-2 p-5 pt-0 sm:p-6 sm:pt-0', className)} {...props} />;
 }

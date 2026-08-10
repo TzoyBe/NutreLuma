@@ -9,11 +9,11 @@ export function Badge({
   tone?: 'neutral' | 'primary' | 'accent' | 'danger' | 'muted';
 }) {
   const tones = {
-    neutral: 'bg-secondary text-secondary-foreground',
-    primary: 'bg-primary/10 text-primary',
-    accent: 'bg-accent/20 text-accent',
-    danger: 'bg-destructive/10 text-destructive',
-    muted: 'bg-muted text-muted-foreground',
+    neutral: 'liquid-control text-secondary-foreground',
+    primary: 'bg-primary/10 text-primary ring-1 ring-primary/15',
+    accent: 'bg-accent/15 text-accent ring-1 ring-accent/20',
+    danger: 'bg-destructive/10 text-destructive ring-1 ring-destructive/15',
+    muted: 'bg-muted/70 text-muted-foreground ring-1 ring-border/60',
   } as const;
   return (
     <span
@@ -46,7 +46,7 @@ export function Progress({
       aria-valuemin={0}
       aria-valuemax={max}
       aria-label={label}
-      className="h-3 w-full overflow-hidden rounded-full bg-muted"
+      className="liquid-control h-3 w-full overflow-hidden rounded-full p-[2px]"
     >
       <div
         className={cn(
@@ -98,7 +98,7 @@ export function MacroBar({
           aria-valuemin={0}
           aria-valuemax={target}
           aria-label={label}
-          className="h-2 w-full overflow-hidden rounded-full bg-muted"
+          className="liquid-control h-2.5 w-full overflow-hidden rounded-full p-[2px]"
         >
           <div
             className={cn(
@@ -144,7 +144,7 @@ export function Disclaimer({ text, className }: { text: string; className?: stri
   return (
     <p
       className={cn(
-        'rounded-lg border border-border bg-muted/60 p-3 text-xs leading-relaxed text-muted-foreground',
+          'liquid-control rounded-2xl p-3 text-xs leading-relaxed text-muted-foreground',
         className,
       )}
     >

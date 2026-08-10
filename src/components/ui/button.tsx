@@ -5,17 +5,17 @@ import { cn } from '@/lib/utils';
 const buttonVariants = cva(
   // `active:scale` δίνει την αίσθηση αφής του iOS. Το transition περιλαμβάνει
   // transform, αλλά το reduced-motion το ακυρώνει καθολικά στο globals.css.
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-[background-color,box-shadow,transform,color] duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
   {
     variants: {
       variant: {
         primary:
-          'bg-primary text-primary-foreground shadow-[0_6px_18px_-8px_hsl(var(--primary)/0.9)] hover:bg-primary/90',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/70',
-        outline: 'glass hover:bg-[hsl(var(--glass-bg)/calc(var(--glass-opacity)*1.25))]',
-        ghost: 'hover:bg-secondary',
+          'bg-primary text-primary-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.42)_inset,0_12px_26px_-14px_hsl(var(--primary)/0.95)] hover:bg-primary/90',
+        secondary: 'liquid-control text-secondary-foreground hover:bg-secondary/70',
+        outline: 'liquid-control hover:bg-[hsl(var(--glass-bg)/0.72)]',
+        ghost: 'hover:bg-[hsl(var(--glass-border)/0.18)]',
         destructive:
-          'bg-destructive text-destructive-foreground shadow-[0_6px_18px_-8px_hsl(var(--destructive)/0.9)] hover:bg-destructive/90',
+          'bg-destructive text-destructive-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.3)_inset,0_12px_26px_-14px_hsl(var(--destructive)/0.95)] hover:bg-destructive/90',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {

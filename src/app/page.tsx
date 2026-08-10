@@ -14,22 +14,26 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-dvh">
-      <header className="container flex h-16 items-center justify-between gap-3">
+      <header className="pointer-events-none sticky top-0 z-30 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+        <div className="container px-0">
+          <div className="liquid-top-nav pointer-events-auto flex min-h-16 items-center justify-between gap-3 px-3 py-2">
         <Logo />
         <nav className="flex items-center gap-2" aria-label={t('nav.menu')}>
           <Link
             href="/login"
-            className="rounded-full px-4 py-2 text-sm font-medium hover:bg-secondary"
+            className="liquid-nav-link rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
           >
             {t('nav.login')}
           </Link>
           <Link
             href="/register"
-            className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_6px_18px_-8px_hsl(var(--primary)/0.9)] hover:bg-primary/90"
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.42)_inset,0_12px_26px_-14px_hsl(var(--primary)/0.95)] hover:bg-primary/90"
           >
             {t('nav.register')}
           </Link>
         </nav>
+          </div>
+        </div>
       </header>
 
       <main id="main" className="container space-y-14 pb-16 pt-8">
@@ -47,7 +51,7 @@ export default async function LandingPage() {
             </Link>
             <Link
               href="/login"
-              className="glass inline-flex h-12 items-center justify-center rounded-full px-7 font-medium transition-transform active:scale-[0.97]"
+              className="liquid-control inline-flex h-12 items-center justify-center rounded-full px-7 font-semibold transition-transform active:scale-[0.97]"
             >
               {t('landing.ctaSecondary')}
             </Link>
