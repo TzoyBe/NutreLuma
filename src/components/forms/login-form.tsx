@@ -26,6 +26,12 @@ export function LoginForm({
   const toast = useToast();
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState(false);
+  const [isCapacitorApp, setIsCapacitorApp] = React.useState(false);
+
+  React.useEffect(() => {
+    const maybeCapacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    setIsCapacitorApp(Boolean(maybeCapacitor?.isNativePlatform?.()));
+  }, []);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,9 +68,10 @@ export function LoginForm({
     }
   }
 
-  const googleHref = nextPath
-    ? `/api/auth/google?next=${encodeURIComponent(nextPath)}`
-    : '/api/auth/google';
+  const googleParams = new URLSearchParams();
+  if (nextPath) googleParams.set('next', nextPath);
+  if (isCapacitorApp) googleParams.set('app', 'capacitor');
+  const googleHref = googleParams.size > 0 ? `/api/auth/google?${googleParams.toString()}` : '/api/auth/google';
 
   return (
     <div className="space-y-4">

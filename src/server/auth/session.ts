@@ -2,10 +2,13 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { env } from '../env';
 import {
+  createMobileAuthHandoffToken,
   createSessionToken,
   isSessionExpiredByPasswordChange,
+  verifyMobileAuthHandoffToken,
   verifySessionToken,
   type SessionPayload,
+  type MobileAuthHandoffPayload,
   type VerifiedSession,
 } from './jwt';
 
@@ -49,5 +52,11 @@ export async function readSession(): Promise<VerifiedSession | null> {
   return verifySessionToken(token);
 }
 
-export { createSessionToken, verifySessionToken, isSessionExpiredByPasswordChange };
-export type { SessionPayload, VerifiedSession };
+export {
+  createMobileAuthHandoffToken,
+  createSessionToken,
+  verifyMobileAuthHandoffToken,
+  verifySessionToken,
+  isSessionExpiredByPasswordChange,
+};
+export type { MobileAuthHandoffPayload, SessionPayload, VerifiedSession };

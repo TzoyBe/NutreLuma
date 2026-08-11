@@ -8,6 +8,7 @@ import { env } from '../env';
 const secret = new TextEncoder().encode(env.AUTH_SECRET);
 const ISSUER = 'nutreluma';
 const AUDIENCE = 'nutreluma-web';
+const MOBILE_HANDOFF_AUDIENCE = 'nutreluma-mobile-handoff';
 
 export interface SessionPayload {
   sub: string;
@@ -24,6 +25,10 @@ export interface VerifiedSession extends SessionPayload {
   issuedAt: number | null;
 }
 
+export interface MobileAuthHandoffPayload extends SessionPayload {
+  nextPath: string;
+}
+
 export async function createSessionToken(payload: SessionPayload): Promise<string> {
   return new SignJWT({ email: payload.email, role: payload.role })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
@@ -32,6 +37,19 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
     .setAudience(AUDIENCE)
     .setIssuedAt()
     .setExpirationTime(`${env.SESSION_MAX_AGE_DAYS}d`)
+    .sign(secret);
+}
+
+export async function createMobileAuthHandoffToken(
+  payload: MobileAuthHandoffPayload,
+): Promise<string> {
+  return new SignJWT({ email: payload.email, role: payload.role, nextPath: payload.nextPath })
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setSubject(payload.sub)
+    .setIssuer(ISSUER)
+    .setAudience(MOBILE_HANDOFF_AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime('5m')
     .sign(secret);
 }
 
@@ -66,6 +84,28 @@ export async function verifySessionToken(token: string): Promise<VerifiedSession
       email: String(payload.email ?? ''),
       role: String(payload.role ?? 'USER'),
       issuedAt: typeof payload.iat === 'number' ? payload.iat : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function verifyMobileAuthHandoffToken(
+  token: string,
+): Promise<MobileAuthHandoffPayload | null> {
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, secret, {
+      issuer: ISSUER,
+      audience: MOBILE_HANDOFF_AUDIENCE,
+      algorithms: ['HS256'],
+    });
+    if (!payload.sub || typeof payload.nextPath !== 'string') return null;
+    return {
+      sub: payload.sub,
+      email: String(payload.email ?? ''),
+      role: String(payload.role ?? 'USER'),
+      nextPath: payload.nextPath,
     };
   } catch {
     return null;

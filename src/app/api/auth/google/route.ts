@@ -20,13 +20,19 @@ export const GET = async (request: Request) => {
     const origin = requestedOrigin(request, url).replace(/\/+$/, '');
     const canonicalOrigin = env.APP_URL.replace(/\/+$/, '');
     const nextPath = sanitizeNextPath(url.searchParams.get('next'), '/dashboard');
+    const appMode = url.searchParams.get('app') === 'capacitor' ? 'capacitor' : 'web';
     if (isProduction && origin !== canonicalOrigin) {
       const canonicalUrl = new URL('/api/auth/google', canonicalOrigin);
       if (nextPath !== '/dashboard') canonicalUrl.searchParams.set('next', nextPath);
+      if (appMode === 'capacitor') canonicalUrl.searchParams.set('app', 'capacitor');
       return NextResponse.redirect(canonicalUrl);
     }
 
-    const destination = await buildGoogleAuthorizationUrl(isProduction ? canonicalOrigin : origin, nextPath);
+    const destination = await buildGoogleAuthorizationUrl(
+      isProduction ? canonicalOrigin : origin,
+      nextPath,
+      appMode,
+    );
     return NextResponse.redirect(destination);
   } catch (error) {
     logger.warn('google_auth_start_failed', {

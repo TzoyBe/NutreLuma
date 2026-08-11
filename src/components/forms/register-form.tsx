@@ -20,6 +20,14 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
   const toast = useToast();
   const [errors, setErrors] = React.useState<Errors>({});
   const [loading, setLoading] = React.useState(false);
+  const [isCapacitorApp, setIsCapacitorApp] = React.useState(false);
+
+  React.useEffect(() => {
+    const maybeCapacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    setIsCapacitorApp(Boolean(maybeCapacitor?.isNativePlatform?.()));
+  }, []);
+
+  const googleHref = isCapacitorApp ? '/api/auth/google?app=capacitor' : '/api/auth/google';
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,7 +76,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
       {googleEnabled ? (
         <>
           <Link
-            href="/api/auth/google"
+            href={googleHref}
             className={cn(buttonVariants({ variant: 'outline', size: 'lg', block: true }))}
           >
             <Chrome className="h-4 w-4" aria-hidden="true" />

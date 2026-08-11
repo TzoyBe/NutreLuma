@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/server/db/prisma';
 import { resolveGoogleUserFromCallback, sanitizeNextPath } from '@/server/auth/google';
-import { setSessionCookie } from '@/server/auth/session';
+import { createMobileAuthHandoffToken, setSessionCookie } from '@/server/auth/session';
 import { env, isProduction } from '@/server/env';
 import { logger } from '@/server/logger';
 import { findOrCreateUserFromGoogle } from '@/server/services/user';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const CAPACITOR_RETURN_SCHEME = 'nutreluma://auth/callback';
 
 function requestedOrigin(request: Request, url: URL): string {
   const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
@@ -30,16 +32,28 @@ export const GET = async (request: Request) => {
       );
     }
 
-    const { profile, nextPath } = await resolveGoogleUserFromCallback(callbackUrl.searchParams);
+    const { profile, nextPath, appMode } = await resolveGoogleUserFromCallback(callbackUrl.searchParams);
     const user = await findOrCreateUserFromGoogle(profile);
-    await setSessionCookie({ sub: user.id, email: user.email, role: user.role });
-
     const hasProfile = await prisma.healthProfile.findUnique({
       where: { userId: user.id },
       select: { id: true },
     });
 
     const destination = hasProfile ? sanitizeNextPath(nextPath) : '/onboarding';
+    if (appMode === 'capacitor') {
+      const token = await createMobileAuthHandoffToken({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        nextPath: destination,
+      });
+      const handoffUrl = new URL(CAPACITOR_RETURN_SCHEME);
+      handoffUrl.searchParams.set('token', token);
+      handoffUrl.searchParams.set('next', destination);
+      return NextResponse.redirect(handoffUrl);
+    }
+
+    await setSessionCookie({ sub: user.id, email: user.email, role: user.role });
     return NextResponse.redirect(new URL(destination, publicOrigin));
   } catch (error) {
     logger.warn('google_auth_callback_failed', {

@@ -20,6 +20,7 @@ interface GoogleOauthCookieValue {
   nonce: string;
   nextPath: string;
   origin: string;
+  appMode: 'web' | 'capacitor';
 }
 
 export interface GoogleUserProfile {
@@ -111,7 +112,11 @@ async function readOauthCookie(): Promise<GoogleOauthCookieValue | null> {
   return null;
 }
 
-export async function buildGoogleAuthorizationUrl(origin: string, nextPath?: string): Promise<string> {
+export async function buildGoogleAuthorizationUrl(
+  origin: string,
+  nextPath?: string,
+  appMode: 'web' | 'capacitor' = 'web',
+): Promise<string> {
   if (!googleAuthConfigured) {
     throw new ApiError('INTERNAL_ERROR', 'Google login is not configured.');
   }
@@ -129,6 +134,7 @@ export async function buildGoogleAuthorizationUrl(origin: string, nextPath?: str
     codeVerifier,
     nextPath: safeNextPath,
     origin: normalizeOrigin(origin),
+    appMode,
   });
 
   const url = new URL(GOOGLE_AUTH_ENDPOINT);
@@ -225,6 +231,7 @@ async function fetchGoogleUserInfo(accessToken: string): Promise<GoogleUserProfi
 export async function resolveGoogleUserFromCallback(params: URLSearchParams): Promise<{
   profile: GoogleUserProfile;
   nextPath: string;
+  appMode: 'web' | 'capacitor';
 }> {
   const state = params.get('state');
   const code = params.get('code');
@@ -268,5 +275,6 @@ export async function resolveGoogleUserFromCallback(params: URLSearchParams): Pr
   return {
     profile,
     nextPath: sanitizeNextPath(cookie.nextPath),
+    appMode: cookie.appMode ?? 'web',
   };
 }
