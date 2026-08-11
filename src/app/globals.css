@@ -4,65 +4,65 @@
 
 @layer base {
   :root {
-    --background: 190 34% 10%;
-    --foreground: 184 28% 94%;
-    --card: 190 27% 14%;
-    --card-foreground: 184 28% 94%;
-    --primary: 169 72% 48%;
-    --primary-foreground: 190 42% 8%;
-    --secondary: 190 24% 18%;
-    --secondary-foreground: 184 24% 91%;
-    --muted: 190 20% 19%;
-    --muted-foreground: 184 14% 76%;
-    --accent: 24 88% 61%;
-    --accent-foreground: 190 42% 8%;
+    --background: 206 34% 7%;
+    --foreground: 192 22% 95%;
+    --card: 202 24% 11%;
+    --card-foreground: 192 22% 95%;
+    --primary: 170 74% 50%;
+    --primary-foreground: 198 48% 7%;
+    --secondary: 202 22% 15%;
+    --secondary-foreground: 192 18% 92%;
+    --muted: 201 18% 15%;
+    --muted-foreground: 190 12% 75%;
+    --accent: 31 86% 63%;
+    --accent-foreground: 198 48% 7%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 190 17% 25%;
-    --input: 190 17% 25%;
-    --ring: 169 72% 48%;
+    --border: 199 18% 21%;
+    --input: 199 18% 21%;
+    --ring: 170 74% 50%;
     --radius: 1.25rem;
 
-    --glass-bg: 190 25% 17%;
-    --glass-tint: 188 32% 21%;
-    --glass-opacity: 0.72;
-    --glass-border: 184 48% 78%;
-    --glass-border-opacity: 0.22;
-    --glass-shadow: 190 62% 2%;
-    --glass-blur: 26px;
-    --glass-saturate: 190%;
-    --liquid-edge: 178 80% 64%;
-    --liquid-depth: 212 78% 54%;
+    --glass-bg: 203 28% 12%;
+    --glass-tint: 201 34% 15%;
+    --glass-opacity: 0.78;
+    --glass-border: 190 42% 82%;
+    --glass-border-opacity: 0.18;
+    --glass-shadow: 210 58% 2%;
+    --glass-blur: 28px;
+    --glass-saturate: 180%;
+    --liquid-edge: 184 72% 72%;
+    --liquid-depth: 205 68% 44%;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 190 38% 8%;
-      --foreground: 185 24% 95%;
-      --card: 190 28% 12%;
-      --card-foreground: 185 24% 95%;
-      --primary: 170 74% 50%;
-      --primary-foreground: 190 42% 8%;
-      --secondary: 190 24% 16%;
-      --secondary-foreground: 185 24% 92%;
-      --muted: 190 22% 16%;
-      --muted-foreground: 184 13% 76%;
-      --accent: 24 91% 61%;
-      --accent-foreground: 190 42% 8%;
+      --background: 210 36% 5%;
+      --foreground: 191 20% 96%;
+      --card: 206 24% 10%;
+      --card-foreground: 191 20% 96%;
+      --primary: 170 76% 52%;
+      --primary-foreground: 200 46% 7%;
+      --secondary: 205 22% 13%;
+      --secondary-foreground: 191 18% 92%;
+      --muted: 204 18% 13%;
+      --muted-foreground: 190 12% 74%;
+      --accent: 31 88% 64%;
+      --accent-foreground: 200 46% 7%;
       --destructive: 0 62% 52%;
       --destructive-foreground: 0 0% 100%;
-      --border: 190 17% 24%;
-      --input: 190 17% 24%;
-      --ring: 170 72% 52%;
+      --border: 201 18% 18%;
+      --input: 201 18% 18%;
+      --ring: 170 76% 52%;
 
-      --glass-bg: 190 26% 14%;
-      --glass-tint: 190 32% 18%;
-      --glass-opacity: 0.72;
-      --glass-border: 185 52% 82%;
-      --glass-border-opacity: 0.2;
-      --glass-shadow: 190 60% 2%;
-      --liquid-edge: 180 82% 68%;
-      --liquid-depth: 210 74% 57%;
+      --glass-bg: 205 28% 10%;
+      --glass-tint: 204 30% 13%;
+      --glass-opacity: 0.82;
+      --glass-border: 191 38% 84%;
+      --glass-border-opacity: 0.16;
+      --glass-shadow: 212 64% 2%;
+      --liquid-edge: 185 74% 74%;
+      --liquid-depth: 207 62% 41%;
     }
   }
 
@@ -83,9 +83,10 @@
     font-feature-settings: 'kern' 1, 'liga' 1, 'tnum' 0;
     text-rendering: optimizeLegibility;
     background:
-      linear-gradient(115deg, hsl(190 42% 7%) 0%, hsl(var(--background)) 38%, hsl(196 34% 9%) 100%),
-      linear-gradient(180deg, hsl(var(--primary) / 0.11), transparent 36%),
-      linear-gradient(90deg, hsl(var(--accent) / 0.055), transparent 46%, hsl(var(--liquid-depth) / 0.08));
+      radial-gradient(circle at top center, hsl(var(--primary) / 0.08), transparent 24%),
+      linear-gradient(118deg, hsl(215 38% 4%) 0%, hsl(var(--background)) 36%, hsl(204 34% 7%) 100%),
+      linear-gradient(180deg, hsl(var(--primary) / 0.08), transparent 34%),
+      linear-gradient(90deg, transparent 10%, hsl(var(--liquid-depth) / 0.08) 52%, transparent 100%);
   }
 
   body::before {
@@ -94,11 +95,11 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    opacity: 0.26;
+    opacity: 0.18;
     background-image:
-      linear-gradient(hsl(var(--foreground) / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--foreground) / 0.04) 1px, transparent 1px);
-    background-size: 44px 44px;
+      linear-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
     mask-image: linear-gradient(to bottom, transparent, black 16%, black 78%, transparent);
   }
 
@@ -123,16 +124,16 @@
 @layer components {
   .glass {
     background:
-      linear-gradient(135deg, hsl(var(--glass-border) / 0.38), transparent 30%),
-      linear-gradient(180deg, hsl(var(--glass-bg) / var(--glass-opacity)), hsl(var(--glass-tint) / calc(var(--glass-opacity) * 0.78)));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) contrast(104%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) contrast(104%);
+      linear-gradient(135deg, hsl(var(--glass-border) / 0.24), transparent 32%),
+      linear-gradient(180deg, hsl(var(--glass-bg) / var(--glass-opacity)), hsl(var(--glass-tint) / calc(var(--glass-opacity) * 0.72)));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) contrast(108%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) contrast(108%);
     border: 1px solid hsl(var(--glass-border) / var(--glass-border-opacity));
     box-shadow:
-      0 1px 0 hsl(var(--glass-border) / 0.64) inset,
-      0 -1px 0 hsl(var(--foreground) / 0.045) inset,
-      0 16px 44px -24px hsl(var(--glass-shadow) / 0.5),
-      0 4px 18px -14px hsl(var(--glass-shadow) / 0.36);
+      0 1px 0 hsl(var(--glass-border) / 0.42) inset,
+      0 -1px 0 hsl(var(--foreground) / 0.03) inset,
+      0 24px 60px -30px hsl(var(--glass-shadow) / 0.72),
+      0 8px 22px -18px hsl(var(--glass-shadow) / 0.54);
   }
 
   .glass-specular {
@@ -149,17 +150,17 @@
     border-radius: inherit;
     pointer-events: none;
     background:
-      linear-gradient(180deg, hsl(var(--glass-border) / 0.58), transparent 34%),
-      linear-gradient(110deg, transparent 0%, hsl(var(--liquid-edge) / 0.18) 38%, transparent 62%);
+      linear-gradient(180deg, hsl(var(--glass-border) / 0.4), transparent 28%),
+      linear-gradient(112deg, transparent 0%, hsl(var(--liquid-edge) / 0.12) 36%, transparent 60%);
   }
 
   .glass-subtle {
     background:
-      linear-gradient(180deg, hsl(var(--glass-bg) / 0.48), hsl(var(--glass-tint) / 0.3));
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-    backdrop-filter: blur(16px) saturate(160%);
+      linear-gradient(180deg, hsl(var(--glass-bg) / 0.58), hsl(var(--glass-tint) / 0.34));
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
     border: 1px solid hsl(var(--glass-border) / calc(var(--glass-border-opacity) * 0.62));
-    box-shadow: 0 1px 0 hsl(var(--glass-border) / 0.42) inset;
+    box-shadow: 0 1px 0 hsl(var(--glass-border) / 0.28) inset;
   }
 
   .liquid-top-nav,
@@ -169,16 +170,16 @@
     overflow: hidden;
     border-radius: 2rem;
     background:
-      linear-gradient(135deg, hsl(var(--glass-border) / 0.52), transparent 25%),
-      linear-gradient(180deg, hsl(var(--glass-bg) / 0.78), hsl(var(--glass-tint) / 0.54));
-    -webkit-backdrop-filter: blur(34px) saturate(205%) contrast(106%);
-    backdrop-filter: blur(34px) saturate(205%) contrast(106%);
-    border: 1px solid hsl(var(--glass-border) / 0.66);
+      linear-gradient(135deg, hsl(var(--glass-border) / 0.28), transparent 24%),
+      linear-gradient(180deg, hsl(var(--glass-bg) / 0.86), hsl(var(--glass-tint) / 0.62));
+    -webkit-backdrop-filter: blur(34px) saturate(190%) contrast(108%);
+    backdrop-filter: blur(34px) saturate(190%) contrast(108%);
+    border: 1px solid hsl(var(--glass-border) / 0.4);
     box-shadow:
-      0 1px 0 hsl(var(--glass-border) / 0.76) inset,
-      0 -1px 0 hsl(var(--foreground) / 0.06) inset,
-      0 24px 58px -30px hsl(var(--glass-shadow) / 0.62),
-      0 10px 30px -22px hsl(var(--liquid-depth) / 0.46);
+      0 1px 0 hsl(var(--glass-border) / 0.46) inset,
+      0 -1px 0 hsl(var(--foreground) / 0.03) inset,
+      0 28px 72px -34px hsl(var(--glass-shadow) / 0.78),
+      0 10px 26px -22px hsl(var(--liquid-depth) / 0.22);
   }
 
   .liquid-top-nav::before,
@@ -196,15 +197,15 @@
   .liquid-mobile-nav::before {
     z-index: -1;
     background:
-      linear-gradient(105deg, hsl(var(--liquid-edge) / 0.22), transparent 36%),
-      linear-gradient(255deg, hsl(var(--primary) / 0.12), transparent 48%);
+      linear-gradient(105deg, hsl(var(--liquid-edge) / 0.14), transparent 34%),
+      linear-gradient(255deg, hsl(var(--primary) / 0.08), transparent 48%);
   }
 
   .liquid-top-nav::after,
   .liquid-mobile-nav::after {
     box-shadow:
-      0 0 0 1px hsl(var(--glass-border) / 0.22) inset,
-      0 14px 30px -22px hsl(var(--foreground) / 0.34) inset;
+      0 0 0 1px hsl(var(--glass-border) / 0.12) inset,
+      0 14px 30px -22px hsl(var(--foreground) / 0.18) inset;
   }
 
   .liquid-brand,
@@ -256,13 +257,13 @@
 
   .liquid-control {
     background:
-      linear-gradient(180deg, hsl(var(--glass-bg) / 0.62), hsl(var(--glass-tint) / 0.42));
-    -webkit-backdrop-filter: blur(18px) saturate(170%);
-    backdrop-filter: blur(18px) saturate(170%);
-    border: 1px solid hsl(var(--glass-border) / 0.58);
+      linear-gradient(180deg, hsl(var(--glass-bg) / 0.74), hsl(var(--glass-tint) / 0.5));
+    -webkit-backdrop-filter: blur(18px) saturate(155%);
+    backdrop-filter: blur(18px) saturate(155%);
+    border: 1px solid hsl(var(--glass-border) / 0.32);
     box-shadow:
-      0 1px 0 hsl(var(--glass-border) / 0.58) inset,
-      0 10px 24px -20px hsl(var(--glass-shadow) / 0.42);
+      0 1px 0 hsl(var(--glass-border) / 0.34) inset,
+      0 12px 28px -20px hsl(var(--glass-shadow) / 0.52);
   }
 
   .liquid-select {

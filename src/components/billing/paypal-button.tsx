@@ -16,7 +16,16 @@ interface PayPalActions {
 }
 
 interface PayPalButtonsConfig {
-  style?: { shape?: string; color?: string; layout?: string; label?: string; height?: number };
+  style?: {
+    shape?: string;
+    color?: string;
+    layout?: string;
+    label?: string;
+    height?: number;
+    borderRadius?: number;
+    tagline?: boolean;
+    disableMaxWidth?: boolean;
+  };
   createSubscription(data: unknown, actions: PayPalActions): Promise<string>;
   onApprove(data: { subscriptionID?: string | null }): void | Promise<void>;
   onError?(error: unknown): void;
@@ -60,6 +69,7 @@ function loadSdk(clientId: string): Promise<PayPalSdk> {
     url.searchParams.set('vault', 'true');
     url.searchParams.set('intent', 'subscription');
     url.searchParams.set('currency', 'EUR');
+    url.searchParams.set('disable-funding', 'venmo');
     script.id = SCRIPT_ID;
     script.src = url.toString();
     script.async = true;
@@ -101,7 +111,16 @@ export function PayPalButton({
       .then((sdk) => {
         if (cancelled) return;
         const buttons = sdk.Buttons({
-          style: { shape: 'pill', color: 'gold', layout: 'vertical', label: 'paypal' },
+          style: {
+            shape: 'pill',
+            color: 'gold',
+            layout: 'vertical',
+            label: 'subscribe',
+            borderRadius: 999,
+            tagline: false,
+            height: 50,
+            disableMaxWidth: true,
+          },
           createSubscription: (_data, actions) =>
             actions.subscription.create({ plan_id: planId, custom_id: userId }),
           onApprove: async (data) => {
@@ -147,7 +166,7 @@ export function PayPalButton({
   }
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-[64rem] rounded-[1.8rem] bg-[linear-gradient(180deg,rgba(212, 32, 32, 0.98)_0%,rgba(44, 152, 206, 0.98)_100%)] px-6 py-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:px-10 sm:py-12">
       {ready ? null : <Skeleton className="h-12 w-full rounded-full" />}
       <div ref={containerRef} />
     </div>

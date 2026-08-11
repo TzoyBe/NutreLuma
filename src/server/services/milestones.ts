@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 import { Prisma, type MilestoneStatus, type MilestoneType } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { ApiError } from '../errors';
@@ -166,8 +166,7 @@ function realismWarnings(args: {
     {
       code: 'AGGRESSIVE_WEIGHT_RATE',
       weeklyRateKg: rate,
-      message:
-        'Ο ρυθμός αλλαγής βάρους φαίνεται επιθετικός. Προχώρησε με προσοχή και συμβουλέψου ειδικό αν χρειάζεται.',
+      message: 'This rate of weight change looks aggressive. Please proceed carefully and consult a professional if needed.',
     },
   ];
 }
@@ -223,7 +222,7 @@ export async function listMilestones(
 
 export async function getMilestoneForUser(userId: string, milestoneId: string): Promise<MilestoneView> {
   const row = await prisma.milestone.findFirst({ where: { id: milestoneId, userId } });
-  if (!row) throw new ApiError('NOT_FOUND', 'Ο στόχος δεν βρέθηκε.');
+  if (!row) throw new ApiError('NOT_FOUND', 'Milestone not found.');
   return toView(row);
 }
 
@@ -233,16 +232,16 @@ export async function updateMilestone(
   input: UpdateMilestoneInput,
 ): Promise<MilestoneSaveResult> {
   const existing = await prisma.milestone.findFirst({ where: { id: milestoneId, userId } });
-  if (!existing) throw new ApiError('NOT_FOUND', 'Ο στόχος δεν βρέθηκε.');
+  if (!existing) throw new ApiError('NOT_FOUND', 'Milestone not found.');
   if (existing.status === 'COMPLETED' || existing.status === 'CANCELLED') {
-    throw new ApiError('BAD_REQUEST', 'Ο στόχος δεν μπορεί να αλλάξει σε αυτή την κατάσταση.');
+    throw new ApiError('BAD_REQUEST', 'This milestone can no longer be edited in its current state.');
   }
 
   const parsed = updateMilestoneSchema.parse(input);
   const nextStartDate = parsed.startDate ?? toDayISO(existing.startDate);
   const nextEndDate = parsed.endDate === undefined ? existing.endDate && toDayISO(existing.endDate) : parsed.endDate;
   if (nextEndDate && nextEndDate < nextStartDate) {
-    throw new ApiError('VALIDATION_ERROR', 'Η λήξη δεν μπορεί να είναι πριν από την έναρξη.');
+    throw new ApiError('VALIDATION_ERROR', 'End date cannot be earlier than the start date.');
   }
 
   const nextStartValue =
@@ -280,7 +279,7 @@ export async function pauseMilestone(userId: string, milestoneId: string): Promi
     where: { id: milestoneId, userId, status: 'ACTIVE' },
     data: { status: 'PAUSED' },
   });
-  if (updated.count === 0) throw new ApiError('NOT_FOUND', 'Ο ενεργός στόχος δεν βρέθηκε.');
+  if (updated.count === 0) throw new ApiError('NOT_FOUND', 'Active milestone not found.');
   return getMilestoneForUser(userId, milestoneId);
 }
 
@@ -289,7 +288,7 @@ export async function resumeMilestone(userId: string, milestoneId: string): Prom
     where: { id: milestoneId, userId, status: 'PAUSED' },
     data: { status: 'ACTIVE' },
   });
-  if (updated.count === 0) throw new ApiError('NOT_FOUND', 'Ο στόχος σε παύση δεν βρέθηκε.');
+  if (updated.count === 0) throw new ApiError('NOT_FOUND', 'Paused milestone not found.');
   return getMilestoneForUser(userId, milestoneId);
 }
 
@@ -298,7 +297,7 @@ export async function cancelMilestone(userId: string, milestoneId: string): Prom
     where: { id: milestoneId, userId, status: { in: ['ACTIVE', 'PAUSED', 'DRAFT'] } },
     data: { status: 'CANCELLED' },
   });
-  if (updated.count === 0) throw new ApiError('NOT_FOUND', 'Ο στόχος δεν βρέθηκε.');
+  if (updated.count === 0) throw new ApiError('NOT_FOUND', 'Milestone not found.');
   return getMilestoneForUser(userId, milestoneId);
 }
 
@@ -353,8 +352,8 @@ export async function suggestMilestones(
 
   if (profile?.targetWeightKg) {
     suggestions.unshift({
-      title: 'Κάνε ένα μικρό βήμα προς το βάρος-στόχο',
-      description: 'Παρακολούθηση με βάση το δηλωμένο βάρος-στόχο του προφίλ σου.',
+      title: 'Take a small step toward your target weight',
+      description: 'Track progress against the target weight already set in your profile.',
       type: 'TARGET_WEIGHT',
       targetValue: toNumber(profile.targetWeightKg),
       dailyThreshold: null,
@@ -366,3 +365,4 @@ export async function suggestMilestones(
 
   return activeCount > 0 ? suggestions.slice(0, 3) : suggestions;
 }
+

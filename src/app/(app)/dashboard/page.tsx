@@ -1,13 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Pencil, Plus, Utensils } from 'lucide-react';
+import { Pencil, Plus, Scale, Utensils } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getDashboard } from '@/server/services/stats';
 import { getAccessState } from '@/server/services/subscription';
-import { listMilestones } from '@/server/services/milestones';
-import { listAchievements } from '@/server/services/achievements';
 import { SubscriptionBanner } from '@/components/billing/subscription-banner';
 import { dayISOSchema } from '@/lib/validation/meal';
 import { formatDateInTz, formatDayISOHuman, formatTimeInTz, todayISO } from '@/lib/dates';
@@ -16,7 +14,6 @@ import { Disclaimer, EmptyState, MacroBar, Progress, StatTile } from '@/componen
 import { DateNav } from '@/components/date-nav';
 import { MealCard } from '@/components/meal/meal-card';
 import { getT } from '@/i18n/locale';
-import { localizeAchievement } from '@/lib/achievement-localization';
 import { MaintenanceDashboardCard } from '@/components/maintenance/maintenance-dashboard-card';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,11 +38,9 @@ export default async function DashboardPage({
   const parsedDate = dayISOSchema.safeParse(params.date);
   const date = parsedDate.success && parsedDate.data <= today ? parsedDate.data : today;
 
-  const [{ summary, macros, meals, drafts }, access, milestones, achievements] = await Promise.all([
+  const [{ summary, macros, meals, drafts }, access] = await Promise.all([
     getDashboard(user.id, date),
     getAccessState(user.id),
-    listMilestones(user.id, { status: 'ACTIVE', limit: 3 }),
-    listAchievements(user.id),
   ]);
 
   const isToday = date === today;
@@ -53,8 +48,6 @@ export default async function DashboardPage({
     macros.protein.target !== null ||
     macros.carbohydrate.target !== null ||
     macros.fat.target !== null;
-  const latestAchievement = achievements.find((achievement) => achievement.unlocked);
-
   const mealCard = (meal: (typeof meals)[number] | (typeof drafts)[number]) => (
     <MealCard
       key={meal.id}
@@ -87,7 +80,7 @@ export default async function DashboardPage({
       </div>
 
       {access.canWrite ? (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           <Link
             href="/meals/add"
             className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.42)_inset,0_12px_26px_-14px_hsl(var(--primary)/0.95)] transition-colors hover:bg-primary/90"
@@ -101,6 +94,13 @@ export default async function DashboardPage({
           >
             <Pencil className="h-5 w-5" aria-hidden="true" />
             {t('dashboard.addManual')}
+          </Link>
+          <Link
+            href="/weight"
+            className="liquid-control flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition-colors hover:bg-[hsl(var(--glass-bg)/0.72)]"
+          >
+            <Scale className="h-5 w-5" aria-hidden="true" />
+            {t('weight.addEntry')}
           </Link>
         </div>
       ) : (
@@ -203,41 +203,6 @@ export default async function DashboardPage({
           <div className="space-y-2">{meals.map((meal) => mealCard(meal))}</div>
         )}
       </section>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle>{t('goals.achievementsTitle')}</CardTitle>
-          <Link href="/goals/achievements" className="text-sm font-medium text-primary hover:underline">
-            {t('common.open')}
-          </Link>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {milestones[0] ? (
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm font-medium">{milestones[0].title}</p>
-                <p className="text-sm tabular-nums text-muted-foreground">{milestones[0].percent}%</p>
-              </div>
-              <Progress value={milestones[0].percent} max={100} label={milestones[0].status} />
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t('achievements.noMilestones')}</p>
-          )}
-          {latestAchievement ? (
-            <p className="text-sm text-muted-foreground">
-              {t('achievements.latestAchievement')}:{' '}
-              <span className="font-medium text-foreground">
-                {
-                  localizeAchievement(
-                    latestAchievement,
-                    t('achievements.achievements') === 'Achievements',
-                  ).name
-                }
-              </span>
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
 
       <MaintenanceDashboardCard userId={user.id} />
 

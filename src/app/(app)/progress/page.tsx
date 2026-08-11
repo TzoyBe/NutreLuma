@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CalendarDays, BarChart3, Sparkles, Scale, ChevronRight } from 'lucide-react';
+import { CalendarDays, BarChart3, Sparkles, ChevronRight } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { Card, CardContent } from '@/components/ui/card';
 import { getT } from '@/i18n/locale';
@@ -20,7 +20,6 @@ export default async function ProgressPage() {
     { href: '/history', title: t('progress.history'), desc: t('progress.historyDesc'), Icon: CalendarDays },
     { href: '/stats', title: t('progress.stats'), desc: t('progress.statsDesc'), Icon: BarChart3 },
     { href: '/insights', title: t('progress.insights'), desc: t('progress.insightsDesc'), Icon: Sparkles },
-    { href: '/weight', title: t('progress.weight'), desc: t('progress.weightDesc'), Icon: Scale },
   ];
 
   return (

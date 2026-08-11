@@ -43,7 +43,7 @@ const envSchema = z.object({
     .transform((v) => v !== 'false'),
   TRIAL_DAYS: intFromEnv(3),
   SUBSCRIPTION_GRACE_DAYS: intFromEnv(3),
-  SUBSCRIPTION_PRICE_CENTS: intFromEnv(300),
+  SUBSCRIPTION_PRICE_CENTS: intFromEnv(299),
   STRIPE_SECRET_KEY: z.string().optional().default(''),
   STRIPE_PRICE_ID: z.string().optional().default(''),
 

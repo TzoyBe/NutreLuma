@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 import { Prisma, type Milestone, type MilestoneType } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { ApiError } from '../errors';
@@ -370,7 +370,7 @@ export async function computeMilestoneProgress(
   now = new Date(),
 ): Promise<ComputedMilestoneProgress> {
   if (milestone.userId !== userId) {
-    throw new ApiError('NOT_FOUND', 'Ο στόχος δεν βρέθηκε.');
+    throw new ApiError('NOT_FOUND', 'Milestone not found.');
   }
   const timezone = await getUserTimezone(userId);
   if (
@@ -435,7 +435,7 @@ async function createProgressNotifications(
     await createNotification(milestone.userId, {
       type: 'MILESTONE_PROGRESS',
       title: `${threshold}% ${milestone.title}`,
-      body: `Έφτασες το ${threshold}% του στόχου.`,
+      body: `You reached ${threshold}% of this milestone.`,
       milestoneId: milestone.id,
       dedupeKey: `milestone:${milestone.id}:progress:${threshold}`,
     });
@@ -444,7 +444,7 @@ async function createProgressNotifications(
     await createNotification(milestone.userId, {
       type: 'MILESTONE_COMPLETED',
       title: milestone.title,
-      body: 'Ο στόχος ολοκληρώθηκε.',
+      body: 'This milestone is complete.',
       milestoneId: milestone.id,
       dedupeKey: `milestone:${milestone.id}:completed`,
     });
@@ -453,7 +453,7 @@ async function createProgressNotifications(
     await createNotification(milestone.userId, {
       type: 'MILESTONE_MISSED',
       title: milestone.title,
-      body: 'Ο στόχος έληξε χωρίς να ολοκληρωθεί. Μπορείς πάντα να δοκιμάσεις έναν πιο ήπιο επόμενο στόχο.',
+      body: 'This milestone expired before completion. You can always try a lighter next goal.',
       milestoneId: milestone.id,
       dedupeKey: `milestone:${milestone.id}:missed`,
     });
@@ -466,7 +466,7 @@ export async function recomputeMilestoneProgress(
   now = new Date(),
 ): Promise<ComputedMilestoneProgress> {
   const milestone = await prisma.milestone.findFirst({ where: { id: milestoneId, userId } });
-  if (!milestone) throw new ApiError('NOT_FOUND', 'Ο στόχος δεν βρέθηκε.');
+  if (!milestone) throw new ApiError('NOT_FOUND', 'Milestone not found.');
   const computed = await computeMilestoneProgress(userId, milestone, now);
   await persistComputedProgress(milestone, computed);
   return computed;
@@ -495,12 +495,12 @@ export async function recordCustomMilestoneProgress(
   value: number,
 ): Promise<ComputedMilestoneProgress> {
   if (!Number.isFinite(value) || value < 0) {
-    throw new ApiError('VALIDATION_ERROR', 'Η πρόοδος πρέπει να είναι θετικός αριθμός.');
+    throw new ApiError('VALIDATION_ERROR', 'Progress must be a positive number.');
   }
   const milestone = await prisma.milestone.findFirst({
     where: { id: milestoneId, userId, type: 'CUSTOM_NUMERIC' },
   });
-  if (!milestone) throw new ApiError('NOT_FOUND', 'Ο χειροκίνητος στόχος δεν βρέθηκε.');
+  if (!milestone) throw new ApiError('NOT_FOUND', 'Custom milestone not found.');
 
   const targetValue = targetValueOf(milestone);
   const computed: ComputedMilestoneProgress = {
@@ -516,3 +516,4 @@ export async function recordCustomMilestoneProgress(
   await persistComputedProgress(milestone, computed);
   return computed;
 }
+

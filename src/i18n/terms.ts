@@ -119,13 +119,13 @@ export const termsEn: Record<keyof typeof termsEl, string> = {
   s2Body:
     'NutreLuma is a personal nutrition logging tool. It analyses meal photos using artificial intelligence and produces estimates of calories and macronutrients, which you may correct before logging them. It is a logging aid and nothing more.',
 
-  s3Title: '3. Estimates are estimates — nothing more',
+  s3Title: '3. Estimates are estimates - nothing more',
   s3Body:
     'Every number the app displays is an estimate, not a measurement. A photograph cannot reveal the true weight of a portion, the exact ingredients, the amount of oil or sugar used, the cooking method, or anything that is not visible. Deviations from reality may be large, in either direction. No warranty is given as to the accuracy, completeness or fitness of the estimates for any purpose.',
 
   s4Title: '4. No medical or dietary advice',
   s4Body:
-    'The app does not provide medical, dietary or therapeutic services and does not replace a doctor, dietitian or other healthcare professional. It does not diagnose, treat or prevent any condition. Before making any change to your diet — particularly if you have diabetes, an eating disorder, kidney or cardiovascular disease, if you take medication, or if you are pregnant or breastfeeding — consult a healthcare professional.',
+    'The app does not provide medical, dietary or therapeutic services and does not replace a doctor, dietitian or other healthcare professional. It does not diagnose, treat or prevent any condition. Before making any change to your diet - particularly if you have diabetes, an eating disorder, kidney or cardiovascular disease, if you take medication, or if you are pregnant or breastfeeding - consult a healthcare professional.',
 
   s5Title: '5. Responsibility for use is yours',
   s5Body:
@@ -133,7 +133,7 @@ export const termsEn: Record<keyof typeof termsEl, string> = {
 
   s6Title: '6. Allergen information',
   s6Body:
-    'Photo analysis CANNOT reliably detect allergens. Any indication is a probability, never a certainty — neither of presence nor of absence. If you have an allergy or intolerance, never rely on the app; check the actual packaging or ask the producer.',
+    'Photo analysis CANNOT reliably detect allergens. Any indication is a probability, never a certainty - neither of presence nor of absence. If you have an allergy or intolerance, never rely on the app; check the actual packaging or ask the producer.',
 
   s7Title: '7. Account and security',
   s7Body:
@@ -145,7 +145,7 @@ export const termsEn: Record<keyof typeof termsEl, string> = {
 
   s9Title: '9. Subscription and payments',
   s9Body:
-    'The subscription costs €3.00 per month and grants access for one month from payment. Card payments are processed exclusively by Stripe. We never see, store or process card details. Stripe’s own terms apply to the transaction itself.',
+    'The subscription costs \u20AC2.99 per month and grants access for one month from payment. Card payments are processed exclusively by Stripe. We never see, store or process card details. Stripe\'s own terms apply to the transaction itself.',
 
   s10Title: '10. Auto-renewal and cancellation',
   s10Body:
@@ -165,7 +165,7 @@ export const termsEn: Record<keyof typeof termsEl, string> = {
 
   s14Title: '14. Limitation of liability',
   s14Body:
-    'To the maximum extent permitted by law, we accept no liability for any direct, indirect, incidental or consequential loss — including but not limited to effects on health, loss of profit, data, time or opportunity — arising from the use of or inability to use the app, from inaccurate estimates, or from actions you took in reliance on them. Where liability cannot be excluded, it is limited to the total amount you paid in the twelve months preceding the event giving rise to it.',
+    'To the maximum extent permitted by law, we accept no liability for any direct, indirect, incidental or consequential loss - including but not limited to effects on health, loss of profit, data, time or opportunity - arising from the use of or inability to use the app, from inaccurate estimates, or from actions you took in reliance on them. Where liability cannot be excluded, it is limited to the total amount you paid in the twelve months preceding the event giving rise to it.',
 
   s15Title: '15. What is NOT excluded',
   s15Body:

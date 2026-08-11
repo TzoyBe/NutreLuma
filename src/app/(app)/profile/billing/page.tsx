@@ -32,7 +32,7 @@ export default async function ProfileBillingPage() {
     getUserTimezone(user.id),
   ]);
 
-  const euro = (cents: number) => `${(cents / 100).toFixed(2)}€`;
+  const euro = (cents: number) => `${(cents / 100).toFixed(2)}\u20AC`;
 
   return (
     <>

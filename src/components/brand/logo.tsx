@@ -1,16 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/**
- * Λογότυπο NutreLuma.
- *
- * Ιδέα: ένα διάφραγμα φακού (vision) του οποίου τα πτερύγια σχηματίζουν φύλλο
- * (nutrition). Το κενό στο κέντρο λειτουργεί ταυτόχρονα ως κόρη φακού και ως
- * σπόρος. Καθαρά γεωμετρικό, ώστε να διαβάζεται και στα 16 px του favicon.
- *
- * Χρησιμοποιεί `currentColor` για το μονόχρωμο variant και gradient για το
- * κανονικό, οπότε δουλεύει σε light και dark χωρίς δεύτερο αρχείο.
- */
 export function LogoMark({
   className,
   monochrome = false,
@@ -36,38 +26,35 @@ export function LogoMark({
       {monochrome ? null : (
         <defs>
           <linearGradient id={gradientId} x1="8" y1="4" x2="40" y2="44" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#34D399" />
-            <stop offset="0.55" stopColor="#0F7A63" />
-            <stop offset="1" stopColor="#0B5B57" />
+            <stop stopColor="#74F5D4" />
+            <stop offset="0.48" stopColor="#28C59E" />
+            <stop offset="1" stopColor="#117B69" />
           </linearGradient>
         </defs>
       )}
 
-      {/* Εξωτερικός δακτύλιος — το «σώμα» του φακού */}
-      <circle cx="24" cy="24" r="21" stroke={fill} strokeWidth="2.5" opacity="0.35" />
+      {monochrome ? null : <circle cx="24" cy="24" r="19" fill="#07131B" opacity="0.92" />}
+      <circle cx="24" cy="24" r="21" stroke={fill} strokeWidth="2.8" opacity={monochrome ? 1 : 0.88} />
+      {monochrome ? null : (
+        <circle cx="24" cy="24" r="20.2" stroke="#D7FFF6" strokeWidth="0.8" opacity="0.22" />
+      )}
 
-      {/*
-        Τέσσερα πτερύγια διαφράγματος. Κάθε πτερύγιο είναι φύλλο: δύο τόξα που
-        συναντιούνται σε αιχμή. Περιστρέφονται ανά 90° γύρω από το κέντρο.
-      */}
       {[0, 90, 180, 270].map((angle) => (
         <path
           key={angle}
           d="M24 8 C31.5 12 36 17 36 24 C29 24 24 19.5 24 8 Z"
           fill={fill}
-          opacity={angle % 180 === 0 ? 0.95 : 0.7}
+          opacity={angle % 180 === 0 ? 1 : 0.86}
           transform={`rotate(${angle} 24 24)`}
         />
       ))}
 
-      {/* Κόρη / σπόρος */}
       <circle cx="24" cy="24" r="4.2" fill={fill} />
-      <circle cx="22.4" cy="22.4" r="1.5" fill="#FFFFFF" opacity="0.85" />
+      <circle cx="22.4" cy="22.4" r="1.6" fill="#FFFFFF" opacity="0.96" />
     </svg>
   );
 }
 
-/** Λογότυπο με το όνομα δίπλα. */
 export function Logo({
   className,
   markClassName,

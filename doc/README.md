@@ -632,5 +632,5 @@ HTTP status codes: `400` bad request · `401` unauthenticated · `403` forbidden
 Ιδιωτικό project. Δεν παρέχεται άδεια χρήσης προς τρίτους.
 
 
-use this while making changes in .env file 
- docker compose --env-file .env up -d --force-recreate --no-build web
+## Use this while making changes in .env file 
+docker compose --env-file .env up -d --force-recreate --no-build web

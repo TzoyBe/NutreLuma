@@ -5,7 +5,6 @@ import { getProfile } from '@/server/services/profile';
 import { evaluateGoalsForUser } from '@/server/services/goals-evaluator';
 import { listMilestones, suggestMilestones } from '@/server/services/milestones';
 import { listBadges, upsertBadgeCatalog } from '@/server/services/badges';
-import { listNotifications } from '@/server/services/notifications';
 import { todayISO } from '@/lib/dates';
 import { AchievementsPanel } from '@/components/goals/achievements-panel';
 import { Disclaimer } from '@/components/ui/misc';
@@ -26,11 +25,10 @@ export default async function GoalsAchievementsPage() {
 
   const today = todayISO(profile.timezone);
   await upsertBadgeCatalog();
-  const [evaluation, milestones, badges, notifications, suggestions] = await Promise.all([
+  const [evaluation, milestones, badges, suggestions] = await Promise.all([
     evaluateGoalsForUser(user.id),
     listMilestones(user.id, { limit: 20 }),
     listBadges(user.id),
-    listNotifications(user.id, { limit: 20 }),
     suggestMilestones(user.id, today),
   ]);
 
@@ -45,7 +43,6 @@ export default async function GoalsAchievementsPage() {
         milestones={milestones}
         achievements={evaluation.achievements}
         badges={badges}
-        notifications={notifications}
         suggestions={suggestions}
         today={today}
       />
