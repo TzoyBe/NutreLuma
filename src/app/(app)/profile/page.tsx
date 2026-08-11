@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requirePageUser } from '@/server/auth/guards';
+import { prisma } from '@/server/db/prisma';
 import { getProfile } from '@/server/services/profile';
 import { ProfileForm } from '@/components/forms/profile-form';
 import {
@@ -24,8 +25,14 @@ export const dynamic = 'force-dynamic';
 export default async function ProfileAccountPage() {
   const t = await getT();
   const user = await requirePageUser();
-  const profile = await getProfile(user.id);
-  const intelligenceSettings = await getIntelligenceSettings(user.id);
+  const [profile, intelligenceSettings, googleIdentity] = await Promise.all([
+    getProfile(user.id),
+    getIntelligenceSettings(user.id),
+    prisma.authIdentity.findFirst({
+      where: { userId: user.id, provider: 'GOOGLE' },
+      select: { id: true },
+    }),
+  ]);
 
   return (
     <>
@@ -93,7 +100,7 @@ export default async function ProfileAccountPage() {
         </CardContent>
       </Card>
 
-      <DangerZonePanel />
+      <DangerZonePanel passwordRequired={!googleIdentity} />
 
       <Disclaimer text={t('app.disclaimer')} />
     </>

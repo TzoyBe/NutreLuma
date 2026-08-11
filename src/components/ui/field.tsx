@@ -17,7 +17,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
       type={type}
       className={cn(
         controlClasses,
-        'h-11 min-w-0',
+        'h-11 min-w-0 max-w-full overflow-hidden',
         isCalendarInput(type) && 'liquid-date-input tabular-nums',
         className,
       )}
@@ -39,7 +39,15 @@ export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
 >(({ className, children, ...props }, ref) => (
-  <select ref={ref} className={cn(controlClasses, 'h-11 pr-8', className)} {...props}>
+  <select
+    ref={ref}
+    className={cn(
+      controlClasses,
+      'liquid-select h-11 appearance-none pr-11',
+      className,
+    )}
+    {...props}
+  >
     {children}
   </select>
 ));

@@ -8,6 +8,10 @@ export interface BadgeView extends BadgeDef {
   unlocked: boolean;
 }
 
+interface AwardBadgeOptions {
+  notify?: boolean;
+}
+
 export async function upsertBadgeCatalog(): Promise<void> {
   await prisma.$transaction(
     BADGES.map((badge, index) =>
@@ -20,7 +24,11 @@ export async function upsertBadgeCatalog(): Promise<void> {
   );
 }
 
-export async function awardBadge(userId: string, badgeCode: string): Promise<{ awarded: boolean }> {
+export async function awardBadge(
+  userId: string,
+  badgeCode: string,
+  options: AwardBadgeOptions = {},
+): Promise<{ awarded: boolean }> {
   const badge = BADGES.find((item) => item.code === badgeCode);
   if (!badge) return { awarded: false };
 
@@ -30,12 +38,14 @@ export async function awardBadge(userId: string, badgeCode: string): Promise<{ a
   if (existing) return { awarded: false };
 
   await prisma.userBadge.create({ data: { userId, badgeCode } });
-  await createNotification(userId, {
-    type: 'BADGE_UNLOCKED',
-    title: badge.name,
-    body: badge.description,
-    dedupeKey: `badge:${badgeCode}`,
-  });
+  if (options.notify !== false) {
+    await createNotification(userId, {
+      type: 'BADGE_UNLOCKED',
+      title: badge.name,
+      body: badge.description,
+      dedupeKey: `badge:${badgeCode}`,
+    });
+  }
   return { awarded: true };
 }
 

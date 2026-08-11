@@ -28,7 +28,7 @@ export function DateNav({
   };
 
   return (
-    <div className="grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-2">
+    <div className="grid w-full grid-cols-[2.75rem,minmax(0,1fr),2.75rem] items-center gap-2">
       <Button
         variant="outline"
         size="icon"
@@ -49,7 +49,7 @@ export function DateNav({
           value={date}
           max={maxDate}
           onChange={(event) => event.target.value && go(event.target.value)}
-          className="h-10 rounded-xl text-sm sm:text-base"
+          className="h-10 rounded-xl px-2.5 text-[0.95rem] sm:px-3 sm:text-base"
           aria-describedby="date-label"
         />
         <span id="date-label" className="sr-only">

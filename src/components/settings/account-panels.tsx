@@ -200,7 +200,7 @@ export function DataPanel() {
   );
 }
 
-export function DangerZonePanel() {
+export function DangerZonePanel({ passwordRequired = true }: { passwordRequired?: boolean }) {
   const t = useT();
   const router = useRouter();
   const toast = useToast();
@@ -213,7 +213,13 @@ export function DangerZonePanel() {
   function validate() {
     const parsed = deleteAccountSchema.safeParse({ password, confirmation });
     if (!parsed.success) {
-      setErrors(collectIssues(parsed.error));
+      const nextErrors = collectIssues(parsed.error);
+      if (!passwordRequired) delete nextErrors.password;
+      setErrors(nextErrors);
+      return false;
+    }
+    if (passwordRequired && !password.trim()) {
+      setErrors({ password: t('common.required') });
       return false;
     }
     setErrors({});
@@ -240,18 +246,22 @@ export function DangerZonePanel() {
           <TriangleAlert className="h-4 w-4" aria-hidden="true" />
           {t('settings.dangerZone')}
         </CardTitle>
-        <CardDescription>{t('settings.deleteAccountBody')}</CardDescription>
+        <CardDescription>
+          {passwordRequired ? t('settings.deleteAccountBody') : t('settings.deleteAccountGoogleHint')}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Field label={t('auth.password')} htmlFor="deletePassword" error={errors.password} required>
-          <Input
-            {...fieldAria('deletePassword', errors.password)}
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </Field>
+        {passwordRequired ? (
+          <Field label={t('auth.password')} htmlFor="deletePassword" error={errors.password} required>
+            <Input
+              {...fieldAria('deletePassword', errors.password)}
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+        ) : null}
         <Field
           label={t('settings.deleteAccountConfirm')}
           htmlFor="confirmation"
@@ -278,7 +288,7 @@ export function DangerZonePanel() {
       <ConfirmDialog
         open={open}
         title={t('settings.deleteAccount')}
-        body={t('settings.deleteAccountBody')}
+        body={passwordRequired ? t('settings.deleteAccountBody') : t('settings.deleteAccountGoogleConfirmBody')}
         confirmLabel={t('common.delete')}
         destructive
         loading={deleting}

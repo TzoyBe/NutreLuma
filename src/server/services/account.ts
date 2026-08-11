@@ -16,7 +16,6 @@ export interface ExportBundle {
   disclaimer: string;
 }
 
-/** Τα macros ενός γεύματος ή τροφίμου, σε μορφή κατάλληλη για export. */
 function macrosForExport(row: {
   proteinGrams: unknown;
   carbohydrateGrams: unknown;
@@ -39,15 +38,14 @@ function macrosForExport(row: {
 }
 
 const DISCLAIMER =
-  'Οι θερμίδες αποτελούν εκτίμηση βάσει φωτογραφίας και ενδέχεται να μην είναι ακριβείς. Δεν αποτελούν ιατρική ή διατροφική διάγνωση.';
+  'Calories calculated by this app are estimates based on the photo and may be inaccurate. The app does not provide medical or nutritional diagnosis.';
 
-/** Πλήρης εξαγωγή των δεδομένων του χρήστη (GDPR portability). */
 export async function exportUserData(userId: string): Promise<ExportBundle> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, displayName: true, createdAt: true },
   });
-  if (!user) throw new ApiError('NOT_FOUND', 'Ο λογαριασμός δεν βρέθηκε.');
+  if (!user) throw new ApiError('NOT_FOUND', 'Account not found.');
 
   const [profile, goals, meals, weights] = await Promise.all([
     prisma.healthProfile.findUnique({ where: { userId } }),
@@ -125,10 +123,10 @@ export async function exportUserData(userId: string): Promise<ExportBundle> {
         aiMaxCalories: item.aiMaxCalories,
         macros: macrosForExport(item),
       })),
-      clarifications: meal.clarifications.map((c) => ({
-        question: c.question,
-        answer: c.answer,
-        answeredAt: c.answeredAt ? c.answeredAt.toISOString() : null,
+      clarifications: meal.clarifications.map((clarification) => ({
+        question: clarification.question,
+        answer: clarification.answer,
+        answeredAt: clarification.answeredAt ? clarification.answeredAt.toISOString() : null,
       })),
     })),
     weightEntries: weights.map((entry) => ({
@@ -143,7 +141,6 @@ export async function exportUserData(userId: string): Promise<ExportBundle> {
 function csvCell(value: unknown): string {
   if (value === null || value === undefined) return '';
   const text = String(value);
-  // Αποτροπή CSV injection σε Excel/Sheets.
   const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
   return `"${safe.replace(/"/g, '""')}"`;
 }
@@ -250,22 +247,32 @@ export function exportToCsv(bundle: ExportBundle): string {
     );
   }
 
-  return `﻿${lines.join('\r\n')}\r\n`;
+  return `\uFEFF${lines.join('\r\n')}\r\n`;
 }
 
-/**
- * Οριστική διαγραφή λογαριασμού: πρώτα τα αρχεία, μετά η εγγραφή χρήστη
- * (cascade διαγράφει profile, meals, items, weight entries, ai logs).
- */
-export async function deleteAccount(userId: string, password: string): Promise<void> {
+export async function deleteAccount(userId: string, password?: string): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { passwordHash: true },
+    select: {
+      passwordHash: true,
+      authIdentities: {
+        where: { provider: 'GOOGLE' },
+        select: { id: true },
+        take: 1,
+      },
+    },
   });
-  if (!user) throw new ApiError('NOT_FOUND', 'Ο λογαριασμός δεν βρέθηκε.');
+  if (!user) throw new ApiError('NOT_FOUND', 'Account not found.');
 
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) throw new ApiError('FORBIDDEN', 'Ο κωδικός δεν είναι σωστός.');
+  const hasGoogleIdentity = user.authIdentities.length > 0;
+  if (!hasGoogleIdentity) {
+    if (!password?.trim()) {
+      throw new ApiError('VALIDATION_ERROR', 'Password is required.');
+    }
+
+    const valid = await verifyPassword(password, user.passwordHash);
+    if (!valid) throw new ApiError('FORBIDDEN', 'The password is incorrect.');
+  }
 
   const meals = await prisma.meal.findMany({
     where: { userId },

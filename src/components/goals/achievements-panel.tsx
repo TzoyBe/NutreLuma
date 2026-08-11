@@ -24,6 +24,7 @@ import { Progress } from '@/components/ui/misc';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 import { localizeAchievement } from '@/lib/achievement-localization';
+import { BadgeIcon } from '@/components/goals/badge-icon';
 
 type Milestone = {
   id: string;
@@ -39,9 +40,30 @@ type Milestone = {
   percent: number;
 };
 
-type Achievement = { code: string; name: string; description: string; unlocked: boolean };
-type Badge = { code: string; name: string; tier: string; unlocked: boolean };
-type Notification = { id: string; title: string; body: string; readAt: string | null };
+type Achievement = {
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  badgeCode: string;
+  unlocked: boolean;
+};
+type Badge = {
+  code: string;
+  name: string;
+  description: string;
+  iconKey: string;
+  tier: string;
+  unlocked: boolean;
+};
+type Notification = {
+  id: string;
+  type: 'ACHIEVEMENT_UNLOCKED' | 'BADGE_UNLOCKED' | string;
+  title: string;
+  body: string;
+  dedupeKey: string | null;
+  readAt: string | null;
+};
 type Suggestion = {
   title: string;
   description: string;
@@ -82,6 +104,40 @@ function statusClass(status: string) {
   return 'border-border bg-muted text-muted-foreground';
 }
 
+function notificationUnlockKey(notification: Notification, achievements: Achievement[]): string {
+  if (notification.type === 'BADGE_UNLOCKED') {
+    const badgeCode = notification.dedupeKey?.startsWith('badge:') ? notification.dedupeKey.slice('badge:'.length) : '';
+    return badgeCode ? `unlock:${badgeCode}` : `notification:${notification.id}`;
+  }
+
+  if (notification.type === 'ACHIEVEMENT_UNLOCKED') {
+    const achievementCode = notification.dedupeKey?.startsWith('achievement:')
+      ? notification.dedupeKey.slice('achievement:'.length)
+      : '';
+    const achievement = achievements.find((item) => item.code === achievementCode);
+    return achievement?.badgeCode ? `unlock:${achievement.badgeCode}` : `notification:${notification.id}`;
+  }
+
+  return `notification:${notification.id}`;
+}
+
+function getNotificationBadge(notification: Notification, achievements: Achievement[], badges: Badge[]) {
+  if (notification.type === 'BADGE_UNLOCKED') {
+    const badgeCode = notification.dedupeKey?.startsWith('badge:') ? notification.dedupeKey.slice('badge:'.length) : '';
+    return badges.find((badge) => badge.code === badgeCode);
+  }
+
+  if (notification.type === 'ACHIEVEMENT_UNLOCKED') {
+    const achievementCode = notification.dedupeKey?.startsWith('achievement:')
+      ? notification.dedupeKey.slice('achievement:'.length)
+      : '';
+    const achievement = achievements.find((item) => item.code === achievementCode);
+    return achievement ? badges.find((badge) => badge.code === achievement.badgeCode) : undefined;
+  }
+
+  return undefined;
+}
+
 export function AchievementsPanel({
   milestones,
   achievements,
@@ -110,11 +166,21 @@ export function AchievementsPanel({
   const [waterMl, setWaterMl] = React.useState('250');
   const [steps, setSteps] = React.useState('');
   const [durationMin, setDurationMin] = React.useState('');
+  const [readNotificationIds, setReadNotificationIds] = React.useState<string[]>([]);
 
   const activeMilestones = milestones.filter((milestone) => milestone.status === 'ACTIVE');
   const unlockedAchievements = achievements.filter((achievement) => achievement.unlocked);
   const unlockedBadges = badges.filter((badge) => badge.unlocked);
-  const unreadNotifications = notifications.filter((notification) => !notification.readAt);
+  const visibleNotifications = notifications.map((notification) =>
+    readNotificationIds.includes(notification.id)
+      ? { ...notification, readAt: notification.readAt ?? new Date().toISOString() }
+      : notification,
+  );
+  const dedupedNotifications = visibleNotifications.filter((notification, index, all) => {
+    const key = notificationUnlockKey(notification, achievements);
+    return all.findIndex((candidate) => notificationUnlockKey(candidate, achievements) === key) === index;
+  });
+  const unreadNotifications = dedupedNotifications.filter((notification) => !notification.readAt);
   const nextMilestone = activeMilestones
     .slice()
     .sort((a, b) => b.percent - a.percent)[0];
@@ -157,8 +223,8 @@ export function AchievementsPanel({
     <div className="space-y-5">
       <div className="grid gap-3 md:grid-cols-4">
         <SummaryTile icon={Target} label={t('achievements.activeGoals')} value={activeMilestones.length} />
-        <SummaryTile icon={Check} label="{t('achievements.achievements')}" value={`${unlockedAchievements.length}/${achievements.length}`} />
-        <SummaryTile icon={Trophy} label="{t('achievements.badges')}" value={unlockedBadges.length} />
+        <SummaryTile icon={Check} label={t('achievements.achievements')} value={`${unlockedAchievements.length}/${achievements.length}`} />
+        <SummaryTile icon={Trophy} label={t('achievements.badges')} value={unlockedBadges.length} />
         <SummaryTile icon={Bell} label={t('achievements.new')} value={unreadNotifications.length} />
       </div>
 
@@ -473,9 +539,12 @@ export function AchievementsPanel({
             <CardContent className="space-y-2">
               {achievements.slice(0, 8).map((achievement) => (
                 <div key={achievement.code} className="flex gap-2 text-sm">
-                  <Check
-                    className={cn('mt-0.5 h-4 w-4 shrink-0', achievement.unlocked ? 'text-primary' : 'text-muted-foreground')}
-                    aria-hidden="true"
+                  <BadgeIcon
+                    iconKey={achievement.icon}
+                    tier={badges.find((badge) => badge.code === achievement.badgeCode)?.tier}
+                    unlocked={achievement.unlocked}
+                    size="sm"
+                    className="mt-0.5"
                   />
                   <div>
                     <p className="font-medium">{localizeAchievement(achievement, english).name}</p>
@@ -500,10 +569,7 @@ export function AchievementsPanel({
                     badge.unlocked ? 'border-primary/25 bg-primary/10' : 'border-border',
                   )}
                 >
-                  <Trophy
-                    className={cn('mb-1 h-4 w-4', badge.unlocked ? 'text-primary' : 'text-muted-foreground')}
-                    aria-hidden="true"
-                  />
+                  <BadgeIcon iconKey={badge.iconKey} tier={badge.tier} unlocked={badge.unlocked} size="sm" className="mb-2" />
                   <p className="font-medium">{badge.name}</p>
                   <p className="text-xs text-muted-foreground">{badge.tier}</p>
                 </div>
@@ -522,25 +588,39 @@ export function AchievementsPanel({
                 size="icon"
                 variant="ghost"
                 title={t('achievements.markRead')}
-                onClick={() => run('read', () => api.post('/api/notifications/read'))}
+                onClick={() =>
+                  run('read', async () => {
+                    await api.post('/api/notifications/read');
+                    setReadNotificationIds(visibleNotifications.map((notification) => notification.id));
+                  })
+                }
               >
                 <Bell className="h-4 w-4" aria-hidden="true" />
               </Button>
             </CardHeader>
             <CardContent className="space-y-2">
-              {notifications.length === 0 ? (
+              {dedupedNotifications.length === 0 ? (
                 <EmptyState text={t('achievements.noNotifications')} />
               ) : (
-                notifications.slice(0, 6).map((notification) => (
+                dedupedNotifications.slice(0, 6).map((notification) => (
                   <div
                     key={notification.id}
                     className={cn(
-                      'rounded-lg border p-2 text-sm',
+                      'flex gap-2 rounded-lg border p-2 text-sm',
                       notification.readAt ? 'border-border' : 'border-primary/25 bg-primary/10',
                     )}
                   >
-                    <p className="font-medium">{notification.title}</p>
-                    <p className="text-xs text-muted-foreground">{notification.body}</p>
+                    <BadgeIcon
+                      iconKey={getNotificationBadge(notification, achievements, badges)?.iconKey}
+                      tier={getNotificationBadge(notification, achievements, badges)?.tier}
+                      unlocked={notification.type === 'ACHIEVEMENT_UNLOCKED' || notification.type === 'BADGE_UNLOCKED'}
+                      size="sm"
+                      className="mt-0.5"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium">{notification.title}</p>
+                      <p className="text-xs text-muted-foreground">{notification.body}</p>
+                    </div>
                   </div>
                 ))
               )}

@@ -19,6 +19,7 @@ interface GoogleOauthCookieValue {
   codeVerifier: string;
   nonce: string;
   nextPath: string;
+  origin: string;
 }
 
 export interface GoogleUserProfile {
@@ -50,6 +51,14 @@ function randomUrlSafe(size = 32): string {
 
 function buildCodeChallenge(verifier: string): string {
   return base64Url(createHash('sha256').update(verifier).digest());
+}
+
+function normalizeOrigin(origin: string): string {
+  return origin.replace(/\/+$/, '');
+}
+
+function buildGoogleRedirectUri(origin: string): string {
+  return `${normalizeOrigin(origin)}/api/auth/google/callback`;
 }
 
 export function sanitizeNextPath(path: string | null | undefined, fallback = '/dashboard'): string {
@@ -91,7 +100,8 @@ async function readOauthCookie(): Promise<GoogleOauthCookieValue | null> {
       typeof parsed.state === 'string' &&
       typeof parsed.codeVerifier === 'string' &&
       typeof parsed.nonce === 'string' &&
-      typeof parsed.nextPath === 'string'
+      typeof parsed.nextPath === 'string' &&
+      typeof parsed.origin === 'string'
     ) {
       return parsed as GoogleOauthCookieValue;
     }
@@ -101,7 +111,7 @@ async function readOauthCookie(): Promise<GoogleOauthCookieValue | null> {
   return null;
 }
 
-export async function buildGoogleAuthorizationUrl(nextPath?: string): Promise<string> {
+export async function buildGoogleAuthorizationUrl(origin: string, nextPath?: string): Promise<string> {
   if (!googleAuthConfigured) {
     throw new ApiError('INTERNAL_ERROR', 'Google login is not configured.');
   }
@@ -110,7 +120,7 @@ export async function buildGoogleAuthorizationUrl(nextPath?: string): Promise<st
   const nonce = randomUrlSafe();
   const codeVerifier = randomUrlSafe(48);
   const codeChallenge = buildCodeChallenge(codeVerifier);
-  const redirectUri = `${env.APP_URL.replace(/\/+$/, '')}/api/auth/google/callback`;
+  const redirectUri = buildGoogleRedirectUri(origin);
   const safeNextPath = sanitizeNextPath(nextPath);
 
   await writeOauthCookie({
@@ -118,6 +128,7 @@ export async function buildGoogleAuthorizationUrl(nextPath?: string): Promise<st
     nonce,
     codeVerifier,
     nextPath: safeNextPath,
+    origin: normalizeOrigin(origin),
   });
 
   const url = new URL(GOOGLE_AUTH_ENDPOINT);
@@ -133,8 +144,8 @@ export async function buildGoogleAuthorizationUrl(nextPath?: string): Promise<st
   return url.toString();
 }
 
-async function exchangeCodeForTokens(code: string, codeVerifier: string) {
-  const redirectUri = `${env.APP_URL.replace(/\/+$/, '')}/api/auth/google/callback`;
+async function exchangeCodeForTokens(code: string, codeVerifier: string, origin: string) {
+  const redirectUri = buildGoogleRedirectUri(origin);
   const body = new URLSearchParams({
     code,
     client_id: env.GOOGLE_CLIENT_ID,
@@ -235,7 +246,7 @@ export async function resolveGoogleUserFromCallback(params: URLSearchParams): Pr
     throw new ApiError('UNAUTHENTICATED', 'Google did not return an authorization code.');
   }
 
-  const { accessToken, idToken } = await exchangeCodeForTokens(code, cookie.codeVerifier);
+  const { accessToken, idToken } = await exchangeCodeForTokens(code, cookie.codeVerifier, cookie.origin);
   const claims = await verifyGoogleIdToken(idToken, cookie.nonce);
   const userInfo = await fetchGoogleUserInfo(accessToken);
 

@@ -90,7 +90,7 @@ export const changePasswordSchema = z
 export const DELETE_CONFIRMATIONS = ['ΔΙΑΓΡΑΦΗ', 'DELETE'] as const;
 
 export const deleteAccountSchema = z.object({
-  password: z.string().min(1, 'Ο κωδικός είναι υποχρεωτικός.'),
+  password: z.string().optional().default(''),
   confirmation: z
     .string()
     .transform((value) => value.trim().toUpperCase())

@@ -271,7 +271,7 @@ export async function evaluateAchievementsForUser(userId: string): Promise<Achie
       body: achievement.description,
       dedupeKey: `achievement:${achievement.code}`,
     });
-    await awardBadge(userId, badgeCodeFor(achievement.code));
+    await awardBadge(userId, badgeCodeFor(achievement.code), { notify: false });
   }
 
   return listAchievements(userId);
