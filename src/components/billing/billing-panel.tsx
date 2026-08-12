@@ -142,12 +142,17 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
       </Card>
 
       {!isUnlimited ? (
-        <Card className="overflow-hidden" solid>
+        <Card
+          solid
+          className="overflow-hidden !border-black/5 !bg-white text-neutral-900 !shadow-[0_12px_34px_-20px_rgba(0,0,0,0.5)]"
+        >
           <CardContent className="space-y-5">
             {bothMethodsAvailable ? (
               <fieldset className="space-y-2">
-                <legend className="text-sm font-medium">{t('billing.chooseMethod')}</legend>
-                <div className="glass-subtle grid gap-1 rounded-[1.3rem] p-1 sm:grid-cols-2">
+                <legend className="text-sm font-medium text-neutral-700">
+                  {t('billing.chooseMethod')}
+                </legend>
+                <div className="grid gap-1 rounded-[1.3rem] bg-neutral-100 p-1 sm:grid-cols-2">
                   {(
                     [
                       { value: 'card', label: t('billing.methodCard'), Icon: CreditCard },
@@ -159,7 +164,7 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
                       className={`flex cursor-pointer items-center justify-center gap-2 rounded-[1rem] px-3 py-3 text-sm transition-colors ${
                         method === option.value
                           ? 'bg-primary font-medium text-primary-foreground shadow-[0_16px_28px_-18px_hsl(var(--primary)/0.95)]'
-                          : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                          : 'text-neutral-500 hover:bg-black/5 hover:text-neutral-900'
                       }`}
                     >
                       <input
@@ -180,7 +185,7 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
 
             {showCard ? (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">{t('billing.cardCheckout')}</p>
+                <p className="text-sm text-neutral-500">{t('billing.cardCheckout')}</p>
                 <Button onClick={subscribe} loading={loading} className="sm:min-w-[14rem]">
                   {t('billing.subscribe', { price: overview.priceLabel })}
                 </Button>
@@ -197,7 +202,7 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
             ) : null}
 
             {!anyMethodAvailable ? (
-              <p className="text-sm text-muted-foreground">{t('billing.noMethodAvailable')}</p>
+              <p className="text-sm text-neutral-500">{t('billing.noMethodAvailable')}</p>
             ) : null}
           </CardContent>
         </Card>

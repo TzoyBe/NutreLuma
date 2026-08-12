@@ -166,7 +166,7 @@ export function PayPalButton({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[64rem] rounded-[1.8rem] bg-[linear-gradient(180deg,rgba(212, 32, 32, 0.98)_0%,rgba(44, 152, 206, 0.98)_100%)] px-6 py-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:px-10 sm:py-12">
+    <div className="w-full">
       {ready ? null : <Skeleton className="h-12 w-full rounded-full" />}
       <div ref={containerRef} />
     </div>

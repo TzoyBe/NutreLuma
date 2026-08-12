@@ -7,8 +7,6 @@ const isoDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Δώσε έγκυρη ημερομηνία (YYYY-MM-DD).');
 
 export const healthProfileSchema = z.object({
-  firstName: z.string().trim().min(2, 'Το όνομα είναι υποχρεωτικό.').max(60),
-  lastName: z.string().trim().max(60).optional().or(z.literal('')).transform((v) => (v ? v : undefined)),
   birthDate: isoDate.refine(
     (value) => {
       const d = new Date(`${value}T00:00:00.000Z`);

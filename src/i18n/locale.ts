@@ -1,4 +1,5 @@
 import 'server-only';
+import { cookies, headers } from 'next/headers';
 import { DEFAULT_LOCALE, t as translate, type Locale, type TranslationKey } from './index';
 
 /**
@@ -11,19 +12,34 @@ import { DEFAULT_LOCALE, t as translate, type Locale, type TranslationKey } from
  */
 export const LOCALE_COOKIE = 'cv_locale';
 
-export const SUPPORTED_LOCALES: Locale[] = ['en'];
+export const SUPPORTED_LOCALES: Locale[] = ['el', 'en'];
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (SUPPORTED_LOCALES as string[]).includes(value);
 }
 
-/** English is the sole application locale. */
+/** Πρώτο υποστηριζόμενο locale από το Accept-Language, αλλιώς null. */
 export function localeFromAcceptLanguage(value: string | null | undefined): Locale | null {
-  return value ? 'en' : null;
+  if (!value) return null;
+  for (const part of value.split(',')) {
+    const tag = part.trim().slice(0, 2).toLowerCase();
+    if (tag === 'el') return 'el';
+    if (tag === 'en') return 'en';
+  }
+  return null;
 }
 
+/**
+ * Γλώσσα αιτήματος: cookie → Accept-Language → προεπιλογή. Διαβάζεται ανά
+ * αίτημα (ποτέ module-level) ώστε να μη διαρρέει μεταξύ ταυτόχρονων χρηστών.
+ */
 export async function getLocale(): Promise<Locale> {
-  return DEFAULT_LOCALE;
+  const store = await cookies();
+  const fromCookie = store.get(LOCALE_COOKIE)?.value;
+  if (isLocale(fromCookie)) return fromCookie;
+
+  const requestHeaders = await headers();
+  return localeFromAcceptLanguage(requestHeaders.get('accept-language')) ?? DEFAULT_LOCALE;
 }
 
 /**

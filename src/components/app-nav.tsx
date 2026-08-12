@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { LogoMark } from '@/components/brand/logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 const LINKS = [
   { href: '/dashboard', labelKey: 'nav.dashboard', Icon: LayoutDashboard, match: ['/dashboard'] },
@@ -17,7 +18,7 @@ const LINKS = [
     href: '/progress',
     labelKey: 'nav.progress',
     Icon: LineChart,
-    match: ['/progress', '/history', '/stats', '/insights', '/weight'],
+    match: ['/progress', '/history', '/stats', '/insights'],
   },
   { href: '/goals', labelKey: 'nav.goals', Icon: Target, match: ['/goals', '/maintenance'] },
   { href: '/recipes', labelKey: 'recipes.navTitle', Icon: ChefHat, match: ['/recipes', '/meal-plan'] },
@@ -308,6 +309,7 @@ export function AppNav({ displayName }: { displayName: string }) {
               <span className="hidden max-w-[9rem] truncate rounded-full px-3 py-2 text-sm text-muted-foreground xl:inline">
                 {displayName}
               </span>
+              <LanguageSwitcher className="mr-0.5" />
               <div ref={notificationsRef} className="relative">
                 <button
                   type="button"

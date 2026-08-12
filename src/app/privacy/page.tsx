@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Disclaimer } from '@/components/ui/misc';
+import { JOYBEE } from '@/components/brand/joybee';
+import { SiteFooter } from '@/components/site-footer';
 import { getT } from '@/i18n/locale';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,7 +37,13 @@ export default async function PrivacyPage() {
         ))}
       </div>
 
+      <div className="rounded-xl border border-border/60 bg-card/40 p-4 text-sm leading-relaxed text-muted-foreground">
+        {t('app.productOf')} {JOYBEE.copyright}.
+      </div>
+
       <Disclaimer text={t('app.disclaimer')} />
+
+      <SiteFooter labels={{ partOf: t('app.partOf'), productOf: t('app.productOf') }} />
     </main>
   );
 }

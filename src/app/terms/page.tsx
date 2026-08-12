@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Disclaimer } from '@/components/ui/misc';
 import { Logo } from '@/components/brand/logo';
+import { JOYBEE } from '@/components/brand/joybee';
+import { SiteFooter } from '@/components/site-footer';
 import { getT } from '@/i18n/locale';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,6 +31,10 @@ export default async function TermsPage() {
         <p className="text-sm leading-relaxed text-muted-foreground">{t('terms.intro')}</p>
       </div>
 
+      <div className="rounded-xl border border-border/60 bg-card/40 p-4 text-sm leading-relaxed text-muted-foreground">
+        {t('app.productOf')} {JOYBEE.copyright}.
+      </div>
+
       <div className="space-y-5">
         {SECTIONS.map((n) => (
           <section key={n} className="space-y-1">
@@ -47,6 +53,8 @@ export default async function TermsPage() {
           {t('privacy.title')}
         </Link>
       </p>
+
+      <SiteFooter labels={{ partOf: t('app.partOf'), productOf: t('app.productOf') }} />
     </main>
   );
 }

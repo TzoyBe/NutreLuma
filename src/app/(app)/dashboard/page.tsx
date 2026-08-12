@@ -9,10 +9,12 @@ import { getAccessState } from '@/server/services/subscription';
 import { SubscriptionBanner } from '@/components/billing/subscription-banner';
 import { dayISOSchema } from '@/lib/validation/meal';
 import { formatDateInTz, formatDayISOHuman, formatTimeInTz, todayISO } from '@/lib/dates';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Disclaimer, EmptyState, MacroBar, Progress, StatTile } from '@/components/ui/misc';
+import { Card, CardContent } from '@/components/ui/card';
+import { Disclaimer, EmptyState } from '@/components/ui/misc';
 import { DateNav } from '@/components/date-nav';
 import { MealCard } from '@/components/meal/meal-card';
+import { CalorieGauge } from '@/components/dashboard/calorie-gauge';
+import { MacroGauge } from '@/components/dashboard/macro-gauge';
 import { getT } from '@/i18n/locale';
 import { MaintenanceDashboardCard } from '@/components/maintenance/maintenance-dashboard-card';
 
@@ -44,10 +46,6 @@ export default async function DashboardPage({
   ]);
 
   const isToday = date === today;
-  const hasMacroTargets =
-    macros.protein.target !== null ||
-    macros.carbohydrate.target !== null ||
-    macros.fat.target !== null;
   const mealCard = (meal: (typeof meals)[number] | (typeof drafts)[number]) => (
     <MealCard
       key={meal.id}
@@ -110,83 +108,86 @@ export default async function DashboardPage({
         </div>
       )}
 
-      <Card>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {isToday ? t('dashboard.todayCalories') : t('dashboard.dayCalories')}
-            </p>
-            <p className="text-4xl font-semibold tabular-nums">
-              {summary.consumed}
-              <span className="ml-2 text-lg font-normal text-muted-foreground">kcal</span>
-            </p>
-          </div>
-
-          {summary.target ? (
-            <>
-              <Progress
-                value={summary.consumed}
-                max={summary.target}
-                over={summary.overTarget}
-                label={t('dashboard.target')}
-              />
-              <div className="grid grid-cols-3 gap-3">
-                <StatTile label={t('dashboard.target')} value={summary.target} suffix="kcal" />
-                <StatTile
-                  label={summary.overTarget ? t('dashboard.over') : t('dashboard.remaining')}
-                  value={Math.abs(summary.remaining ?? 0)}
-                  suffix="kcal"
-                  tone={summary.overTarget ? 'danger' : 'primary'}
-                />
-                <StatTile label="%" value={summary.progressPercent} suffix="%" />
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t('dashboard.noTarget')}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle>{t('dashboard.macros')}</CardTitle>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {isToday ? t('dashboard.todayProgress') : t('dashboard.dayProgress')}
+          </h2>
           <Link href="/goals" className="shrink-0 text-sm font-medium text-primary hover:underline">
             {t('dashboard.setGoals')}
           </Link>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {hasMacroTargets ? null : (
-            <p className="text-sm text-muted-foreground">{t('dashboard.noMacroTargets')}</p>
-          )}
+        </div>
 
-          <div className="space-y-3">
-            <MacroBar
-              label={t('dashboard.protein')}
-              consumed={macros.protein.consumed}
-              target={macros.protein.target}
-              over={macros.protein.overTarget}
-            />
-            <MacroBar
-              label={t('dashboard.carbohydrate')}
-              consumed={macros.carbohydrate.consumed}
-              target={macros.carbohydrate.target}
-              over={macros.carbohydrate.overTarget}
-            />
-            <MacroBar
-              label={t('dashboard.fat')}
-              consumed={macros.fat.consumed}
-              target={macros.fat.target}
-              over={macros.fat.overTarget}
-            />
-            <MacroBar
-              label={t('dashboard.fiber')}
-              consumed={macros.fiber.consumed}
-              target={macros.fiber.target}
-              over={macros.fiber.overTarget}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Card className="col-span-2 sm:row-span-2">
+            <CardContent className="flex h-full items-center justify-center py-6">
+              <CalorieGauge
+                consumed={summary.consumed}
+                target={summary.target}
+                remaining={summary.remaining}
+                overTarget={summary.overTarget}
+                progressPercent={summary.progressPercent}
+                labels={{
+                  title: isToday ? t('dashboard.todayProgress') : t('dashboard.dayProgress'),
+                  of: t('dashboard.ofTarget', { target: summary.target ?? 0 }),
+                  remaining: t('dashboard.remainingKcal', { n: Math.abs(summary.remaining ?? 0) }),
+                  over: t('dashboard.overKcal', { n: Math.abs(summary.remaining ?? 0) }),
+                  noTarget: t('dashboard.noTarget'),
+                  kcal: 'kcal',
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="flex h-full items-center justify-center">
+              <MacroGauge
+                label={t('dashboard.protein')}
+                consumed={macros.protein.consumed}
+                target={macros.protein.target}
+                over={macros.protein.overTarget}
+                color="hsl(168 76% 55%)"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="flex h-full items-center justify-center">
+              <MacroGauge
+                label={t('dashboard.carbohydrate')}
+                consumed={macros.carbohydrate.consumed}
+                target={macros.carbohydrate.target}
+                over={macros.carbohydrate.overTarget}
+                color="hsl(32 92% 60%)"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="flex h-full items-center justify-center">
+              <MacroGauge
+                label={t('dashboard.fat')}
+                consumed={macros.fat.consumed}
+                target={macros.fat.target}
+                over={macros.fat.overTarget}
+                color="hsl(291 64% 68%)"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="flex h-full items-center justify-center">
+              <MacroGauge
+                label={t('dashboard.fiber')}
+                consumed={macros.fiber.consumed}
+                target={macros.fiber.target}
+                over={macros.fiber.overTarget}
+                color="hsl(142 62% 52%)"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

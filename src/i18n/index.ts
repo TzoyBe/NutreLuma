@@ -20,7 +20,7 @@ export function getDictionary(locale: Locale = DEFAULT_LOCALE): Translations {
 }
 
 export function localeTag(locale: Locale = DEFAULT_LOCALE): string {
-  return 'en-GB';
+  return locale === 'el' ? 'el-GR' : 'en-GB';
 }
 
 /**

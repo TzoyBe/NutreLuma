@@ -13,8 +13,6 @@ import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 
 export interface ProfileFormValues {
-  firstName: string;
-  lastName: string;
   birthDate: string;
   gender: (typeof GENDERS)[number];
   heightCm: string;
@@ -28,8 +26,6 @@ export interface ProfileFormValues {
 }
 
 const EMPTY: ProfileFormValues = {
-  firstName: '',
-  lastName: '',
   birthDate: '',
   gender: 'UNDISCLOSED',
   heightCm: '',
@@ -119,7 +115,6 @@ export function ProfileForm({
 
     const parsed = healthProfileSchema.safeParse({
       ...values,
-      lastName: values.lastName || undefined,
       targetWeightKg: values.targetWeightKg === '' ? undefined : values.targetWeightKg,
       dailyCalorieTarget: values.dailyCalorieTarget === '' ? undefined : values.dailyCalorieTarget,
     });
@@ -159,25 +154,6 @@ export function ProfileForm({
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t('onboarding.firstName')} htmlFor="firstName" error={errors.firstName} required>
-          <Input
-            {...fieldAria('firstName', errors.firstName)}
-            value={values.firstName}
-            onChange={(e) => set('firstName', e.target.value)}
-            autoComplete="given-name"
-            required
-          />
-        </Field>
-
-        <Field label={t('onboarding.lastName')} htmlFor="lastName" error={errors.lastName}>
-          <Input
-            {...fieldAria('lastName', errors.lastName)}
-            value={values.lastName}
-            onChange={(e) => set('lastName', e.target.value)}
-            autoComplete="family-name"
-          />
-        </Field>
-
         <Field label={t('onboarding.birthDate')} htmlFor="birthDate" error={errors.birthDate} required>
           <Input
             {...fieldAria('birthDate', errors.birthDate)}

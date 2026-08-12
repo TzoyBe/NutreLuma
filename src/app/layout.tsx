@@ -1,6 +1,17 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Sora } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/toast';
+
+// Joybee brand fonts. Inter καλύπτει και ελληνικά· η Sora (headings) δεν έχει
+// greek subset, οπότε τα ελληνικά headings κάνουν per-glyph fallback στο Inter.
+const inter = Inter({ subsets: ['latin', 'greek'], variable: '--font-inter', display: 'swap' });
+const sora = Sora({
+  subsets: ['latin'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-sora',
+  display: 'swap',
+});
 import { localeTag, t } from '@/i18n';
 import { LocaleProvider } from '@/i18n/client';
 import { getLocale, getT } from '@/i18n/locale';
@@ -46,7 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} className={`${inter.variable} ${sora.variable}`} suppressHydrationWarning>
       <body>
         <a href="#main" className="sr-only sr-only-focusable">
           {t('common.skipToContent', locale)}

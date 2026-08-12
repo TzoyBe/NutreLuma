@@ -92,9 +92,16 @@ export async function upsertProfile(
   input: HealthProfileInput,
   todayISO: string,
 ): Promise<ProfileView> {
+  // Δεν ζητάμε πλέον όνομα/επώνυμο — χρησιμοποιούμε το nickname (displayName).
+  // Η στήλη firstName παραμένει non-null, οπότε τη γεμίζουμε με το nickname.
+  const account = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { displayName: true },
+  });
+
   const data = {
-    firstName: input.firstName,
-    lastName: input.lastName ?? null,
+    firstName: account?.displayName ?? 'User',
+    lastName: null,
     birthDate: toDateOnly(input.birthDate),
     gender: input.gender,
     heightCm: new Prisma.Decimal(input.heightCm.toFixed(2)),

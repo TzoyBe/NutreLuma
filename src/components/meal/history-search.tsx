@@ -108,16 +108,16 @@ export function HistorySearch() {
             inputMode="numeric"
             value={minCal}
             onChange={(e) => setMinCal(e.target.value)}
-            placeholder="min kcal"
-            aria-label="min kcal"
+            placeholder={t('history.minKcal')}
+            aria-label={t('history.minKcal')}
           />
           <Input
             type="number"
             inputMode="numeric"
             value={maxCal}
             onChange={(e) => setMaxCal(e.target.value)}
-            placeholder="max kcal"
-            aria-label="max kcal"
+            placeholder={t('history.maxKcal')}
+            aria-label={t('history.maxKcal')}
           />
         </div>
       </form>

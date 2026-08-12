@@ -105,7 +105,7 @@ export default async function HistoryPage({
       )}
 
       {totalPages > 1 ? (
-        <nav className="flex items-center justify-between" aria-label="pagination">
+        <nav className="flex items-center justify-between" aria-label={t('history.pagination')}>
           {page > 1 ? (
             <Link
               href={buildPageUrl(page - 1)}

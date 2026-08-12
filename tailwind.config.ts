@@ -13,6 +13,10 @@ const config: Config = {
       // Πολύ μικρές οθόνες (iPhone SE κ.λπ.): κάτω από αυτό κρύβουμε ό,τι δεν
       // είναι απαραίτητο, ώστε το header να μη στριμώχνεται.
       screens: { xs: '400px' },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['var(--font-sora)', 'var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

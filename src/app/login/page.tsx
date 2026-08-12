@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { LoginForm } from '@/components/forms/login-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { LogoMark } from '@/components/brand/logo';
+import { JoybeeAttribution } from '@/components/brand/joybee';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { getT } from '@/i18n/locale';
 import { googleAuthConfigured } from '@/server/env';
 
@@ -31,6 +33,9 @@ export default async function LoginPage({
 
   return (
     <main id="main" className="container flex min-h-dvh max-w-md flex-col justify-center py-10">
+      <div className="mb-4 flex justify-end">
+        <LanguageSwitcher />
+      </div>
       <Link href="/" aria-label={t('app.name')} className="mb-7 flex flex-col items-center gap-3">
         <LogoMark className="h-16 w-16" title={t('app.name')} />
         <span className="text-lg font-semibold tracking-tight">
@@ -47,6 +52,10 @@ export default async function LoginPage({
           />
         </CardContent>
       </Card>
+
+      <div className="mt-7 flex justify-center">
+        <JoybeeAttribution prefix={t('app.partOf')} />
+      </div>
     </main>
   );
 }

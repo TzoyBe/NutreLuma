@@ -5,11 +5,12 @@ import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getStatsOverview } from '@/server/services/stats';
 import { formatDayISOHuman } from '@/lib/dates';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Disclaimer, EmptyState, StatTile } from '@/components/ui/misc';
-import { BarChart, DistributionBar } from '@/components/charts';
+import { BarChart, DistributionBar, LineChart } from '@/components/charts';
+import { ConsistencyHeatmap } from '@/components/stats/consistency-heatmap';
 import { cn } from '@/lib/utils';
-import { getT } from '@/i18n/locale';
+import { getLocale, getT } from '@/i18n/locale';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -36,6 +37,35 @@ export default async function StatsPage({
     value: point.total,
     highlight: stats.target ? point.total > stats.target : false,
   }));
+
+  const locale = await getLocale();
+  const intlLocale = locale === 'el' ? 'el-GR' : 'en-GB';
+  const weekdayName = (wd: number) =>
+    new Intl.DateTimeFormat(intlLocale, { weekday: 'short' }).format(new Date(Date.UTC(2023, 0, 1 + wd)));
+  const weekdayAvgMap = new Map(stats.weekdayAverages.map((w) => [w.weekday, w.average]));
+  const maxWeekdayAvg = Math.max(0, ...stats.weekdayAverages.map((w) => w.average));
+  const weekdayData = [1, 2, 3, 4, 5, 6, 0].map((wd) => {
+    const value = weekdayAvgMap.get(wd) ?? 0;
+    return { label: weekdayName(wd), value, highlight: value === maxWeekdayAvg && maxWeekdayAvg > 0 };
+  });
+
+  const timeLabels: Record<string, string> = {
+    morning: t('stats.timeMorning'),
+    midday: t('stats.timeMidday'),
+    afternoon: t('stats.timeAfternoon'),
+    evening: t('stats.timeEvening'),
+    night: t('stats.timeNight'),
+  };
+  const timeSlices = stats.timeOfDay.map((b) => ({
+    label: timeLabels[b.bucket],
+    percent: b.percent,
+    total: b.total,
+  }));
+  const nightPercent = stats.timeOfDay.find((b) => b.bucket === 'night')?.percent ?? 0;
+
+  const weightData = stats.weight
+    ? stats.weight.points.map((p) => ({ label: formatDayISOHuman(p.day), value: p.value }))
+    : [];
 
   return (
     <>
@@ -78,6 +108,25 @@ export default async function StatsPage({
 
           <Card>
             <CardHeader>
+              <CardTitle>{t('stats.consistency')}</CardTitle>
+              <CardDescription>{t('stats.consistencySubtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ConsistencyHeatmap
+                days={stats.dailyTotals}
+                target={stats.target}
+                legend={{
+                  onTarget: t('stats.legendOnTarget'),
+                  over: t('stats.legendOver'),
+                  noLog: t('stats.legendNoLog'),
+                  logged: t('stats.legendLogged'),
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>{t('stats.caloriesPerDay')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -95,6 +144,66 @@ export default async function StatsPage({
                 ) : null}
                 <span>{formatDayISOHuman(stats.to)}</span>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('stats.weightVsCalories')}</CardTitle>
+              <CardDescription>{t('stats.weightVsCaloriesSubtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {stats.weight ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <StatTile
+                      label={t('stats.weightChange')}
+                      value={`${stats.weight.deltaKg > 0 ? '+' : ''}${stats.weight.deltaKg}`}
+                      suffix="kg"
+                      tone={stats.weight.deltaKg <= 0 ? 'primary' : 'default'}
+                    />
+                    <StatTile label={t('stats.avgIntake')} value={stats.avgIntake} suffix="kcal" />
+                  </div>
+                  <LineChart data={weightData} ariaLabel={t('stats.weightVsCalories')} unit="kg" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{formatDayISOHuman(stats.weight.points[0].day)}</span>
+                    <span>
+                      {formatDayISOHuman(stats.weight.points[stats.weight.points.length - 1].day)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('stats.weightNeedMore')}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('stats.weekdayPattern')}</CardTitle>
+              <CardDescription>{t('stats.weekdaySubtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BarChart
+                data={weekdayData}
+                targetLine={stats.target}
+                ariaLabel={t('stats.weekdayPattern')}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('stats.eatingTimes')}</CardTitle>
+              <CardDescription>{t('stats.eatingTimesSubtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <DistributionBar ariaLabel={t('stats.eatingTimes')} slices={timeSlices} />
+              {nightPercent >= 20 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t('stats.lateNightHint', { percent: nightPercent })}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
 

@@ -2,13 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CreditCard, Database, Scale, UserCog, Users } from 'lucide-react';
+import { CreditCard, Database, UserCog, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
 
 const TABS = [
   { href: '/profile', labelKey: 'profile.tabAccount', Icon: UserCog },
-  { href: '/profile/weight', labelKey: 'profile.tabWeight', Icon: Scale },
   { href: '/profile/billing', labelKey: 'profile.tabBilling', Icon: CreditCard },
 ] as const;
 

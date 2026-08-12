@@ -3,8 +3,15 @@ import type { MealType } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { average, buildDailySummary, type DailySummary } from '@/lib/calories';
 import { buildMacroProgress, type MacroProgress } from '@/lib/nutrition';
-import { addDaysISO, dayRangeList, toZonedDayISO, zonedDayRangeUtc } from '@/lib/dates';
+import {
+  addDaysISO,
+  dayRangeList,
+  timezoneOffsetMs,
+  toZonedDayISO,
+  zonedDayRangeUtc,
+} from '@/lib/dates';
 import { MEAL_TYPES } from '@/lib/constants';
+import { listWeightEntries } from './weight';
 import {
   COUNTED_MEAL_STATUS,
   listMealsForDay,
@@ -13,6 +20,18 @@ import {
 } from './meal';
 import { getUserTimezone } from './profile';
 import { getGoalForDay, type GoalView } from './goals';
+
+export const TIME_BUCKETS = ['morning', 'midday', 'afternoon', 'evening', 'night'] as const;
+export type TimeBucket = (typeof TIME_BUCKETS)[number];
+
+/** Κατηγοριοποίηση ώρας γεύματος (τοπική ώρα χρήστη) σε ζώνη ημέρας. */
+function timeBucket(hour: number): TimeBucket {
+  if (hour >= 5 && hour < 10) return 'morning';
+  if (hour >= 10 && hour < 14) return 'midday';
+  if (hour >= 14 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 22) return 'evening';
+  return 'night';
+}
 
 export interface MacroSummary {
   protein: MacroProgress;
@@ -129,6 +148,15 @@ export interface StatsOverview {
   daysWithinTargetPercent: number | null;
   daysLogged: number;
   distribution: MealTypeSlice[];
+  avgIntake: number;
+  weekdayAverages: { weekday: number; average: number }[];
+  timeOfDay: { bucket: TimeBucket; total: number; percent: number }[];
+  weight: {
+    points: { day: string; value: number }[];
+    first: number;
+    last: number;
+    deltaKg: number;
+  } | null;
 }
 
 export async function getStatsOverview(userId: string, days: number): Promise<StatsOverview> {
@@ -171,6 +199,54 @@ export async function getStatsOverview(userId: string, days: number): Promise<St
     };
   });
 
+  // Μέσος όρος ανά ημέρα της εβδομάδας (μόνο ημέρες με καταγραφή).
+  const weekdayArrays: number[][] = Array.from({ length: 7 }, () => []);
+  for (const d of dailyTotals) {
+    if (d.total <= 0) continue;
+    const weekday = new Date(`${d.day}T00:00:00.000Z`).getUTCDay();
+    weekdayArrays[weekday].push(d.total);
+  }
+  const weekdayAverages = weekdayArrays.map((arr, weekday) => ({
+    weekday,
+    average: average(arr),
+  }));
+
+  // Κατανομή θερμίδων ανά ζώνη ώρας (τοπική ώρα χρήστη).
+  const mealTimes = await prisma.meal.findMany({
+    where: {
+      userId,
+      mealDateTime: { gte: start, lt: end },
+      finalCalories: { not: null },
+      status: COUNTED_MEAL_STATUS,
+    },
+    select: { mealDateTime: true, finalCalories: true },
+  });
+  const timeTotals = new Map<TimeBucket, number>(TIME_BUCKETS.map((b) => [b, 0]));
+  for (const meal of mealTimes) {
+    const local = new Date(meal.mealDateTime.getTime() + timezoneOffsetMs(meal.mealDateTime, timezone));
+    const bucket = timeBucket(local.getUTCHours());
+    timeTotals.set(bucket, (timeTotals.get(bucket) ?? 0) + (meal.finalCalories ?? 0));
+  }
+  const timeGrand = [...timeTotals.values()].reduce((a, b) => a + b, 0);
+  const timeOfDay = TIME_BUCKETS.map((bucket) => {
+    const total = timeTotals.get(bucket) ?? 0;
+    return { bucket, total, percent: timeGrand > 0 ? Math.round((total / timeGrand) * 100) : 0 };
+  });
+
+  // Τάση βάρους στο διάστημα, σε αύξουσα χρονική σειρά.
+  const weightDesc = await listWeightEntries(userId, { from, to: today, limit: 400 });
+  const weightAsc = [...weightDesc].reverse();
+  const weight =
+    weightAsc.length >= 2
+      ? {
+          points: weightAsc.map((entry) => ({ day: entry.entryDate, value: entry.weightKg })),
+          first: weightAsc[0].weightKg,
+          last: weightAsc[weightAsc.length - 1].weightKg,
+          deltaKg:
+            Math.round((weightAsc[weightAsc.length - 1].weightKg - weightAsc[0].weightKg) * 10) / 10,
+        }
+      : null;
+
   return {
     timezone,
     target,
@@ -189,6 +265,10 @@ export async function getStatsOverview(userId: string, days: number): Promise<St
         : null,
     daysLogged: loggedDays.length,
     distribution,
+    avgIntake: average(loggedTotalsOf(dailyTotals)),
+    weekdayAverages,
+    timeOfDay,
+    weight,
   };
 }
 

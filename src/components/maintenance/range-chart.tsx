@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useT } from '@/i18n/client';
 
 interface Point {
   date: string;
@@ -21,6 +22,7 @@ export function RangeChart({
   range: { lower: number; upper: number };
   rawPoints: Point[];
 }) {
+  const t = useT();
   const width = 640;
   const height = 220;
   const pad = { top: 12, right: 12, bottom: 20, left: 32 };
@@ -57,7 +59,7 @@ export function RangeChart({
         preserveAspectRatio="none"
         className="h-56 w-full text-primary"
         role="img"
-        aria-label="Maintenance range chart"
+        aria-label={t('maintenance.rangeChartAria')}
       >
         {/* Range band */}
         <rect

@@ -29,7 +29,7 @@ export default async function ProgressPage() {
         <p className="text-sm text-muted-foreground">{t('progress.subtitle')}</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3">
         {items.map(({ href, title, desc, Icon }) => (
           <Link key={href} href={href} className="group">
             <Card className="h-full transition-colors hover:border-primary/40">

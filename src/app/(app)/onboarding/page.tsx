@@ -24,12 +24,10 @@ export default async function OnboardingPage() {
       </CardHeader>
       <CardContent>
         <ProfileForm
-          redirectTo="/dashboard"
+          redirectTo="/welcome"
           initial={
             profile
               ? {
-                  firstName: profile.firstName,
-                  lastName: profile.lastName ?? '',
                   birthDate: profile.birthDate,
                   gender: profile.gender,
                   heightCm: String(profile.heightCm),

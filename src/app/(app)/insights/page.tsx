@@ -23,15 +23,21 @@ export default async function InsightsPage() {
     getPersonalCalibration(user.id), getCorrectionRates(user.id), getDailyDataQuality(user.id, today, profile.timezone), getPersonalPatterns(user.id, profile.timezone), getPersonalEnergyEstimate(user.id, profile.timezone),
     import('@/server/services/personal-intelligence').then(({ getIntelligenceSettings }) => getIntelligenceSettings(user.id)),
   ]);
+  const levelLabels: Record<string, string> = {
+    HIGH: t('insights.levelHigh'),
+    MEDIUM: t('insights.levelMedium'),
+    LOW: t('insights.levelLow'),
+    UNKNOWN: t('insights.levelUnknown'),
+  };
   return <>
     <div className="space-y-1"><h1 className="text-xl font-semibold">{t('insights.title')}</h1><p className="text-sm text-muted-foreground">{t('insights.subtitle')}</p></div>
     <div className="grid gap-3 sm:grid-cols-3">
       <Metric icon={<BrainCircuit className="h-4 w-4" aria-hidden="true" />} label={t('insights.calibration')} value={`${calibration.score}%`} detail={`${calibration.corrections} ${t('insights.corrections')}`} />
-      <Metric icon={<Gauge className="h-4 w-4" aria-hidden="true" />} label={t('insights.dataConfidence')} value={`${quality.score}%`} detail={quality.level} />
+      <Metric icon={<Gauge className="h-4 w-4" aria-hidden="true" />} label={t('insights.dataConfidence')} value={`${quality.score}%`} detail={levelLabels[quality.level] ?? quality.level} />
       <Metric icon={<CalendarCheck className="h-4 w-4" aria-hidden="true" />} label={t('insights.correctionRate')} value={`${rates['30d']}%`} detail={t('insights.last30Days')} />
     </div>
-    {energy ? <Card><CardHeader><CardTitle>NutreLuma energy estimate</CardTitle><CardDescription>Based on recent complete tracking, not a change to your current goal.</CardDescription></CardHeader><CardContent><p className="text-3xl font-semibold tabular-nums">{energy.estimatedCalories} <span className="text-base font-normal text-muted-foreground">kcal/day</span></p><p className="mt-1 text-sm text-muted-foreground">Confidence {Math.round(energy.confidence * 100)}% across {energy.completeDays} complete days.</p></CardContent></Card> : null}
-    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary" aria-hidden="true" />Useful patterns</CardTitle></CardHeader><CardContent className="space-y-3">{patterns.length ? patterns.map((pattern) => <div key={pattern.type} className="border-b border-border pb-3 last:border-0 last:pb-0"><p className="font-medium">{pattern.title}</p><p className="text-sm text-muted-foreground">{pattern.message}</p><p className="mt-1 text-xs text-muted-foreground">{pattern.sampleCount} tracked meals · {Math.round(pattern.confidence * 100)}% strength</p></div>) : <p className="text-sm text-muted-foreground">More tracked meals are needed before useful patterns appear.</p>}</CardContent></Card>
+    {energy ? <Card><CardHeader><CardTitle>{t('insights.energyEstimate')}</CardTitle><CardDescription>{t('insights.energyDescription')}</CardDescription></CardHeader><CardContent><p className="text-3xl font-semibold tabular-nums">{energy.estimatedCalories} <span className="text-base font-normal text-muted-foreground">{t('insights.perDay')}</span></p><p className="mt-1 text-sm text-muted-foreground">{t('insights.confidence')} {Math.round(energy.confidence * 100)}% · {energy.completeDays} {t('insights.completeDays')}</p></CardContent></Card> : null}
+    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary" aria-hidden="true" />{t('insights.usefulPatterns')}</CardTitle></CardHeader><CardContent className="space-y-3">{patterns.length ? patterns.map((pattern) => <div key={pattern.type} className="border-b border-border pb-3 last:border-0 last:pb-0"><p className="font-medium">{t('insights.weekendPatternTitle')}</p><p className="text-sm text-muted-foreground">{t(pattern.weekendHigher ? 'insights.patternWeekendHigher' : 'insights.patternWeekdayHigher', { kcal: pattern.deltaKcal })}</p><p className="mt-1 text-xs text-muted-foreground">{pattern.sampleCount} {t('insights.trackedMeals')} · {Math.round(pattern.confidence * 100)}% {t('insights.strength')}</p></div>) : <p className="text-sm text-muted-foreground">{t('insights.moreData')}</p>}</CardContent></Card>
     <IntelligenceSettings initial={settings} />
   </>;
 }

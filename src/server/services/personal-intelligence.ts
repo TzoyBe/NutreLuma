@@ -94,7 +94,7 @@ export async function getPersonalPatterns(userId: string, timezone: string) {
   const avg = (rows: typeof meals) => rows.length ? rows.reduce((s, m) => s + (m.finalCalories ?? 0), 0) / rows.length : 0;
   const delta = Math.round(avg(weekend) - avg(weekday));
   if (Math.abs(delta) < 100) return [];
-  return [{ type: 'WEEKEND', title: 'Weekend pattern', message: `${delta > 0 ? 'Weekend' : 'Weekday'} meals average ${Math.abs(delta)} kcal ${delta > 0 ? 'more' : 'less'} in your tracked data.`, sampleCount: meals.length, confidence: clamp(meals.length / 40), completeness: clamp(meals.length / 28) }];
+  return [{ type: 'WEEKEND', weekendHigher: delta > 0, deltaKcal: Math.abs(delta), title: 'Weekend pattern', message: `${delta > 0 ? 'Weekend' : 'Weekday'} meals average ${Math.abs(delta)} kcal ${delta > 0 ? 'more' : 'less'} in your tracked data.`, sampleCount: meals.length, confidence: clamp(meals.length / 40), completeness: clamp(meals.length / 28) }];
 }
 
 export async function getPersonalEnergyEstimate(userId: string, timezone: string) {

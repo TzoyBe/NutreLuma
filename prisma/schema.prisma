@@ -232,6 +232,9 @@ model User {
    */
   passwordChangedAt DateTime?
 
+  /** Χρονική στιγμή που ο χρήστης είδε (ή παρέκαμψε) την ξενάγηση καλωσορίσματος. */
+  tourSeenAt DateTime?
+
   healthProfile  HealthProfile?
   meals          Meal[]
   weightEntries  WeightEntry[]

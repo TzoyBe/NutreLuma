@@ -12,6 +12,7 @@ import {
 } from '@/components/settings/account-panels';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Disclaimer } from '@/components/ui/misc';
+import { JOYBEE, JoybeeAttribution } from '@/components/brand/joybee';
 import { getT } from '@/i18n/locale';
 import { getIntelligenceSettings } from '@/server/services/personal-intelligence';
 import { IntelligenceSettings } from '@/components/intelligence/intelligence-panel';
@@ -48,8 +49,6 @@ export default async function ProfileAccountPage() {
             initial={
               profile
                 ? {
-                    firstName: profile.firstName,
-                    lastName: profile.lastName ?? '',
                     birthDate: profile.birthDate,
                     gender: profile.gender,
                     heightCm: String(profile.heightCm),
@@ -90,13 +89,23 @@ export default async function ProfileAccountPage() {
       ) : null}
 
       <Card>
-        <CardContent className="flex flex-wrap gap-x-5 gap-y-2">
-          <Link href="/terms" className="text-sm text-primary underline underline-offset-4">
-            {t('terms.navLabel')}
-          </Link>
-          <Link href="/privacy" className="text-sm text-primary underline underline-offset-4">
-            {t('nav.privacy')}
-          </Link>
+        <CardHeader>
+          <CardTitle>{t('app.aboutTitle')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">{t('app.aboutBody')}</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <JoybeeAttribution prefix={t('app.partOf')} />
+            <span className="text-xs text-muted-foreground">{JOYBEE.copyright}</span>
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+            <Link href="/terms" className="text-sm text-primary underline underline-offset-4">
+              {t('terms.navLabel')}
+            </Link>
+            <Link href="/privacy" className="text-sm text-primary underline underline-offset-4">
+              {t('nav.privacy')}
+            </Link>
+          </div>
         </CardContent>
       </Card>
 

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { BarChart3, Camera, ShieldCheck } from 'lucide-react';
 import { Disclaimer } from '@/components/ui/misc';
 import { Logo } from '@/components/brand/logo';
+import { JOYBEE, JoybeeAttribution } from '@/components/brand/joybee';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { getT } from '@/i18n/locale';
 
 export default async function LandingPage() {
@@ -19,6 +21,7 @@ export default async function LandingPage() {
           <div className="liquid-top-nav pointer-events-auto flex min-h-16 items-center justify-between gap-3 px-3 py-2">
         <Logo />
         <nav className="flex items-center gap-2" aria-label={t('nav.menu')}>
+          <LanguageSwitcher className="mr-1" />
           <Link
             href="/login"
             className="liquid-nav-link rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
@@ -74,9 +77,12 @@ export default async function LandingPage() {
       </main>
 
       <footer className="border-t border-border py-6">
-        <div className="container flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-          <span>© {new Date().getFullYear()} {t('app.name')}</span>
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="container flex flex-col items-center gap-4 text-sm text-muted-foreground sm:flex-row sm:justify-between">
+          <div className="flex flex-col items-center gap-1.5 sm:items-start">
+            <JoybeeAttribution prefix={t('app.partOf')} />
+            <span className="text-xs">{JOYBEE.copyright}</span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href="/terms" className="underline underline-offset-4">
               {t('terms.navLabel')}
             </Link>

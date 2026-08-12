@@ -360,7 +360,7 @@ export function AchievementsPanel({
                             type="button"
                             size="icon"
                             variant="ghost"
-                            title="Pause"
+                            title={t('achievements.pause')}
                             onClick={() =>
                               run(`pause:${milestone.id}`, () =>
                                 api.post(`/api/milestones/${milestone.id}/pause`),
@@ -375,7 +375,7 @@ export function AchievementsPanel({
                             type="button"
                             size="icon"
                             variant="ghost"
-                            title="Resume"
+                            title={t('achievements.resume')}
                             onClick={() =>
                               run(`resume:${milestone.id}`, () =>
                                 api.post(`/api/milestones/${milestone.id}/resume`),
@@ -390,7 +390,7 @@ export function AchievementsPanel({
                             type="button"
                             size="icon"
                             variant="ghost"
-                            title="Cancel"
+                            title={t('achievements.cancelGoal')}
                             onClick={() =>
                               run(`cancel:${milestone.id}`, () =>
                                 api.post(`/api/milestones/${milestone.id}/cancel`),
