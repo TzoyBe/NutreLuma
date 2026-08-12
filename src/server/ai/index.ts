@@ -16,6 +16,33 @@ import { OpenAiVisionProvider } from './providers/openai';
 import { ProviderError, type VisionProvider } from './providers/types';
 
 let cached: VisionProvider | null = null;
+let fallbackCached: VisionProvider | null = null;
+
+/**
+ * Εφεδρικός πάροχος (OpenAI-compatible) — μόνο όταν έχει ρυθμιστεί κλειδί και
+ * δεν είναι πανομοιότυπος με τον κύριο. Επιστρέφει null αν δεν υπάρχει fallback.
+ */
+function getFallbackProvider(primary: VisionProvider): VisionProvider | null {
+  if (!env.AI_FALLBACK_API_KEY) return null;
+
+  // Άσκοπο fallback: ο κύριος είναι ήδη OpenAI στο ίδιο endpoint με το ίδιο κλειδί.
+  if (
+    primary.name === 'openai' &&
+    env.AI_API_KEY === env.AI_FALLBACK_API_KEY &&
+    env.AI_API_BASE_URL === env.AI_FALLBACK_BASE_URL
+  ) {
+    return null;
+  }
+
+  if (!fallbackCached) {
+    fallbackCached = new OpenAiVisionProvider(
+      env.AI_FALLBACK_API_KEY,
+      env.AI_FALLBACK_BASE_URL,
+      env.AI_FALLBACK_MODEL,
+    );
+  }
+  return fallbackCached;
+}
 
 export function getVisionProvider(): VisionProvider {
   if (cached) return cached;
@@ -115,6 +142,7 @@ const RETRY_TIME_BUDGET_MS = 45_000;
 function providerFailure(
   error: unknown,
   providerName: string,
+  model: string,
   durationMs: number,
 ): AnalysisOutcome {
   if (error instanceof ProviderError) {
@@ -124,7 +152,7 @@ function providerFailure(
     return {
       status: timedOut ? 'TIMEOUT' : 'PROVIDER_ERROR',
       reason: timedOut ? 'TIMEOUT' : 'PROVIDER_ERROR',
-      model: env.AI_MODEL,
+      model,
       provider: providerName,
       requestId: null,
       durationMs,
@@ -136,16 +164,20 @@ function providerFailure(
   return {
     status: 'PROVIDER_ERROR',
     reason: 'UNEXPECTED',
-    model: env.AI_MODEL,
+    model,
     provider: providerName,
     requestId: null,
     durationMs,
   };
 }
 
-async function runVision(input: VisionRun): Promise<AnalysisOutcome> {
-  const provider = getVisionProvider();
-  const imageBase64 = input.imageBuffer.toString('base64');
+/** Εκτελεί την ανάλυση σε ΕΝΑΝ πάροχο, με retries για επαναλήψιμα σφάλματα. */
+async function runOnProvider(
+  provider: VisionProvider,
+  model: string,
+  input: VisionRun,
+  imageBase64: string,
+): Promise<AnalysisOutcome> {
   const started = Date.now();
 
   const attempt = async (retry: boolean) =>
@@ -207,17 +239,46 @@ async function runVision(input: VisionRun): Promise<AnalysisOutcome> {
         continue;
       }
 
-      return providerFailure(error, provider.name, Date.now() - started);
+      return providerFailure(error, provider.name, model, Date.now() - started);
     }
   }
 
   // Θεωρητικά μη προσβάσιμο (το loop επιστρέφει πάντα), αλλά ο τύπος το απαιτεί.
-  return providerFailure(lastError, provider.name, Date.now() - started);
+  return providerFailure(lastError, provider.name, model, Date.now() - started);
 }
 
-/** Μόνο για tests: επιτρέπει επαναρχικοποίηση του cached provider. */
+async function runVision(input: VisionRun): Promise<AnalysisOutcome> {
+  const imageBase64 = input.imageBuffer.toString('base64');
+  const primary = getVisionProvider();
+
+  const primaryResult = await runOnProvider(primary, env.AI_MODEL, input, imageBase64);
+  // Fallback μόνο σε σκληρή αποτυχία παρόχου· INVALID_RESPONSE/NO_FOOD σημαίνει
+  // ότι το μοντέλο απάντησε, οπότε δεν αλλάζουμε πάροχο.
+  if (primaryResult.status !== 'PROVIDER_ERROR' && primaryResult.status !== 'TIMEOUT') {
+    return primaryResult;
+  }
+
+  const fallback = getFallbackProvider(primary);
+  if (!fallback) return primaryResult;
+
+  logger.warn('ai_fallback_engaged', {
+    primary: primary.name,
+    fallback: fallback.name,
+    reason: primaryResult.reason,
+  });
+
+  const fallbackResult = await runOnProvider(fallback, env.AI_FALLBACK_MODEL, input, imageBase64);
+  // Αν και ο fallback αποτύχει σκληρά, επιστρέφουμε το αρχικό σφάλμα του κύριου.
+  if (fallbackResult.status === 'PROVIDER_ERROR' || fallbackResult.status === 'TIMEOUT') {
+    return primaryResult;
+  }
+  return fallbackResult;
+}
+
+/** Μόνο για tests: επιτρέπει επαναρχικοποίηση των cached providers. */
 export function __resetVisionProvider(): void {
   cached = null;
+  fallbackCached = null;
 }
 
 export type { NormalizedAnalysis } from './schema';

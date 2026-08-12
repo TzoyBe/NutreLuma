@@ -29,6 +29,12 @@ const envSchema = z.object({
   AI_MODEL: z.string().optional().default('claude-sonnet-5'),
   AI_TIMEOUT_MS: intFromEnv(60_000),
 
+  // Εφεδρικός πάροχος (OpenAI-compatible) που ενεργοποιείται μόνο όταν ο κύριος
+  // πάροχος αποτύχει σκληρά (PROVIDER_ERROR/TIMEOUT). Κενό κλειδί = χωρίς fallback.
+  AI_FALLBACK_API_KEY: z.string().optional().default(''),
+  AI_FALLBACK_MODEL: z.string().optional().default('gpt-4o-mini'),
+  AI_FALLBACK_BASE_URL: z.string().optional().default('https://api.openai.com/v1'),
+
   STORAGE_DRIVER: z.enum(['local']).default('local'),
   UPLOAD_DIR: z.string().default('/app/uploads'),
   MAX_UPLOAD_SIZE_MB: intFromEnv(10),
@@ -97,6 +103,9 @@ function load() {
     AI_API_BASE_URL: process.env.AI_API_BASE_URL,
     AI_MODEL: process.env.AI_MODEL,
     AI_TIMEOUT_MS: process.env.AI_TIMEOUT_MS,
+    AI_FALLBACK_API_KEY: process.env.AI_FALLBACK_API_KEY,
+    AI_FALLBACK_MODEL: process.env.AI_FALLBACK_MODEL,
+    AI_FALLBACK_BASE_URL: process.env.AI_FALLBACK_BASE_URL,
     STORAGE_DRIVER: process.env.STORAGE_DRIVER,
     UPLOAD_DIR: process.env.UPLOAD_DIR,
     MAX_UPLOAD_SIZE_MB: process.env.MAX_UPLOAD_SIZE_MB,
