@@ -1,7 +1,12 @@
 import 'server-only';
-import { type NotificationType } from '@prisma/client';
+import { MealStatus, MealType, type NotificationType } from '@prisma/client';
 import { prisma } from '../db/prisma';
+import { env } from '../env';
 import { ApiError } from '../errors';
+import { logger } from '../logger';
+import { sendEmail } from '../email';
+import { buildNotificationEmail } from '../email/templates';
+import { todayISO, zonedDayRangeUtc } from '@/lib/dates';
 
 export interface NotificationView {
   id: string;
@@ -11,6 +16,7 @@ export interface NotificationView {
   milestoneId: string | null;
   dedupeKey: string | null;
   readAt: string | null;
+  emailedAt: string | null;
   createdAt: string;
 }
 
@@ -30,6 +36,7 @@ function toView(row: {
   milestoneId: string | null;
   dedupeKey: string | null;
   readAt: Date | null;
+  emailedAt: Date | null;
   createdAt: Date;
 }): NotificationView {
   return {
@@ -40,6 +47,7 @@ function toView(row: {
     milestoneId: row.milestoneId,
     dedupeKey: row.dedupeKey,
     readAt: row.readAt ? row.readAt.toISOString() : null,
+    emailedAt: row.emailedAt ? row.emailedAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -96,4 +104,101 @@ export async function markNotificationsRead(
     data: { readAt: new Date() },
   });
   return { count: result.count };
+}
+
+function localHour(now: Date, timezone: string): number {
+  const hour = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    hour12: false,
+  }).format(now);
+  return Number(hour) % 24;
+}
+
+const MEAL_REMINDERS = [
+  {
+    mealType: MealType.BREAKFAST,
+    afterHour: 10,
+    title: 'Breakfast not logged',
+    body: 'If you had breakfast, add it now while it is still fresh in your mind.',
+  },
+  {
+    mealType: MealType.LUNCH,
+    afterHour: 15,
+    title: 'Lunch not logged',
+    body: 'A quick lunch log keeps your day accurate without extra work later.',
+  },
+  {
+    mealType: MealType.DINNER,
+    afterHour: 21,
+    title: 'Dinner not logged',
+    body: 'Wrap up your day by logging dinner before the details fade.',
+  },
+] as const;
+
+export async function ensureMealReminderNotifications(userId: string): Promise<void> {
+  const profile = await prisma.healthProfile.findUnique({
+    where: { userId },
+    select: {
+      timezone: true,
+      user: { select: { email: true, emailVerifiedAt: true } },
+    },
+  });
+  if (!profile) return;
+
+  const now = new Date();
+  const dayISO = todayISO(profile.timezone);
+  const hour = localHour(now, profile.timezone);
+  const { start, end } = zonedDayRangeUtc(dayISO, profile.timezone);
+
+  for (const reminder of MEAL_REMINDERS) {
+    if (hour < reminder.afterHour) continue;
+
+    const mealCount = await prisma.meal.count({
+      where: {
+        userId,
+        mealType: reminder.mealType,
+        mealDateTime: { gte: start, lt: end },
+        status: { not: MealStatus.CANCELLED },
+      },
+    });
+    if (mealCount > 0) continue;
+
+    const dedupeKey = `meal-reminder:${dayISO}:${reminder.mealType}`;
+    const notification = await prisma.notification.upsert({
+      where: { userId_dedupeKey: { userId, dedupeKey } },
+      create: {
+        userId,
+        type: 'MEAL_REMINDER',
+        title: reminder.title,
+        body: reminder.body,
+        dedupeKey,
+      },
+      update: {},
+    });
+
+    if (notification.emailedAt || !profile.user.emailVerifiedAt) continue;
+
+    const sent = await sendEmail(
+      buildNotificationEmail({
+        to: profile.user.email,
+        title: reminder.title,
+        body: reminder.body,
+        actionLabel: 'Add meal',
+        actionUrl: `${env.APP_URL.replace(/\/+$/, '')}/meals/add`,
+      }),
+    );
+
+    if (sent) {
+      await prisma.notification.update({
+        where: { id: notification.id },
+        data: { emailedAt: new Date() },
+      });
+    }
+    logger.info('meal_reminder_notification_created', {
+      userId,
+      mealType: reminder.mealType,
+      emailSent: sent,
+    });
+  }
 }

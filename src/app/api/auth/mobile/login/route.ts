@@ -1,18 +1,17 @@
-import { ApiError, assertSameOrigin, clientIp, jsonOk, withErrorHandling } from '@/server/http';
+import { ApiError, clientIp, jsonOk, withErrorHandling } from '@/server/http';
 import { assertLoginRateLimit } from '@/server/auth/rate-limit';
 import { fakeVerify, verifyPassword } from '@/server/auth/password';
-import { setSessionCookie } from '@/server/auth/session';
+import { createSessionToken } from '@/server/auth/session';
 import { findUserByEmail } from '@/server/services/user';
 import { prisma } from '@/server/db/prisma';
 import { loginSchema } from '@/lib/validation/auth';
 import { logger } from '@/server/logger';
+import { env } from '@/server/env';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const POST = withErrorHandling(async (request: Request) => {
-  assertSameOrigin(request);
-
   const body = await request.json();
   const input = loginSchema.parse(body);
 
@@ -20,32 +19,36 @@ export const POST = withErrorHandling(async (request: Request) => {
 
   const user = await findUserByEmail(input.email);
   if (!user) {
-    // Ίδιος χρόνος απόκρισης με υπαρκτό χρήστη (anti user-enumeration).
     await fakeVerify();
-    throw new ApiError('UNAUTHENTICATED', 'Λάθος email ή κωδικός.');
+    throw new ApiError('UNAUTHENTICATED', 'Wrong email or password.');
   }
 
   const valid = await verifyPassword(input.password, user.passwordHash);
   if (!valid) {
-    logger.warn('login_failed', { userId: user.id });
-    throw new ApiError('UNAUTHENTICATED', 'Λάθος email ή κωδικός.');
+    logger.warn('mobile_login_failed', { userId: user.id });
+    throw new ApiError('UNAUTHENTICATED', 'Wrong email or password.');
   }
 
   if (!user.emailVerifiedAt) {
-    logger.warn('login_unverified_email', { userId: user.id });
+    logger.warn('mobile_login_unverified_email', { userId: user.id });
     throw new ApiError(
       'FORBIDDEN',
       'Please verify your email before logging in. Check your inbox or request a new verification link.',
     );
   }
 
-  await setSessionCookie({ sub: user.id, email: user.email, role: user.role });
-  logger.info('login_success', { userId: user.id });
-
   const profile = await prisma.healthProfile.findUnique({
     where: { userId: user.id },
     select: { id: true },
   });
+  const token = await createSessionToken({ sub: user.id, email: user.email, role: user.role });
 
-  return jsonOk({ id: user.id, displayName: user.displayName, needsProfile: !profile });
+  logger.info('mobile_login_success', { userId: user.id });
+
+  return jsonOk({
+    token,
+    expiresInDays: env.SESSION_MAX_AGE_DAYS,
+    user: { id: user.id, email: user.email, displayName: user.displayName, role: user.role },
+    needsProfile: !profile,
+  });
 });

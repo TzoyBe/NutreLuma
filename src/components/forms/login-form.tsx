@@ -62,7 +62,11 @@ export function LoginForm({
       router.refresh();
     } catch (error) {
       const message = error instanceof ApiClientError ? error.message : t('errors.generic');
-      setErrors({ password: message });
+      setErrors(
+        error instanceof ApiClientError && error.code === 'FORBIDDEN'
+          ? { password: message, verifyEmail: parsed.data.email }
+          : { password: message },
+      );
       toast.push(message, 'error');
       setLoading(false);
     }
@@ -115,6 +119,17 @@ export function LoginForm({
             required
           />
         </Field>
+
+        {errors.verifyEmail ? (
+          <p className="text-sm">
+            <Link
+              href={`/verify-email?email=${encodeURIComponent(errors.verifyEmail)}`}
+              className="text-primary underline underline-offset-4"
+            >
+              Resend verification email
+            </Link>
+          </p>
+        ) : null}
 
         <Button type="submit" size="lg" block loading={loading}>
           {t('auth.submitLogin')}

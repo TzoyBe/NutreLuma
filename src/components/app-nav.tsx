@@ -38,6 +38,7 @@ type NavNotification = {
   milestoneId?: string | null;
   dedupeKey: string | null;
   readAt: string | null;
+  emailedAt?: string | null;
 };
 
 function notificationKey(notification: NavNotification) {
@@ -48,6 +49,7 @@ function notificationKey(notification: NavNotification) {
 function notificationHref(notification: NavNotification) {
   if (notification.type === 'ACHIEVEMENT_UNLOCKED') return '/goals/achievements#achievements';
   if (notification.type === 'BADGE_UNLOCKED') return '/goals/achievements#badges';
+  if (notification.type === 'MEAL_REMINDER') return '/meals/add';
   if (
     notification.type === 'MILESTONE_PROGRESS' ||
     notification.type === 'MILESTONE_COMPLETED' ||
@@ -269,13 +271,13 @@ export function AppNav({ displayName }: { displayName: string }) {
     <>
       <header className="pointer-events-none sticky top-0 z-30 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <div className="container px-0">
-          <div className="liquid-top-nav pointer-events-auto flex min-h-16 items-center gap-2 px-2.5 py-2">
+          <div className="liquid-top-nav pointer-events-auto flex min-h-16 items-center gap-2 overflow-visible px-2.5 py-2">
             <Link
               href="/dashboard"
               className="liquid-brand flex min-w-0 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-black/12 py-1.5 pl-1.5 pr-3 shadow-[0_14px_30px_-24px_hsl(var(--glass-shadow)/0.72)]"
               aria-label={t('app.name')}
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--primary)/0.18),transparent_58%),linear-gradient(180deg,hsl(205_32%_12%),hsl(205_30%_9%))] shadow-[0_1px_0_hsl(var(--glass-border)/0.24)_inset,0_0_24px_-14px_hsl(var(--primary)/0.72)]">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--accent)/0.18),transparent_46%),radial-gradient(circle_at_70%_70%,hsl(var(--primary)/0.2),transparent_58%),linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] shadow-[0_1px_0_hsl(var(--glass-border)/0.24)_inset,0_0_24px_-14px_hsl(var(--primary)/0.72)]">
                 <LogoMark className="h-7 w-7 drop-shadow-[0_0_10px_hsl(var(--primary)/0.22)]" />
               </span>
               <span className="hidden min-w-0 font-semibold tracking-tight text-white/95 xs:block">

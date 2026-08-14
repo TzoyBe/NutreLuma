@@ -1,0 +1,3 @@
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'MEAL_REMINDER';
+
+ALTER TABLE "notifications" ADD COLUMN "emailedAt" TIMESTAMP(3);

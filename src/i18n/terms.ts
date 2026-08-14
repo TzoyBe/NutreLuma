@@ -14,7 +14,7 @@
 
 export const termsEl = {
   title: 'Όροι Χρήσης',
-  lastUpdated: 'Τελευταία ενημέρωση: 6 Αυγούστου 2026',
+  lastUpdated: 'Τελευταία ενημέρωση: 14 Αυγούστου 2026',
   intro:
     'Διάβασέ τους προσεκτικά. Περιγράφουν τι κάνει η εφαρμογή, τι ΔΕΝ κάνει, και ποιος φέρει την ευθύνη για τη χρήση της.',
   acceptLabel: 'Έχω διαβάσει και αποδέχομαι τους Όρους Χρήσης',
@@ -55,15 +55,15 @@ export const termsEl = {
 
   s9Title: '9. Συνδρομή και πληρωμές',
   s9Body:
-    'Η συνδρομή κοστίζει 3,00 € τον μήνα και δίνει πρόσβαση για έναν μήνα από την πληρωμή. Οι πληρωμές με κάρτα διεκπεραιώνονται αποκλειστικά από τη Stripe. Δεν βλέπουμε, δεν αποθηκεύουμε και δεν επεξεργαζόμαστε ποτέ στοιχεία κάρτας. Για την ίδια τη συναλλαγή ισχύουν παράλληλα και οι όροι της Stripe.',
+    'Η υπηρεσία προσφέρει μηνιαία συνδρομή 2,99 € και ετήσια συνδρομή 19,99 €. Στο πλαίσιο της τρέχουσας προωθητικής ενέργειας, η ετήσια συνδρομή περιλαμβάνει 1 επιπλέον μήνα δώρο. Η πρόσβαση ενεργοποιείται μετά την επιβεβαίωση της πληρωμής. Οι πληρωμές με κάρτα διεκπεραιώνονται αποκλειστικά από τη Stripe και οι πληρωμές με PayPal από την PayPal. Δεν βλέπουμε, δεν αποθηκεύουμε και δεν επεξεργαζόμαστε ποτέ στοιχεία κάρτας ή PayPal. Για την ίδια τη συναλλαγή ισχύουν παράλληλα και οι όροι του αντίστοιχου παρόχου πληρωμών.',
 
   s10Title: '10. Αυτόματη ανανέωση και ακύρωση',
   s10Body:
-    'Αν ενεργοποιήσεις την αυτόματη ανανέωση, η συνδρομή ανανεώνεται κάθε μήνα μέχρι να την ακυρώσεις. Μπορείς να ακυρώσεις οποιαδήποτε στιγμή από τη σελίδα «Συνδρομή», χωρίς αιτιολόγηση και χωρίς ποινή. Η ακύρωση ισχύει στο τέλος της τρέχουσας περιόδου και διατηρείς πρόσβαση μέχρι τότε.',
+    'Αν ενεργοποιήσεις την αυτόματη ανανέωση, η συνδρομή ανανεώνεται σύμφωνα με το πλάνο που επέλεξες, μηνιαίο ή ετήσιο, μέχρι να την ακυρώσεις. Μπορείς να ακυρώσεις οποιαδήποτε στιγμή από τη σελίδα «Συνδρομή», χωρίς αιτιολόγηση και χωρίς ποινή. Μετά την ακύρωση η συνδρομή δεν ανανεώνεται, αλλά διατηρείς πλήρη πρόσβαση μέχρι την ημερομηνία λήξης της ήδη πληρωμένης περιόδου.',
 
   s11Title: '11. Επιστροφές χρημάτων',
   s11Body:
-    'Πέραν όσων σου παρέχει αναγκαστικά η νομοθεσία προστασίας καταναλωτή, ποσά που έχουν ήδη καταβληθεί δεν επιστρέφονται και δεν υπολογίζονται αναλογικά σε περίπτωση πρόωρης ακύρωσης. Η δωρεάν δοκιμαστική περίοδος υπάρχει ακριβώς για να αξιολογήσεις την υπηρεσία πριν πληρώσεις.',
+    'Δεν παρέχονται επιστροφές χρημάτων για πληρωμένες συνδρομές, εκτός αν κάτι διαφορετικό επιβάλλεται αναγκαστικά από την ισχύουσα νομοθεσία προστασίας καταναλωτή. Ποσά που έχουν ήδη καταβληθεί δεν επιστρέφονται και δεν υπολογίζονται αναλογικά σε περίπτωση πρόωρης ακύρωσης. Η δωρεάν δοκιμαστική περίοδος υπάρχει ακριβώς για να αξιολογήσεις την υπηρεσία πριν πληρώσεις.',
 
   s12Title: '12. Διαθεσιμότητα της υπηρεσίας',
   s12Body:
@@ -104,7 +104,7 @@ export const termsEl = {
 
 export const termsEn: Record<keyof typeof termsEl, string> = {
   title: 'Terms of Use',
-  lastUpdated: 'Last updated: 6 August 2026',
+  lastUpdated: 'Last updated: 14 August 2026',
   intro:
     'Please read carefully. These terms describe what the app does, what it does NOT do, and who bears responsibility for its use.',
   acceptLabel: 'I have read and accept the Terms of Use',
@@ -145,15 +145,15 @@ export const termsEn: Record<keyof typeof termsEl, string> = {
 
   s9Title: '9. Subscription and payments',
   s9Body:
-    'The subscription costs \u20AC2.99 per month and grants access for one month from payment. Card payments are processed exclusively by Stripe. We never see, store or process card details. Stripe\'s own terms apply to the transaction itself.',
+    'The service offers a monthly subscription for \u20AC2.99 and a yearly subscription for \u20AC19.99. As part of the current promotion, the yearly subscription includes 1 additional month free. Access is activated after payment is confirmed. Card payments are processed by Stripe and PayPal payments by PayPal. We never see, store or process card or PayPal payment details. The payment provider\'s own terms also apply to the transaction itself.',
 
   s10Title: '10. Auto-renewal and cancellation',
   s10Body:
-    'If you enable auto-renewal, the subscription renews monthly until you cancel it. You may cancel at any time from the Subscription page, without giving a reason and without penalty. Cancellation takes effect at the end of the current period, and you keep access until then.',
+    'If you enable auto-renewal, the subscription renews according to the plan you selected, monthly or yearly, until you cancel it. You may cancel at any time from the Subscription page, without giving a reason and without penalty. After cancellation the subscription will not renew, but you keep full access until the expiration date of the already paid period.',
 
   s11Title: '11. Refunds',
   s11Body:
-    'Beyond what mandatory consumer protection law grants you, amounts already paid are non-refundable and are not pro-rated on early cancellation. The free trial exists precisely so that you can evaluate the service before paying.',
+    'No refunds are provided for paid subscriptions, unless a different outcome is mandatorily required by applicable consumer protection law. Amounts already paid are non-refundable and are not pro-rated on early cancellation. The free trial exists precisely so that you can evaluate the service before paying.',
 
   s12Title: '12. Service availability',
   s12Body:

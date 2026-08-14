@@ -204,6 +204,7 @@ enum NotificationType {
   MILESTONE_PROGRESS
   ACHIEVEMENT_UNLOCKED
   BADGE_UNLOCKED
+  MEAL_REMINDER
 }
 
 enum ActivityKind {
@@ -221,6 +222,7 @@ model User {
   displayName      String
   role             Role      @default(USER)
   consentAcceptedAt DateTime?
+  emailVerifiedAt DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -243,6 +245,7 @@ model User {
   payments       Payment[]
   nutritionGoals NutritionGoal[]
   passwordResets PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
   authIdentities AuthIdentity[]
   favoriteMeals  FavoriteMeal[]
   milestones       Milestone[]
@@ -309,6 +312,27 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+/**
+ * One-time email verification link for password signups.
+ *
+ * Stores only the SHA-256 hash of the token, never the raw token. Existing users are
+ * marked verified by the migration so only new password signups have to confirm email.
+ */
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
 }
 
 model HealthProfile {
@@ -824,6 +848,7 @@ model Notification {
   title       String
   body        String
   readAt      DateTime?
+  emailedAt   DateTime?
   milestoneId String?
   dedupeKey   String?
   createdAt   DateTime         @default(now())

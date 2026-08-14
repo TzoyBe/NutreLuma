@@ -1,7 +1,13 @@
 import 'server-only';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db/prisma';
-import { env, paypalConfigured, stripeConfigured } from '../env';
+import {
+  env,
+  paypalConfigured,
+  paypalYearlyConfigured,
+  stripeConfigured,
+  stripeYearlyConfigured,
+} from '../env';
 import { ApiError } from '../errors';
 import { logger } from '../logger';
 import {
@@ -256,7 +262,12 @@ export async function attachPayPalSubscription(
   const remote = await getPayPalSubscription(subscriptionId);
 
   // 1. Η συνδρομή πρέπει να αφορά ΤΟ δικό μας πλάνο.
-  if (remote.planId !== env.PAYPAL_PLAN_ID) {
+  const allowedPayPalPlanIds = [
+    env.PAYPAL_PLAN_ID,
+    env.PAYPAL_YEARLY_PLAN_ID,
+    env.PAYPAL_COUPON_PLAN_ID,
+  ].filter(Boolean);
+  if (!remote.planId || !allowedPayPalPlanIds.includes(remote.planId)) {
     logger.warn('paypal_plan_mismatch', { userId, planId: remote.planId });
     throw new ApiError('FORBIDDEN', 'Η συνδρομή δεν αντιστοιχεί σε αυτή την υπηρεσία.');
   }
@@ -354,6 +365,17 @@ export interface BillingOverview {
   status: string;
   provider: string | null;
   priceCents: number;
+  originalPriceCents: number;
+  discountPercent: number;
+  couponPriceCents: number;
+  couponDiscountPercent: number;
+  paypalCouponPlanId: string | null;
+  yearlyPriceCents: number;
+  yearlyOriginalPriceCents: number;
+  yearlyDiscountPercent: number;
+  stripeYearlyAvailable: boolean;
+  paypalYearlyAvailable: boolean;
+  paypalYearlyPlanId: string | null;
   stripeAvailable: boolean;
   paypalAvailable: boolean;
   /** Δημόσιο εκ σχεδιασμού: μπαίνει στο JS SDK του browser. */
@@ -380,9 +402,27 @@ export async function getBillingOverview(userId: string): Promise<BillingOvervie
     status: subscription?.status ?? 'EXPIRED',
     provider: subscription?.provider ?? null,
     priceCents: env.SUBSCRIPTION_PRICE_CENTS,
+    originalPriceCents: env.SUBSCRIPTION_ORIGINAL_PRICE_CENTS,
+    discountPercent: env.SUBSCRIPTION_DISCOUNT_PERCENT,
+    couponPriceCents: env.SUBSCRIPTION_COUPON_PRICE_CENTS,
+    couponDiscountPercent: 50,
+    paypalCouponPlanId: env.PAYPAL_COUPON_PLAN_ID || null,
+    yearlyPriceCents: env.SUBSCRIPTION_YEARLY_PRICE_CENTS,
+    yearlyOriginalPriceCents: env.SUBSCRIPTION_YEARLY_ORIGINAL_PRICE_CENTS,
+    yearlyDiscountPercent: Math.max(
+      0,
+      Math.round(
+        100 -
+          (env.SUBSCRIPTION_YEARLY_PRICE_CENTS / env.SUBSCRIPTION_YEARLY_ORIGINAL_PRICE_CENTS) *
+            100,
+      ),
+    ),
+    stripeYearlyAvailable: stripeYearlyConfigured,
+    paypalYearlyAvailable: paypalYearlyConfigured,
+    paypalYearlyPlanId: paypalYearlyConfigured ? env.PAYPAL_YEARLY_PLAN_ID : null,
     stripeAvailable: stripeConfigured,
     paypalAvailable: paypalConfigured,
-    paypalClientId: paypalConfigured ? env.PAYPAL_CLIENT_ID : null,
+    paypalClientId: paypalConfigured || paypalYearlyConfigured ? env.PAYPAL_CLIENT_ID : null,
     paypalPlanId: paypalConfigured ? env.PAYPAL_PLAN_ID : null,
     payments: payments.map((payment) => ({
       id: payment.id,

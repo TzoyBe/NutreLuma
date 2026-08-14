@@ -4,67 +4,67 @@
 
 @layer base {
   :root {
-    --background: 206 34% 7%;
-    --foreground: 192 22% 95%;
-    --card: 202 24% 11%;
-    --card-foreground: 192 22% 95%;
-    --primary: 170 74% 50%;
-    --primary-foreground: 198 48% 7%;
-    --secondary: 202 22% 15%;
-    --secondary-foreground: 192 18% 92%;
-    --muted: 201 18% 15%;
-    --muted-foreground: 190 12% 75%;
-    /* Joybee Bee Yellow #FFB703 */
+    --background: 225 49% 8%;
+    --foreground: 220 20% 96%;
+    --card: 225 42% 12%;
+    --card-foreground: 220 20% 96%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 36% 16%;
+    --secondary-foreground: 220 18% 93%;
+    --muted: 224 30% 16%;
+    --muted-foreground: 220 12% 76%;
+    /* Joybee Yellow #FFB703 */
     --accent: 43 100% 51%;
     --accent-foreground: 225 45% 9%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 199 18% 21%;
-    --input: 199 18% 21%;
-    --ring: 170 74% 50%;
+    --border: 224 24% 23%;
+    --input: 224 24% 23%;
+    --ring: 221 83% 53%;
     --radius: 1.25rem;
 
-    --glass-bg: 203 28% 12%;
-    --glass-tint: 201 34% 15%;
+    --glass-bg: 225 42% 12%;
+    --glass-tint: 224 39% 16%;
     --glass-opacity: 0.78;
-    --glass-border: 190 42% 82%;
+    --glass-border: 220 80% 86%;
     --glass-border-opacity: 0.18;
-    --glass-shadow: 210 58% 2%;
+    --glass-shadow: 225 58% 3%;
     --glass-blur: 28px;
     --glass-saturate: 180%;
-    --liquid-edge: 184 72% 72%;
-    --liquid-depth: 205 68% 44%;
+    --liquid-edge: 262 83% 70%;
+    --liquid-depth: 160 84% 39%;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 210 36% 5%;
-      --foreground: 191 20% 96%;
-      --card: 206 24% 10%;
-      --card-foreground: 191 20% 96%;
-      --primary: 170 76% 52%;
-      --primary-foreground: 200 46% 7%;
-      --secondary: 205 22% 13%;
-      --secondary-foreground: 191 18% 92%;
-      --muted: 204 18% 13%;
-      --muted-foreground: 190 12% 74%;
-      /* Joybee Bee Yellow #FFB703 */
+      --background: 225 55% 6%;
+      --foreground: 220 20% 96%;
+      --card: 225 44% 10%;
+      --card-foreground: 220 20% 96%;
+      --primary: 221 83% 56%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 224 38% 14%;
+      --secondary-foreground: 220 18% 93%;
+      --muted: 224 32% 14%;
+      --muted-foreground: 220 12% 74%;
+      /* Joybee Yellow #FFB703 */
       --accent: 43 100% 51%;
       --accent-foreground: 225 45% 9%;
       --destructive: 0 62% 52%;
       --destructive-foreground: 0 0% 100%;
-      --border: 201 18% 18%;
-      --input: 201 18% 18%;
-      --ring: 170 76% 52%;
+      --border: 224 24% 20%;
+      --input: 224 24% 20%;
+      --ring: 221 83% 56%;
 
-      --glass-bg: 205 28% 10%;
-      --glass-tint: 204 30% 13%;
+      --glass-bg: 225 44% 10%;
+      --glass-tint: 224 40% 14%;
       --glass-opacity: 0.82;
-      --glass-border: 191 38% 84%;
+      --glass-border: 220 80% 86%;
       --glass-border-opacity: 0.16;
-      --glass-shadow: 212 64% 2%;
-      --liquid-edge: 185 74% 74%;
-      --liquid-depth: 207 62% 41%;
+      --glass-shadow: 225 64% 2%;
+      --liquid-edge: 262 83% 70%;
+      --liquid-depth: 160 84% 39%;
     }
   }
 
@@ -86,8 +86,9 @@
     font-feature-settings: 'kern' 1, 'liga' 1, 'tnum' 0;
     text-rendering: optimizeLegibility;
     background:
-      radial-gradient(circle at top center, hsl(var(--primary) / 0.08), transparent 24%),
-      linear-gradient(118deg, hsl(215 38% 4%) 0%, hsl(var(--background)) 36%, hsl(204 34% 7%) 100%),
+      radial-gradient(circle at top center, hsl(var(--accent) / 0.08), transparent 24%),
+      radial-gradient(circle at 82% 12%, hsl(var(--primary) / 0.16), transparent 28%),
+      linear-gradient(118deg, hsl(225 58% 4%) 0%, hsl(var(--background)) 36%, hsl(225 49% 8%) 100%),
       linear-gradient(180deg, hsl(var(--primary) / 0.08), transparent 34%),
       linear-gradient(90deg, transparent 10%, hsl(var(--liquid-depth) / 0.08) 52%, transparent 100%);
   }
@@ -214,6 +215,75 @@
   .tour-draw,
   .tour-grow {
     animation: none;
+  }
+}
+
+/* ---------- Landing showcase ---------- */
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.6rem);
+  }
+}
+
+@keyframes landing-scan {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  12%,
+  84% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(13rem);
+    opacity: 0;
+  }
+}
+
+@keyframes landing-meter {
+  0%,
+  100% {
+    width: 54%;
+  }
+  50% {
+    width: 74%;
+  }
+}
+
+.landing-phone {
+  animation: landing-float 6s ease-in-out infinite;
+}
+
+.landing-float-card {
+  animation: landing-float 5.4s ease-in-out infinite;
+}
+
+.landing-float-card-alt {
+  animation-delay: 1.4s;
+}
+
+.landing-scan-line {
+  animation: landing-scan 2.8s ease-in-out infinite;
+}
+
+.landing-meter {
+  animation: landing-meter 3.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-phone,
+  .landing-float-card,
+  .landing-scan-line,
+  .landing-meter {
+    animation: none;
+  }
+
+  .landing-meter {
+    width: 68%;
   }
 }
 

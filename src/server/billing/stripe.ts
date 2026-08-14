@@ -1,5 +1,5 @@
 import 'server-only';
-import { env, STRIPE_API_BASE, stripeConfigured } from '../env';
+import { env, STRIPE_API_BASE } from '../env';
 
 /** Σφάλμα παρόχου. Το `detail` μένει ΜΟΝΟ στα server logs, ποτέ στον client. */
 export class StripeError extends Error {
@@ -45,8 +45,8 @@ async function call(
   path: string,
   init: { method: 'GET' | 'POST'; body?: Record<string, string | number | boolean> },
 ): Promise<unknown> {
-  if (!stripeConfigured) {
-    throw new StripeError('Stripe not configured', 'missing STRIPE_SECRET_KEY or STRIPE_PRICE_ID');
+  if (!env.STRIPE_SECRET_KEY) {
+    throw new StripeError('Stripe not configured', 'missing STRIPE_SECRET_KEY');
   }
 
   const response = await fetch(`${STRIPE_API_BASE}${path}`, {
@@ -76,12 +76,14 @@ export async function createCheckoutSession(
   userId: string,
   successUrl: string,
   cancelUrl: string,
+  promotionCodeId?: string | null,
+  priceId = env.STRIPE_PRICE_ID,
 ): Promise<{ id: string; url: string }> {
   const data = (await call('/v1/checkout/sessions', {
     method: 'POST',
     body: {
       mode: 'subscription',
-      'line_items[0][price]': env.STRIPE_PRICE_ID,
+      'line_items[0][price]': priceId,
       'line_items[0][quantity]': 1,
       // Δηλώνουμε ρητά κάρτα. Χωρίς αυτό το Stripe επιλέγει μόνο του μεθόδους
       // πληρωμής και απαντά 400 «No valid payment method types» όταν ο
@@ -95,6 +97,7 @@ export async function createCheckoutSession(
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
       locale: 'en',
+      ...(promotionCodeId ? { 'discounts[0][promotion_code]': promotionCodeId } : {}),
     },
   })) as { id: string; url?: string };
 

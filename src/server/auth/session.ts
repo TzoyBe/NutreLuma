@@ -1,5 +1,6 @@
 import 'server-only';
 import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { env } from '../env';
 import {
   createMobileAuthHandoffToken,
@@ -48,8 +49,13 @@ export async function clearSessionCookie(): Promise<void> {
 export async function readSession(): Promise<VerifiedSession | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  return verifySessionToken(token);
+  if (token) return verifySessionToken(token);
+
+  const headerStore = await headers();
+  const authorization = headerStore.get('authorization');
+  const bearer = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  if (!bearer) return null;
+  return verifySessionToken(bearer);
 }
 
 export {

@@ -26,17 +26,17 @@ export function LogoMark({
       {monochrome ? null : (
         <defs>
           <linearGradient id={gradientId} x1="8" y1="4" x2="40" y2="44" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#74F5D4" />
-            <stop offset="0.48" stopColor="#28C59E" />
-            <stop offset="1" stopColor="#117B69" />
+            <stop stopColor="#FFB703" />
+            <stop offset="0.45" stopColor="#2563EB" />
+            <stop offset="1" stopColor="#7C3AED" />
           </linearGradient>
         </defs>
       )}
 
-      {monochrome ? null : <circle cx="24" cy="24" r="19" fill="#07131B" opacity="0.92" />}
+      {monochrome ? null : <circle cx="24" cy="24" r="19" fill="#0B1020" opacity="0.92" />}
       <circle cx="24" cy="24" r="21" stroke={fill} strokeWidth="2.8" opacity={monochrome ? 1 : 0.88} />
       {monochrome ? null : (
-        <circle cx="24" cy="24" r="20.2" stroke="#D7FFF6" strokeWidth="0.8" opacity="0.22" />
+        <circle cx="24" cy="24" r="20.2" stroke="#F3F4F6" strokeWidth="0.8" opacity="0.22" />
       )}
 
       {[0, 90, 180, 270].map((angle) => (

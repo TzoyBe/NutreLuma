@@ -56,7 +56,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
     setLoading(true);
     try {
       await api.post('/api/auth/register', parsed.data);
-      router.replace('/onboarding');
+      router.replace(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiClientError) {

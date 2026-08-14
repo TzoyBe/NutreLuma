@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Pencil, Plus, Scale, Utensils } from 'lucide-react';
+import { Plus, Scale, Utensils } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getDashboard } from '@/server/services/stats';
@@ -78,32 +78,25 @@ export default async function DashboardPage({
       </div>
 
       {access.canWrite ? (
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="glass-subtle grid grid-cols-2 gap-1 rounded-[1.5rem] p-1">
           <Link
             href="/meals/add"
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.42)_inset,0_12px_26px_-14px_hsl(var(--primary)/0.95)] transition-colors hover:bg-primary/90"
+            className="flex h-[3.25rem] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1.15rem] bg-primary px-1.5 text-center text-[11px] font-semibold leading-[1.05] text-primary-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.42)_inset,0_12px_26px_-16px_hsl(var(--primary)/0.95)] transition-[background-color,box-shadow,transform] duration-200 hover:bg-primary/90 active:scale-[0.98] sm:h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm"
           >
-            <Plus className="h-5 w-5" aria-hidden="true" />
-            {t('dashboard.addMeal')}
-          </Link>
-          <Link
-            href="/meals/manual"
-            className="liquid-control flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition-colors hover:bg-[hsl(var(--glass-bg)/0.72)]"
-          >
-            <Pencil className="h-5 w-5" aria-hidden="true" />
-            {t('dashboard.addManual')}
+            <Plus className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />
+            <span className="max-w-full text-balance">{t('dashboard.addMeal')}</span>
           </Link>
           <Link
             href="/weight"
-            className="liquid-control flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition-colors hover:bg-[hsl(var(--glass-bg)/0.72)]"
+            className="flex h-[3.25rem] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,hsl(var(--glass-border)/0.12),hsl(var(--glass-bg)/0.28))] px-1.5 text-center text-[11px] font-semibold leading-[1.05] text-secondary-foreground shadow-[0_1px_0_hsl(var(--glass-border)/0.2)_inset] transition-[background-color,box-shadow,transform] duration-200 hover:bg-[hsl(var(--glass-border)/0.14)] active:scale-[0.98] sm:h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm"
           >
-            <Scale className="h-5 w-5" aria-hidden="true" />
-            {t('weight.addEntry')}
+            <Scale className="h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5" aria-hidden="true" />
+            <span className="max-w-full text-balance">{t('weight.addEntry')}</span>
           </Link>
         </div>
       ) : (
-        <div className="liquid-control flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold text-muted-foreground">
-          <Plus className="h-5 w-5" aria-hidden="true" />
+        <div className="liquid-control flex h-12 w-full items-center justify-center gap-2 rounded-[1.15rem] text-sm font-semibold text-muted-foreground sm:h-14 sm:rounded-full sm:text-base">
+          <Plus className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
           {t('billing.lockedAction')}
         </div>
       )}

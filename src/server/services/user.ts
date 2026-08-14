@@ -38,7 +38,14 @@ export async function createUser(input: Omit<RegisterInput, 'passwordConfirm' | 
 export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({
     where: { email: email.toLowerCase() },
-    select: { id: true, email: true, displayName: true, role: true, passwordHash: true },
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      role: true,
+      passwordHash: true,
+      emailVerifiedAt: true,
+    },
   });
 }
 
@@ -104,6 +111,7 @@ export async function findOrCreateUserFromGoogle(profile: GoogleIdentityProfile)
           displayName,
           passwordHash: placeholderPassword,
           consentAcceptedAt: new Date(),
+          emailVerifiedAt: new Date(),
           authIdentities: {
             create: {
               provider: 'GOOGLE',

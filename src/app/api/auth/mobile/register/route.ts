@@ -1,4 +1,4 @@
-import { assertSameOrigin, clientIp, jsonOk, withErrorHandling } from '@/server/http';
+import { clientIp, jsonOk, withErrorHandling } from '@/server/http';
 import { assertRegisterRateLimit } from '@/server/auth/rate-limit';
 import { createUser } from '@/server/services/user';
 import { sendEmailVerification } from '@/server/services/email-verification';
@@ -9,7 +9,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const POST = withErrorHandling(async (request: Request) => {
-  assertSameOrigin(request);
   await assertRegisterRateLimit(clientIp(request));
 
   const body = await request.json();
@@ -25,7 +24,10 @@ export const POST = withErrorHandling(async (request: Request) => {
   await sendEmailVerification(user.id, locale);
 
   return jsonOk(
-    { id: user.id, displayName: user.displayName, requiresEmailVerification: true },
+    {
+      user: { id: user.id, email: user.email, displayName: user.displayName, role: user.role },
+      requiresEmailVerification: true,
+    },
     201,
   );
 });

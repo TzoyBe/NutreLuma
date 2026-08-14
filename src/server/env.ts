@@ -49,15 +49,25 @@ const envSchema = z.object({
     .transform((v) => v !== 'false'),
   TRIAL_DAYS: intFromEnv(3),
   SUBSCRIPTION_GRACE_DAYS: intFromEnv(3),
+  SUBSCRIPTION_ORIGINAL_PRICE_CENTS: intFromEnv(399),
+  SUBSCRIPTION_DISCOUNT_PERCENT: intFromEnv(25),
   SUBSCRIPTION_PRICE_CENTS: intFromEnv(299),
+  SUBSCRIPTION_YEARLY_ORIGINAL_PRICE_CENTS: intFromEnv(3999),
+  SUBSCRIPTION_YEARLY_PRICE_CENTS: intFromEnv(1999),
+  SUBSCRIPTION_COUPON_CODES: z.string().optional().default(''),
+  SUBSCRIPTION_COUPON_PRICE_CENTS: intFromEnv(199),
   STRIPE_SECRET_KEY: z.string().optional().default(''),
   STRIPE_PRICE_ID: z.string().optional().default(''),
+  STRIPE_YEARLY_PRICE_ID: z.string().optional().default(''),
+  STRIPE_COUPON_PROMOTION_CODE_ID: z.string().optional().default(''),
 
   // Το client id είναι εκ σχεδιασμού δημόσιο (μπαίνει στο JS του browser).
   // Το secret ΔΕΝ φεύγει ποτέ από τον server.
   PAYPAL_CLIENT_ID: z.string().optional().default(''),
   PAYPAL_CLIENT_SECRET: z.string().optional().default(''),
   PAYPAL_PLAN_ID: z.string().optional().default(''),
+  PAYPAL_YEARLY_PLAN_ID: z.string().optional().default(''),
+  PAYPAL_COUPON_PLAN_ID: z.string().optional().default(''),
   PAYPAL_ENV: z.enum(['sandbox', 'live']).optional().default('sandbox'),
 
   // EMAIL_PROVIDER=log γράφει το μήνυμα στα logs αντί να το στείλει —
@@ -67,6 +77,7 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().optional().default(''),
   EMAIL_FROM_NAME: z.string().optional().default('NutreLuma'),
   PASSWORD_RESET_TTL_MINUTES: intFromEnv(60),
+  EMAIL_VERIFICATION_TTL_HOURS: intFromEnv(24),
 
   DEFAULT_DAILY_WATER_TARGET_ML: intFromEnv(2500),
 
@@ -115,18 +126,29 @@ function load() {
     BILLING_ENABLED: process.env.BILLING_ENABLED,
     TRIAL_DAYS: process.env.TRIAL_DAYS,
     SUBSCRIPTION_GRACE_DAYS: process.env.SUBSCRIPTION_GRACE_DAYS,
+    SUBSCRIPTION_ORIGINAL_PRICE_CENTS: process.env.SUBSCRIPTION_ORIGINAL_PRICE_CENTS,
+    SUBSCRIPTION_DISCOUNT_PERCENT: process.env.SUBSCRIPTION_DISCOUNT_PERCENT,
     SUBSCRIPTION_PRICE_CENTS: process.env.SUBSCRIPTION_PRICE_CENTS,
+    SUBSCRIPTION_YEARLY_ORIGINAL_PRICE_CENTS: process.env.SUBSCRIPTION_YEARLY_ORIGINAL_PRICE_CENTS,
+    SUBSCRIPTION_YEARLY_PRICE_CENTS: process.env.SUBSCRIPTION_YEARLY_PRICE_CENTS,
+    SUBSCRIPTION_COUPON_CODES: process.env.SUBSCRIPTION_COUPON_CODES,
+    SUBSCRIPTION_COUPON_PRICE_CENTS: process.env.SUBSCRIPTION_COUPON_PRICE_CENTS,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
+    STRIPE_YEARLY_PRICE_ID: process.env.STRIPE_YEARLY_PRICE_ID,
+    STRIPE_COUPON_PROMOTION_CODE_ID: process.env.STRIPE_COUPON_PROMOTION_CODE_ID,
     PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID,
     PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET,
     PAYPAL_PLAN_ID: process.env.PAYPAL_PLAN_ID,
+    PAYPAL_YEARLY_PLAN_ID: process.env.PAYPAL_YEARLY_PLAN_ID,
+    PAYPAL_COUPON_PLAN_ID: process.env.PAYPAL_COUPON_PLAN_ID,
     PAYPAL_ENV: process.env.PAYPAL_ENV,
     EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
     EMAIL_API_KEY: process.env.EMAIL_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
     EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME,
     PASSWORD_RESET_TTL_MINUTES: process.env.PASSWORD_RESET_TTL_MINUTES,
+    EMAIL_VERIFICATION_TTL_HOURS: process.env.EMAIL_VERIFICATION_TTL_HOURS,
     DEFAULT_DAILY_WATER_TARGET_ML: process.env.DEFAULT_DAILY_WATER_TARGET_ML,
     DEFAULT_LOCALE: process.env.DEFAULT_LOCALE,
     DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE,
@@ -163,6 +185,9 @@ export const googleAuthConfigured =
 export const stripeConfigured =
   env.STRIPE_SECRET_KEY.length > 0 && env.STRIPE_PRICE_ID.length > 0;
 
+export const stripeYearlyConfigured =
+  env.STRIPE_SECRET_KEY.length > 0 && env.STRIPE_YEARLY_PRICE_ID.length > 0;
+
 /**
  * Το πρόθεμα του κλειδιού ΕΙΝΑΙ ο διακόπτης περιβάλλοντος — δεν υπάρχει άλλη
  * ρύθμιση που μπορείς να ξεχάσεις να αλλάξεις.
@@ -180,6 +205,11 @@ export const paypalConfigured =
   env.PAYPAL_CLIENT_ID.length > 0 &&
   env.PAYPAL_CLIENT_SECRET.length > 0 &&
   env.PAYPAL_PLAN_ID.length > 0;
+
+export const paypalYearlyConfigured =
+  env.PAYPAL_CLIENT_ID.length > 0 &&
+  env.PAYPAL_CLIENT_SECRET.length > 0 &&
+  env.PAYPAL_YEARLY_PLAN_ID.length > 0;
 
 export const paypalIsLive = env.PAYPAL_ENV === 'live';
 
