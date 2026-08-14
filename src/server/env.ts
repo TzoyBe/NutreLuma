@@ -78,6 +78,7 @@ const envSchema = z.object({
   EMAIL_FROM_NAME: z.string().optional().default('NutreLuma'),
   PASSWORD_RESET_TTL_MINUTES: intFromEnv(60),
   EMAIL_VERIFICATION_TTL_HOURS: intFromEnv(24),
+  EXPO_ACCESS_TOKEN: z.string().optional().default(''),
 
   DEFAULT_DAILY_WATER_TARGET_ML: intFromEnv(2500),
 
@@ -149,6 +150,7 @@ function load() {
     EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME,
     PASSWORD_RESET_TTL_MINUTES: process.env.PASSWORD_RESET_TTL_MINUTES,
     EMAIL_VERIFICATION_TTL_HOURS: process.env.EMAIL_VERIFICATION_TTL_HOURS,
+    EXPO_ACCESS_TOKEN: process.env.EXPO_ACCESS_TOKEN,
     DEFAULT_DAILY_WATER_TARGET_ML: process.env.DEFAULT_DAILY_WATER_TARGET_ML,
     DEFAULT_LOCALE: process.env.DEFAULT_LOCALE,
     DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE,

@@ -6,6 +6,7 @@ import { ApiError } from '../errors';
 import { logger } from '../logger';
 import { sendEmail } from '../email';
 import { buildNotificationEmail } from '../email/templates';
+import { sendPushNotificationForNotification } from './push-notifications';
 import { todayISO, zonedDayRangeUtc } from '@/lib/dates';
 
 export interface NotificationView {
@@ -17,6 +18,7 @@ export interface NotificationView {
   dedupeKey: string | null;
   readAt: string | null;
   emailedAt: string | null;
+  pushedAt: string | null;
   createdAt: string;
 }
 
@@ -37,6 +39,7 @@ function toView(row: {
   dedupeKey: string | null;
   readAt: Date | null;
   emailedAt: Date | null;
+  pushedAt: Date | null;
   createdAt: Date;
 }): NotificationView {
   return {
@@ -48,6 +51,7 @@ function toView(row: {
     dedupeKey: row.dedupeKey,
     readAt: row.readAt ? row.readAt.toISOString() : null,
     emailedAt: row.emailedAt ? row.emailedAt.toISOString() : null,
+    pushedAt: row.pushedAt ? row.pushedAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -75,6 +79,9 @@ export async function createNotification(
         update: {},
       })
     : await prisma.notification.create({ data });
+  if (!row.pushedAt) {
+    void sendPushNotificationForNotification(row.id);
+  }
   return toView(row);
 }
 
@@ -176,6 +183,10 @@ export async function ensureMealReminderNotifications(userId: string): Promise<v
       },
       update: {},
     });
+
+    if (!notification.pushedAt) {
+      void sendPushNotificationForNotification(notification.id);
+    }
 
     if (notification.emailedAt || !profile.user.emailVerifiedAt) continue;
 

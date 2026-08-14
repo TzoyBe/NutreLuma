@@ -252,6 +252,7 @@ model User {
   userAchievements UserAchievement[]
   userBadges       UserBadge[]
   notifications    Notification[]
+  pushTokens       PushToken[]
   waterEntries     WaterEntry[]
   activityEntries  ActivityEntry[]
   calibrationFacts UserCalibrationFact[]
@@ -849,6 +850,7 @@ model Notification {
   body        String
   readAt      DateTime?
   emailedAt   DateTime?
+  pushedAt    DateTime?
   milestoneId String?
   dedupeKey   String?
   createdAt   DateTime         @default(now())
@@ -862,6 +864,23 @@ model Notification {
 }
 
 /** Καταγραφή νερού. Πολλές εγγραφές ανά ημέρα· αθροίζονται. */
+model PushToken {
+  id         String    @id @default(cuid())
+  userId     String
+  token      String    @unique
+  platform   String?
+  deviceName String?
+  disabledAt DateTime?
+  lastError  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, disabledAt])
+  @@map("push_tokens")
+}
+
 model WaterEntry {
   id        String   @id @default(cuid())
   userId    String
