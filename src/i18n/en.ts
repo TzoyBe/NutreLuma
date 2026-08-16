@@ -185,6 +185,11 @@ export const en: Translations = {
   },
   dashboard: {
     title: 'Your dashboard',
+    today: 'Today',
+    day: 'That day',
+    targets: 'Targets',
+    water: 'Water',
+    steps: 'Steps',
     todayCalories: 'Calories today',
     dayCalories: 'Calories for the day',
     todayProgress: "Today's progress",

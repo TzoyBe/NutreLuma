@@ -5,7 +5,10 @@ import { Plus, Scale, Utensils } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getDashboard } from '@/server/services/stats';
+import { waterMlByDay } from '@/server/services/water';
+import { stepsByDay } from '@/server/services/activity';
 import { getAccessState } from '@/server/services/subscription';
+import { ActivityGauges } from '@/components/dashboard/activity-gauges';
 import { SubscriptionBanner } from '@/components/billing/subscription-banner';
 import { dayISOSchema } from '@/lib/validation/meal';
 import { formatDateInTz, formatDayISOHuman, formatTimeInTz, todayISO } from '@/lib/dates';
@@ -40,12 +43,16 @@ export default async function DashboardPage({
   const parsedDate = dayISOSchema.safeParse(params.date);
   const date = parsedDate.success && parsedDate.data <= today ? parsedDate.data : today;
 
-  const [{ summary, macros, meals, drafts }, access] = await Promise.all([
+  const [{ summary, macros, meals, drafts, goal }, access, waterByDay, stepsMap] = await Promise.all([
     getDashboard(user.id, date),
     getAccessState(user.id),
+    waterMlByDay(user.id, date, date),
+    stepsByDay(user.id, date, date),
   ]);
 
   const isToday = date === today;
+  const waterMl = waterByDay.get(date) ?? 0;
+  const steps = stepsMap.get(date) ?? 0;
   const mealCard = (meal: (typeof meals)[number] | (typeof drafts)[number]) => (
     <MealCard
       key={meal.id}
@@ -181,6 +188,22 @@ export default async function DashboardPage({
           </Card>
         </div>
       </section>
+
+      <ActivityGauges
+        date={date}
+        isToday={isToday}
+        waterMl={waterMl}
+        steps={steps}
+        goal={{
+          calorieTarget: goal.calorieTarget,
+          proteinGrams: goal.proteinGrams,
+          carbohydrateGrams: goal.carbohydrateGrams,
+          fatGrams: goal.fatGrams,
+          fiberGrams: goal.fiberGrams,
+          waterMl: goal.waterMl,
+          stepsTarget: goal.stepsTarget,
+        }}
+      />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

@@ -193,6 +193,11 @@ export const el = {
   },
   dashboard: {
     title: 'Ο πίνακάς σου',
+    today: 'Σήμερα',
+    day: 'Εκείνη τη μέρα',
+    targets: 'Στόχοι',
+    water: 'Νερό',
+    steps: 'Βήματα',
     todayCalories: 'Θερμίδες σήμερα',
     dayCalories: 'Θερμίδες ημέρας',
     todayProgress: 'Η πρόοδός σου σήμερα',
