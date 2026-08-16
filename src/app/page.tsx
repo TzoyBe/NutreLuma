@@ -81,12 +81,12 @@ export default async function LandingPage() {
       <main id="main">
         <section className="relative min-h-[92dvh] overflow-hidden pt-28">
           <Image
-            src="/og.png"
+            src="/brand/hero.png"
             alt=""
             fill
             priority
             sizes="100vw"
-            className="pointer-events-none object-cover opacity-[0.12]"
+            className="pointer-events-none object-cover opacity-[0.16]"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.72),hsl(var(--background)/0.96)_78%,hsl(var(--background)))]" />
 

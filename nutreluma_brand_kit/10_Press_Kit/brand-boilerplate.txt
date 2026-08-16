@@ -1,0 +1,4 @@
+Nutreluma is an AI-powered nutrition and progress-tracking product designed to become more personal over time. It helps users understand meals, track calories and macronutrients, follow goals, and turn nutrition data into practical insights. Nutreluma is a Joybee Digital product.
+
+Tagline: Nutrition that learns you.
+Website: nutreluma.com

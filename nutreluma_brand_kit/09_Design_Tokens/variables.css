@@ -1,0 +1,32 @@
+:root {
+  --nl-navy: #0B1020;
+  --nl-navy-2: #11182E;
+  --nl-surface: #151D35;
+  --nl-surface-2: #1A2442;
+  --nl-blue: #2563EB;
+  --nl-blue-bright: #3B6FF5;
+  --nl-purple: #7C3AED;
+  --nl-violet: #6746E8;
+  --nl-gold: #FFB703;
+  --nl-gold-soft: #D8AA48;
+  --nl-teal: #10B981;
+  --nl-cyan: #2DD4BF;
+  --nl-light: #F3F4F6;
+  --nl-muted: #AAB3C5;
+  --nl-white: #FFFFFF;
+
+  --nl-calories: #3B6FF5;
+  --nl-protein: #38BDF8;
+  --nl-carbs: #FFB703;
+  --nl-fat: #A855F7;
+  --nl-fibre: #10B981;
+
+  --nl-gradient-signature: linear-gradient(135deg,#FFB703 0%,#2563EB 52%,#7C3AED 100%);
+  --nl-gradient-blue-violet: linear-gradient(135deg,#2563EB 0%,#7C3AED 100%);
+
+  --nl-font-heading: "Sora", sans-serif;
+  --nl-font-body: "Inter", sans-serif;
+  --nl-radius-card: 24px;
+  --nl-radius-control: 16px;
+  --nl-shadow-brand: 0 18px 50px rgba(37,99,235,.18);
+}

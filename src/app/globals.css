@@ -24,6 +24,16 @@
     --ring: 221 83% 53%;
     --radius: 1.25rem;
 
+    /* Brand kit v2 — personalization / premium accents */
+    --brand-purple: 262 83% 58%; /* #7C3AED */
+    --brand-violet: 252 77% 59%; /* #6746E8 */
+    /* Nutrition data colors — fixed semantics across the product */
+    --nutrition-calories: 222 90% 60%; /* #3B6FF5 */
+    --nutrition-protein: 199 92% 60%; /* #38BDF8 */
+    --nutrition-carbs: 43 100% 51%; /* #FFB703 */
+    --nutrition-fat: 270 91% 65%; /* #A855F7 */
+    --nutrition-fibre: 160 84% 39%; /* #10B981 */
+
     --glass-bg: 225 42% 12%;
     --glass-tint: 224 39% 16%;
     --glass-opacity: 0.78;

@@ -139,7 +139,7 @@ export default async function DashboardPage({
                 consumed={macros.protein.consumed}
                 target={macros.protein.target}
                 over={macros.protein.overTarget}
-                color="hsl(168 76% 55%)"
+                color="#38BDF8"
               />
             </CardContent>
           </Card>
@@ -151,7 +151,7 @@ export default async function DashboardPage({
                 consumed={macros.carbohydrate.consumed}
                 target={macros.carbohydrate.target}
                 over={macros.carbohydrate.overTarget}
-                color="hsl(32 92% 60%)"
+                color="#FFB703"
               />
             </CardContent>
           </Card>
@@ -163,7 +163,7 @@ export default async function DashboardPage({
                 consumed={macros.fat.consumed}
                 target={macros.fat.target}
                 over={macros.fat.overTarget}
-                color="hsl(291 64% 68%)"
+                color="#A855F7"
               />
             </CardContent>
           </Card>
@@ -175,7 +175,7 @@ export default async function DashboardPage({
                 consumed={macros.fiber.consumed}
                 target={macros.fiber.target}
                 over={macros.fiber.overTarget}
-                color="hsl(142 62% 52%)"
+                color="#10B981"
               />
             </CardContent>
           </Card>
