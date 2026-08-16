@@ -38,6 +38,13 @@ export const setGoalSchema = z.object({
     .max(8000, 'Ο στόχος νερού είναι μη ρεαλιστικά υψηλός.')
     .nullable()
     .optional(),
+  stepsTarget: z.coerce
+    .number({ invalid_type_error: 'Η τιμή πρέπει να είναι αριθμός.' })
+    .int()
+    .min(1000, 'Ο στόχος βημάτων είναι μη ρεαλιστικά χαμηλός.')
+    .max(100000, 'Ο στόχος βημάτων είναι μη ρεαλιστικά υψηλός.')
+    .nullable()
+    .optional(),
 });
 
 export type SetGoalInput = z.infer<typeof setGoalSchema>;

@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   Check,
   ChevronRight,
-  Droplets,
-  Footprints,
   Pause,
   Plus,
   Sparkles,
@@ -118,9 +116,6 @@ export function AchievementsPanel({
   const [targetValue, setTargetValue] = React.useState('5');
   const [dailyThreshold, setDailyThreshold] = React.useState('');
   const [endDate, setEndDate] = React.useState('');
-  const [waterMl, setWaterMl] = React.useState('250');
-  const [steps, setSteps] = React.useState('');
-  const [durationMin, setDurationMin] = React.useState('');
 
   const activeMilestones = milestones.filter((milestone) => milestone.status === 'ACTIVE');
   const unlockedAchievements = achievements.filter((achievement) => achievement.unlocked);
@@ -173,99 +168,6 @@ export function AchievementsPanel({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(25rem,0.8fr)]">
         <div className="space-y-5">
-          <Card id="milestones">
-            <CardHeader>
-              <CardTitle>{t('achievements.today')}</CardTitle>
-              <CardDescription>{t('achievements.quickLog')}</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <form
-                className="rounded-lg border border-border p-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void run(
-                    'water',
-                    () => api.post('/api/water', { entryDate: today, volumeMl: Number(waterMl) }),
-                    t('achievements.loggedWater'),
-                  );
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <Droplets className="h-5 w-5 text-primary" aria-hidden="true" />
-                  <p className="font-medium">{t('achievements.water')}</p>
-                </div>
-                <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-                  <Input
-                    aria-label={t('achievements.waterMl')}
-                    type="number"
-                    min={1}
-                    value={waterMl}
-                    onChange={(event) => setWaterMl(event.target.value)}
-                  />
-                  <Button type="submit" loading={busy === 'water'}>
-                    {t('common.save')}
-                  </Button>
-                </div>
-                <div className="mt-2 flex gap-2">
-                  {[250, 500, 750].map((amount) => (
-                    <button
-                      key={amount}
-                      type="button"
-                      className="rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-muted"
-                      onClick={() => setWaterMl(String(amount))}
-                    >
-                      {amount} ml
-                    </button>
-                  ))}
-                </div>
-              </form>
-
-              <form
-                className="rounded-lg border border-border p-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void run(
-                    'activity',
-                    () =>
-                      api.post('/api/activity', {
-                        entryDate: today,
-                        kind: 'WALK',
-                        steps: steps ? Number(steps) : undefined,
-                        durationMin: durationMin ? Number(durationMin) : undefined,
-                      }),
-                    t('achievements.loggedActivity'),
-                  );
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <Footprints className="h-5 w-5 text-primary" aria-hidden="true" />
-                  <p className="font-medium">{t('achievements.walking')}</p>
-                </div>
-                <div className="mt-3 grid grid-cols-[1fr_1fr_auto] gap-2">
-                  <Input
-                    aria-label={t('achievements.steps')}
-                    type="number"
-                    min={0}
-                    placeholder={t('achievements.steps')}
-                    value={steps}
-                    onChange={(event) => setSteps(event.target.value)}
-                  />
-                  <Input
-                    aria-label={t('achievements.minutes')}
-                    type="number"
-                    min={0}
-                    placeholder={t('achievements.minutes')}
-                    value={durationMin}
-                    onChange={(event) => setDurationMin(event.target.value)}
-                  />
-                  <Button type="submit" loading={busy === 'activity'}>
-                    {t('common.save')}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
           {nextMilestone ? (
             <Card>
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
@@ -326,7 +228,7 @@ export function AchievementsPanel({
             </CardContent>
           </Card>
 
-          <Card>
+          <Card id="milestones">
             <CardHeader>
               <CardTitle>{t('achievements.milestones')}</CardTitle>
               <CardDescription>{t('achievements.milestonesDescription')}</CardDescription>

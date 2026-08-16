@@ -18,6 +18,7 @@ export interface GoalValues {
   fatGrams: number | null;
   fiberGrams: number | null;
   waterMl: number;
+  stepsTarget: number | null;
 }
 
 export interface GoalSuggestionValues {
@@ -68,6 +69,7 @@ export function GoalsPanel({
   const [fat, setFat] = React.useState(str(goal.fatGrams));
   const [fiber, setFiber] = React.useState(str(goal.fiberGrams));
   const [water, setWater] = React.useState(String(goal.waterMl));
+  const [steps, setSteps] = React.useState(str(goal.stepsTarget));
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [saving, setSaving] = React.useState(false);
 
@@ -96,6 +98,7 @@ export function GoalsPanel({
         fatGrams: optionalNumber(fat),
         fiberGrams: optionalNumber(fiber),
         waterMl: optionalNumber(water),
+        stepsTarget: optionalNumber(steps),
       });
       toast.push(t('goals.saved'), 'success');
       router.refresh();
@@ -146,6 +149,19 @@ export function GoalsPanel({
                   step={50}
                   value={water}
                   onChange={(e) => setWater(e.target.value)}
+                />
+              </Field>
+
+              <Field label={t('goals.stepsTarget')} htmlFor="stepsTarget" error={errors.stepsTarget}>
+                <Input
+                  {...fieldAria('stepsTarget', errors.stepsTarget)}
+                  type="number"
+                  inputMode="numeric"
+                  min={1000}
+                  max={100000}
+                  step={500}
+                  value={steps}
+                  onChange={(e) => setSteps(e.target.value)}
                 />
               </Field>
 

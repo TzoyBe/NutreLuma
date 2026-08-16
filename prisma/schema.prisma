@@ -499,6 +499,7 @@ model NutritionGoal {
   fatGrams          Decimal? @db.Decimal(6, 2)
   fiberGrams        Decimal? @db.Decimal(6, 2)
   waterMl           Int?
+  stepsTarget       Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

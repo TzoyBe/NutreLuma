@@ -79,6 +79,7 @@ export default async function GoalsPage() {
           fatGrams: goal.fatGrams,
           fiberGrams: goal.fiberGrams,
           waterMl: goal.waterMl,
+          stepsTarget: goal.stepsTarget,
         }}
         suggestion={suggestion}
         history={history.map((row) => ({

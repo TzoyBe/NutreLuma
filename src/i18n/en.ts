@@ -227,6 +227,7 @@ export const en: Translations = {
     fat: 'Fat',
     fiber: 'Fibre',
     water: 'Water',
+    stepsTarget: 'Daily steps target',
     useSuggestion: 'Use suggested values',
     suggestionHint: 'Suggestions come from your profile and are estimates.',
     saved: 'Goals saved.',

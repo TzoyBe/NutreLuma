@@ -19,6 +19,7 @@ export interface GoalView {
   fatGrams: number | null;
   fiberGrams: number | null;
   waterMl: number;
+  stepsTarget: number | null;
   /** true όταν ο στόχος δεν προέρχεται από αποθηκευμένη εγγραφή ιστορικού. */
   isFallback: boolean;
 }
@@ -62,6 +63,7 @@ export async function getGoalForDay(userId: string, dayISO: string): Promise<Goa
       fatGrams: row.fatGrams === null ? null : toNumber(row.fatGrams),
       fiberGrams: row.fiberGrams === null ? null : toNumber(row.fiberGrams),
       waterMl: row.waterMl ?? env.DEFAULT_DAILY_WATER_TARGET_ML,
+      stepsTarget: row.stepsTarget ?? null,
       isFallback: false,
     };
   }
@@ -81,6 +83,7 @@ export async function getGoalForDay(userId: string, dayISO: string): Promise<Goa
     fatGrams: null,
     fiberGrams: null,
     waterMl: env.DEFAULT_DAILY_WATER_TARGET_ML,
+    stepsTarget: null,
     isFallback: true,
   };
 }
@@ -142,6 +145,7 @@ export async function setGoal(
     fatGrams: dec(input.fatGrams),
     fiberGrams: dec(input.fiberGrams),
     waterMl: input.waterMl ?? null,
+    stepsTarget: input.stepsTarget ?? null,
   };
 
   await prisma.$transaction(async (tx) => {
