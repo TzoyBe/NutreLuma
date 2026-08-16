@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Field, fieldAria, Input, Select, Textarea } from '@/components/ui/field';
 import { Badge, Disclaimer } from '@/components/ui/misc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AiLoader } from '@/components/ui/ai-loader';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { FavoriteToggle } from '@/components/meal/favorite-toggle';
 import { useToast } from '@/components/toast';
@@ -423,6 +424,8 @@ export function MealDetail({ meal }: { meal: MealDetailData }) {
                 {clarifying ? t('meal.clarificationsSubmitting') : t('meal.clarificationsSubmit')}
               </Button>
             ) : null}
+
+            {clarifying ? <AiLoader title={t('meal.clarificationsSubmitting')} /> : null}
           </CardContent>
         </Card>
       ) : null}

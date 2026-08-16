@@ -5,6 +5,7 @@ import { ChefHat, Clock3, RefreshCw, Save, ShoppingBasket } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AiLoader } from '@/components/ui/ai-loader';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 
@@ -154,7 +155,11 @@ export function DailyPlanPanel({ date }: { date: string }) {
       ) : (
         <Card>
           <CardContent className="flex min-h-36 items-center justify-center p-6 text-center text-sm text-muted-foreground">
-            {loading ? t('common.loading') : t('recipes.empty')}
+            {loading ? (
+              <AiLoader title={t('recipes.createSuggestions')} subtitle={t('recipes.description')} />
+            ) : (
+              t('recipes.empty')
+            )}
           </CardContent>
         </Card>
       )}
