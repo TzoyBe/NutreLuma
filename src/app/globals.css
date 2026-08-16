@@ -4,17 +4,18 @@
 
 @layer base {
   :root {
+    /* Brand kit v2 surfaces: navy #0B1020 / surface #151D35 / surface_2 #1A2442 / navy_2 #11182E */
     --background: 225 49% 8%;
     --foreground: 220 20% 96%;
-    --card: 225 42% 12%;
+    --card: 225 43% 15%;
     --card-foreground: 220 20% 96%;
     --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 224 36% 16%;
+    --secondary: 225 43% 18%;
     --secondary-foreground: 220 18% 93%;
-    --muted: 224 30% 16%;
-    --muted-foreground: 220 12% 76%;
-    /* Joybee Yellow #FFB703 */
+    --muted: 226 46% 12%;
+    --muted-foreground: 218 18% 71%; /* #AAB3C5 */
+    /* Brand Gold #FFB703 */
     --accent: 43 100% 51%;
     --accent-foreground: 225 45% 9%;
     --destructive: 0 72% 51%;
@@ -22,7 +23,7 @@
     --border: 224 24% 23%;
     --input: 224 24% 23%;
     --ring: 221 83% 53%;
-    --radius: 1.25rem;
+    --radius: 1.5rem; /* 24px primary card radius (brand kit v2) */
 
     /* Brand kit v2 — personalization / premium accents */
     --brand-purple: 262 83% 58%; /* #7C3AED */
@@ -34,8 +35,8 @@
     --nutrition-fat: 270 91% 65%; /* #A855F7 */
     --nutrition-fibre: 160 84% 39%; /* #10B981 */
 
-    --glass-bg: 225 42% 12%;
-    --glass-tint: 224 39% 16%;
+    --glass-bg: 225 43% 15%;
+    --glass-tint: 225 43% 18%;
     --glass-opacity: 0.78;
     --glass-border: 220 80% 86%;
     --glass-border-opacity: 0.18;
@@ -48,17 +49,17 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 225 55% 6%;
+      --background: 225 49% 8%; /* brand navy #0B1020 */
       --foreground: 220 20% 96%;
-      --card: 225 44% 10%;
+      --card: 225 43% 15%; /* surface #151D35 */
       --card-foreground: 220 20% 96%;
       --primary: 221 83% 56%;
       --primary-foreground: 0 0% 100%;
-      --secondary: 224 38% 14%;
+      --secondary: 225 43% 18%; /* surface_2 #1A2442 */
       --secondary-foreground: 220 18% 93%;
-      --muted: 224 32% 14%;
-      --muted-foreground: 220 12% 74%;
-      /* Joybee Yellow #FFB703 */
+      --muted: 226 46% 12%; /* navy_2 #11182E */
+      --muted-foreground: 218 18% 71%; /* #AAB3C5 */
+      /* Brand Gold #FFB703 */
       --accent: 43 100% 51%;
       --accent-foreground: 225 45% 9%;
       --destructive: 0 62% 52%;
@@ -67,8 +68,8 @@
       --input: 224 24% 20%;
       --ring: 221 83% 56%;
 
-      --glass-bg: 225 44% 10%;
-      --glass-tint: 224 40% 14%;
+      --glass-bg: 225 43% 15%;
+      --glass-tint: 225 43% 18%;
       --glass-opacity: 0.82;
       --glass-border: 220 80% 86%;
       --glass-border-opacity: 0.16;
