@@ -6,6 +6,7 @@ import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getGoalForDay, listGoalHistory, suggestGoals } from '@/server/services/goals';
 import { GoalsPanel } from '@/components/goals/goals-panel';
+import { GoalTargets } from '@/components/goals/goal-targets';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { Disclaimer } from '@/components/ui/misc';
@@ -38,6 +39,13 @@ export default async function GoalsPage() {
         <h1 className="text-xl font-semibold">{t('goals.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('goals.subtitle')}</p>
       </div>
+
+      <GoalTargets
+        calories={goal.calorieTarget}
+        protein={goal.proteinGrams}
+        carbs={goal.carbohydrateGrams}
+        fat={goal.fatGrams}
+      />
 
       <Card>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
