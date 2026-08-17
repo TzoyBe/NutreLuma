@@ -196,6 +196,7 @@ export const el = {
     today: 'Σήμερα',
     day: 'Εκείνη τη μέρα',
     targets: 'Στόχοι',
+    dragToAdjust: 'Σύρε το δαχτυλίδι για ρύθμιση',
     water: 'Νερό',
     steps: 'Βήματα',
     todayCalories: 'Θερμίδες σήμερα',

@@ -188,6 +188,7 @@ export const en: Translations = {
     today: 'Today',
     day: 'That day',
     targets: 'Targets',
+    dragToAdjust: 'Drag the ring to adjust',
     water: 'Water',
     steps: 'Steps',
     todayCalories: 'Calories today',

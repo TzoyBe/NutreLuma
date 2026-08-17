@@ -2,12 +2,13 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Droplet, Footprints, Plus, SlidersHorizontal } from 'lucide-react';
+import { Droplet, Footprints, SlidersHorizontal } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
+import { angleFraction, applyAntiWrap, snapValue } from './radial-gauge-math';
 
 /**
  * Water & Steps gauges για το web dashboard — parity με το mobile app: animated
@@ -21,6 +22,7 @@ const STROKE = 12;
 const R = (SIZE - STROKE) / 2;
 const C = 2 * Math.PI * R;
 const STEPS_FALLBACK = 10000;
+const SNAP = 50;
 
 interface GoalValues {
   calorieTarget: number | null;
@@ -33,43 +35,98 @@ interface GoalValues {
 }
 
 function Ring({
-  fraction,
+  value,
+  scaleMax,
+  target,
   from,
   to,
+  interactive,
+  onCommit,
   children,
 }: {
-  fraction: number;
+  value: number;            // committed value (consumed)
+  scaleMax: number;         // value at fraction 1 (1.5 × target)
+  target: number;           // 100%-of-goal marker position
   from: string;
   to: string;
-  children: React.ReactNode;
+  interactive: boolean;
+  onCommit?: (newValue: number) => void;
+  children: (displayValue: number) => React.ReactNode;
 }) {
-  const [offset, setOffset] = React.useState(C);
   const gid = React.useId();
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const prevFraction = React.useRef<number | null>(null);
+  const [preview, setPreview] = React.useState<number | null>(null);
+  const [dragging, setDragging] = React.useState(false);
 
-  React.useEffect(() => {
-    const clamped = Math.max(0, Math.min(1, fraction));
-    const id = requestAnimationFrame(() => setOffset(C * (1 - clamped)));
-    return () => cancelAnimationFrame(id);
-  }, [fraction]);
+  const display = preview ?? value;
+  const fraction = Math.max(0, Math.min(1, display / scaleMax));
+  const offset = C * (1 - fraction);
+  const targetFraction = Math.max(0, Math.min(1, target / scaleMax));
+
+  // knob position (arc starts at top, clockwise) — SVG is rotated -90°, so the
+  // painted angle for a fraction f is (f*360 - 90) degrees.
+  const knobAngle = (fraction * 360 - 90) * (Math.PI / 180);
+  const knobX = SIZE / 2 + R * Math.cos(knobAngle);
+  const knobY = SIZE / 2 + R * Math.sin(knobAngle);
+  // target tick position
+  const tickAngle = (targetFraction * 360 - 90) * (Math.PI / 180);
+  const tickX1 = SIZE / 2 + (R - STROKE / 2) * Math.cos(tickAngle);
+  const tickY1 = SIZE / 2 + (R - STROKE / 2) * Math.sin(tickAngle);
+  const tickX2 = SIZE / 2 + (R + STROKE / 2) * Math.cos(tickAngle);
+  const tickY2 = SIZE / 2 + (R + STROKE / 2) * Math.sin(tickAngle);
+
+  const updateFromEvent = React.useCallback(
+    (e: React.PointerEvent) => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const raw = angleFraction(cx, cy, e.clientX, e.clientY);
+      const f = applyAntiWrap(raw, prevFraction.current);
+      prevFraction.current = f;
+      setPreview(snapValue(f, scaleMax, SNAP));
+    },
+    [scaleMax],
+  );
 
   return (
     <div className="relative" style={{ width: SIZE, height: SIZE }}>
-      <svg width={SIZE} height={SIZE} className="-rotate-90">
+      <svg
+        ref={svgRef}
+        width={SIZE}
+        height={SIZE}
+        className={`-rotate-90 ${interactive ? 'cursor-pointer touch-none' : ''}`}
+        onPointerDown={
+          interactive
+            ? (e) => {
+                (e.target as Element).setPointerCapture?.(e.pointerId);
+                setDragging(true);
+                prevFraction.current = Math.max(0, Math.min(1, value / scaleMax));
+                updateFromEvent(e);
+              }
+            : undefined
+        }
+        onPointerMove={interactive && dragging ? updateFromEvent : undefined}
+        onPointerUp={
+          interactive
+            ? () => {
+                setDragging(false);
+                const next = preview;
+                prevFraction.current = null;
+                setPreview(null);
+                if (next != null && next !== value) onCommit?.(next);
+              }
+            : undefined
+        }
+      >
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor={from} />
             <stop offset="1" stopColor={to} />
           </linearGradient>
         </defs>
-        <circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={R}
-          fill="none"
-          stroke="hsl(var(--secondary))"
-          strokeWidth={STROKE}
-          opacity={0.6}
-        />
+        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="hsl(var(--secondary))" strokeWidth={STROKE} opacity={0.6} />
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}
@@ -80,11 +137,17 @@ function Ring({
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1)' }}
+          style={dragging ? undefined : { transition: 'stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1)' }}
         />
+        {interactive ? (
+          <>
+            <line x1={tickX1} y1={tickY1} x2={tickX2} y2={tickY2} stroke="hsl(var(--foreground))" strokeWidth={2} opacity={0.35} />
+            <circle cx={knobX} cy={knobY} r={STROKE / 2 + 2} fill="white" stroke={to} strokeWidth={2} />
+          </>
+        ) : null}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        {children}
+        {children(Math.round(display))}
       </div>
     </div>
   );
@@ -128,11 +191,21 @@ export function ActivityGauges({
     }
   }
 
-  const addWater = (volumeMl: number) =>
-    run(`water-${volumeMl}`, () => api.post('/api/water', { entryDate: date, volumeMl }));
+  const WATER_DEFAULT = 3000;
+  const STEPS_DEFAULT = 10000;
+  const waterScaleMax = 1.5 * (waterTarget ?? WATER_DEFAULT);
+  const stepsScaleMax = 1.5 * (goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_DEFAULT);
 
-  const addSteps = (value: number) =>
-    run(`steps-${value}`, () => api.post('/api/activity', { entryDate: date, kind: 'WALK', steps: value }));
+  const commitWater = (newTotal: number) => {
+    const delta = Math.round(newTotal - waterMl);
+    if (delta === 0) return;
+    run('water-commit', () => api.post('/api/water', { entryDate: date, volumeMl: delta }));
+  };
+  const commitSteps = (newTotal: number) => {
+    const delta = Math.round(newTotal - steps);
+    if (delta === 0) return;
+    run('steps-commit', () => api.post('/api/activity', { entryDate: date, kind: 'WALK', steps: delta }));
+  };
 
   const num = (value: string) => {
     const trimmed = value.trim();
@@ -174,45 +247,49 @@ export function ActivityGauges({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-background/40 p-4">
-          <Ring fraction={waterTarget ? waterMl / waterTarget : 0} from="#38BDF8" to="#2563EB">
-            <Droplet className="h-4 w-4 text-sky-400" aria-hidden="true" />
-            <span className="text-2xl font-bold tabular-nums">{Math.round(waterMl).toLocaleString()}</span>
-            <span className="text-[11px] text-muted-foreground tabular-nums">
-              {waterTarget ? `of ${waterTarget.toLocaleString()} ml` : 'ml'}
-            </span>
+          <Ring
+            value={waterMl}
+            scaleMax={waterScaleMax}
+            target={waterTarget ?? WATER_DEFAULT}
+            from="#38BDF8"
+            to="#2563EB"
+            interactive={isToday}
+            onCommit={commitWater}
+          >
+            {(display) => (
+              <>
+                <Droplet className="h-4 w-4 text-sky-400" aria-hidden="true" />
+                <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {waterTarget ? `of ${waterTarget.toLocaleString()} ml` : 'ml'}
+                </span>
+              </>
+            )}
           </Ring>
           <p className="text-sm font-semibold">{t('dashboard.water')}</p>
-          {isToday ? (
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => addWater(250)} loading={busy === 'water-250'}>
-                <Plus className="mr-1 h-3.5 w-3.5" /> 250 ml
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => addWater(500)} loading={busy === 'water-500'}>
-                +500
-              </Button>
-            </div>
-          ) : null}
+          {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
         </div>
 
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-background/40 p-4">
-          <Ring fraction={steps / stepsTarget} from="#2DD4BF" to="#10B981">
-            <Footprints className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-            <span className="text-2xl font-bold tabular-nums">{Math.round(steps).toLocaleString()}</span>
-            <span className="text-[11px] text-muted-foreground tabular-nums">
-              of {stepsTarget.toLocaleString()}
-            </span>
+          <Ring
+            value={steps}
+            scaleMax={stepsScaleMax}
+            target={goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_FALLBACK}
+            from="#2DD4BF"
+            to="#10B981"
+            interactive={isToday}
+            onCommit={commitSteps}
+          >
+            {(display) => (
+              <>
+                <Footprints className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">of {stepsTarget.toLocaleString()}</span>
+              </>
+            )}
           </Ring>
           <p className="text-sm font-semibold">{t('dashboard.steps')}</p>
-          {isToday ? (
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => addSteps(500)} loading={busy === 'steps-500'}>
-                <Plus className="mr-1 h-3.5 w-3.5" /> 500
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => addSteps(1000)} loading={busy === 'steps-1000'}>
-                +1000
-              </Button>
-            </div>
-          ) : null}
+          {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
         </div>
       </div>
 
