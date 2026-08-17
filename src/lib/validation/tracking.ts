@@ -19,8 +19,9 @@ export const waterEntrySchema = z.object({
   volumeMl: z.coerce
     .number({ invalid_type_error: 'Η ποσότητα πρέπει να είναι αριθμός.' })
     .int('Ακέραιος αριθμός ml.')
-    .min(1, 'Δώσε θετική ποσότητα.')
-    .max(20000, 'Μη ρεαλιστική ποσότητα.'),
+    .min(-20000, 'Μη ρεαλιστική ποσότητα.')
+    .max(20000, 'Μη ρεαλιστική ποσότητα.')
+    .refine((v) => v !== 0, 'Δώσε μη μηδενική ποσότητα.'),
 });
 export type WaterEntryInput = z.infer<typeof waterEntrySchema>;
 
@@ -40,11 +41,11 @@ export const activityEntrySchema = z
   .object({
     entryDate: dayISOSchema,
     kind: z.enum(ACTIVITY_KINDS).default('OTHER'),
-    steps: z.coerce.number().int().min(0).max(200000).nullable().optional(),
+    steps: z.coerce.number().int().min(-200000).max(200000).nullable().optional(),
     durationMin: z.coerce.number().int().min(0).max(1440).nullable().optional(),
     note: z.string().trim().max(200).optional(),
   })
-  .refine((d) => (d.steps ?? 0) > 0 || (d.durationMin ?? 0) > 0, {
+  .refine((d) => (d.steps ?? 0) !== 0 || (d.durationMin ?? 0) > 0, {
     message: 'Δώσε βήματα ή διάρκεια.',
     path: ['steps'],
   });
