@@ -163,7 +163,7 @@ function Ring({
           </>
         ) : null}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-0.5">
         {children(Math.round(display))}
       </div>
     </div>
