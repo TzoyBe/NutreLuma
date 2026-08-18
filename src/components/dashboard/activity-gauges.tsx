@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Droplet, Footprints, SlidersHorizontal } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
@@ -247,14 +248,16 @@ export function ActivityGauges({
     });
 
   return (
-    <div className="rounded-2xl border border-border bg-card/60 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground">{isToday ? t('dashboard.today') : t('dashboard.day')}</h2>
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {isToday ? t('dashboard.today') : t('dashboard.day')}
+        </h2>
         {isToday ? (
           <button
             type="button"
             onClick={() => setShowTargets((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-primary hover:underline"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
             {t('dashboard.targets')}
@@ -262,87 +265,93 @@ export function ActivityGauges({
         ) : null}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-background/40 p-4">
-          <Ring
-            value={waterMl}
-            scaleMax={waterScaleMax}
-            target={waterTarget ?? WATER_DEFAULT}
-            from="#38BDF8"
-            to="#2563EB"
-            interactive={isToday}
-            onCommit={commitWater}
-          >
-            {(display) => (
-              <>
-                <Droplet className="h-4 w-4 text-sky-400" aria-hidden="true" />
-                <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
-                <span className="text-[11px] text-muted-foreground tabular-nums">
-                  {waterTarget ? `of ${waterTarget.toLocaleString()} ml` : 'ml'}
-                </span>
-              </>
-            )}
-          </Ring>
-          <p className="text-sm font-semibold">{t('dashboard.water')}</p>
-          {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
-        </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardContent className="flex h-full flex-col items-center justify-center gap-3">
+            <Ring
+              value={waterMl}
+              scaleMax={waterScaleMax}
+              target={waterTarget ?? WATER_DEFAULT}
+              from="#38BDF8"
+              to="#2563EB"
+              interactive={isToday}
+              onCommit={commitWater}
+            >
+              {(display) => (
+                <>
+                  <Droplet className="h-4 w-4 text-sky-400" aria-hidden="true" />
+                  <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {waterTarget ? `of ${waterTarget.toLocaleString()} ml` : 'ml'}
+                  </span>
+                </>
+              )}
+            </Ring>
+            <p className="text-sm font-semibold">{t('dashboard.water')}</p>
+            {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
+          </CardContent>
+        </Card>
 
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-background/40 p-4">
-          <Ring
-            value={steps}
-            scaleMax={stepsScaleMax}
-            target={goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_FALLBACK}
-            from="#2DD4BF"
-            to="#10B981"
-            interactive={isToday}
-            onCommit={commitSteps}
-          >
-            {(display) => (
-              <>
-                <Footprints className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-                <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
-                <span className="text-[11px] text-muted-foreground tabular-nums">of {stepsTarget.toLocaleString()}</span>
-              </>
-            )}
-          </Ring>
-          <p className="text-sm font-semibold">{t('dashboard.steps')}</p>
-          {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
-        </div>
+        <Card>
+          <CardContent className="flex h-full flex-col items-center justify-center gap-3">
+            <Ring
+              value={steps}
+              scaleMax={stepsScaleMax}
+              target={goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_FALLBACK}
+              from="#2DD4BF"
+              to="#10B981"
+              interactive={isToday}
+              onCommit={commitSteps}
+            >
+              {(display) => (
+                <>
+                  <Footprints className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                  <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">of {stepsTarget.toLocaleString()}</span>
+                </>
+              )}
+            </Ring>
+            <p className="text-sm font-semibold">{t('dashboard.steps')}</p>
+            {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
+          </CardContent>
+        </Card>
       </div>
 
       {showTargets ? (
-        <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-background/40 p-4 sm:grid-cols-2">
-          <Field label={`${t('dashboard.water')} (ml)`} htmlFor="waterTargetInput">
-            <Input
-              id="waterTargetInput"
-              type="number"
-              inputMode="numeric"
-              min={200}
-              max={8000}
-              step={50}
-              value={waterInput}
-              onChange={(e) => setWaterInput(e.target.value)}
-            />
-          </Field>
-          <Field label={t('goals.stepsTarget')} htmlFor="stepsTargetInput">
-            <Input
-              id="stepsTargetInput"
-              type="number"
-              inputMode="numeric"
-              min={1000}
-              max={100000}
-              step={500}
-              value={stepsInput}
-              onChange={(e) => setStepsInput(e.target.value)}
-            />
-          </Field>
-          <div className="sm:col-span-2">
-            <Button onClick={saveTargets} loading={busy === 'targets'}>
-              {t('common.save')}
-            </Button>
-          </div>
-        </div>
+        <Card>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <Field label={`${t('dashboard.water')} (ml)`} htmlFor="waterTargetInput">
+              <Input
+                id="waterTargetInput"
+                type="number"
+                inputMode="numeric"
+                min={200}
+                max={8000}
+                step={50}
+                value={waterInput}
+                onChange={(e) => setWaterInput(e.target.value)}
+              />
+            </Field>
+            <Field label={t('goals.stepsTarget')} htmlFor="stepsTargetInput">
+              <Input
+                id="stepsTargetInput"
+                type="number"
+                inputMode="numeric"
+                min={1000}
+                max={100000}
+                step={500}
+                value={stepsInput}
+                onChange={(e) => setStepsInput(e.target.value)}
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <Button onClick={saveTargets} loading={busy === 'targets'}>
+                {t('common.save')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
-    </div>
+    </section>
   );
 }
