@@ -64,8 +64,11 @@ function Ring({
   const offset = C * (1 - fraction);
   const targetFraction = Math.max(0, Math.min(1, target / scaleMax));
 
-  // knob position (arc starts at top, clockwise) — SVG is rotated -90°, so the
-  // painted angle for a fraction f is (f*360 - 90) degrees.
+  // Everything is drawn in one screen-space frame: top = fraction 0, clockwise.
+  // Only the arc circles get an SVG rotate(-90); the knob/tick are computed
+  // directly here so they line up with the pointer math (which is also screen
+  // space). Rotating the whole <svg> in CSS used to offset the knob by 90°,
+  // which made drag-to-adjust feel broken.
   const knobAngle = (fraction * 360 - 90) * (Math.PI / 180);
   const knobX = SIZE / 2 + R * Math.cos(knobAngle);
   const knobY = SIZE / 2 + R * Math.sin(knobAngle);
@@ -90,35 +93,38 @@ function Ring({
     [scaleMax],
   );
 
+  const endDrag = React.useCallback(() => {
+    setDragging(false);
+    setPreview((next) => {
+      prevFraction.current = null;
+      if (next != null && next !== value) onCommit?.(next);
+      return null;
+    });
+  }, [value, onCommit]);
+
+  const rotate = `rotate(-90 ${SIZE / 2} ${SIZE / 2})`;
+
   return (
     <div className="relative" style={{ width: SIZE, height: SIZE }}>
       <svg
         ref={svgRef}
         width={SIZE}
         height={SIZE}
-        className={`-rotate-90 ${interactive ? 'cursor-pointer touch-none' : ''}`}
+        className={interactive ? 'cursor-pointer' : ''}
+        style={interactive ? { touchAction: 'none' } : undefined}
         onPointerDown={
           interactive
             ? (e) => {
-                (e.target as Element).setPointerCapture?.(e.pointerId);
+                e.currentTarget.setPointerCapture?.(e.pointerId);
                 setDragging(true);
                 prevFraction.current = Math.max(0, Math.min(1, value / scaleMax));
                 updateFromEvent(e);
               }
             : undefined
         }
-        onPointerMove={interactive && dragging ? updateFromEvent : undefined}
-        onPointerUp={
-          interactive
-            ? () => {
-                setDragging(false);
-                const next = preview;
-                prevFraction.current = null;
-                setPreview(null);
-                if (next != null && next !== value) onCommit?.(next);
-              }
-            : undefined
-        }
+        onPointerMove={interactive ? (e) => { if (dragging) updateFromEvent(e); } : undefined}
+        onPointerUp={interactive ? endDrag : undefined}
+        onPointerCancel={interactive ? endDrag : undefined}
       >
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
@@ -128,6 +134,7 @@ function Ring({
         </defs>
         <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="hsl(var(--secondary))" strokeWidth={STROKE} opacity={0.6} />
         <circle
+          transform={rotate}
           cx={SIZE / 2}
           cy={SIZE / 2}
           r={R}
@@ -142,7 +149,17 @@ function Ring({
         {interactive ? (
           <>
             <line x1={tickX1} y1={tickY1} x2={tickX2} y2={tickY2} stroke="hsl(var(--foreground))" strokeWidth={2} opacity={0.35} />
-            <circle cx={knobX} cy={knobY} r={STROKE / 2 + 2} fill="white" stroke={to} strokeWidth={2} />
+            {/* Grab handle — the round button the user drags around the ring. */}
+            <circle cx={knobX} cy={knobY} r={STROKE / 2 + 5} fill={to} opacity={0.18} />
+            <circle
+              cx={knobX}
+              cy={knobY}
+              r={STROKE / 2 + 1}
+              fill="white"
+              stroke={to}
+              strokeWidth={3}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}
+            />
           </>
         ) : null}
       </svg>
