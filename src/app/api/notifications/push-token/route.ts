@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ApiError, jsonOk, withErrorHandling } from '@/server/http';
+import { ApiError, assertSameOrigin, jsonOk, withErrorHandling } from '@/server/http';
 import { requireApiUser } from '@/server/auth/guards';
 import {
   isValidExpoPushToken,
@@ -17,6 +17,7 @@ const bodySchema = z.object({
 });
 
 export const POST = withErrorHandling(async (request: Request) => {
+  assertSameOrigin(request);
   const user = await requireApiUser();
   const input = bodySchema.parse(await request.json());
   if (!isValidExpoPushToken(input.token)) {
@@ -26,6 +27,7 @@ export const POST = withErrorHandling(async (request: Request) => {
 });
 
 export const DELETE = withErrorHandling(async (request: Request) => {
+  assertSameOrigin(request);
   const user = await requireApiUser();
   const input = bodySchema.pick({ token: true }).parse(await request.json());
   return jsonOk(await unregisterPushToken(user.id, input.token));
