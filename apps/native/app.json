@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "NutreLuma",
+    "slug": "nutreluma-native",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nutreluma",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B1020"
+    },
+    "ios": {
+      "bundleIdentifier": "com.joybeedigital.nutreluma",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.joybeedigital.nutreluma",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1020",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "NutreLuma uses your photo library so you can upload meal photos.",
+          "cameraPermission": "NutreLuma uses your camera so you can take meal photos."
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#2563EB"
+        }
+      ]
+    ],
+    "extra": {
+      "apiBaseUrl": "https://www.nutreluma.com",
+      "eas": {
+        "projectId": "755bf395-96ff-4f1e-9f92-dff3c002e5d0"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "owner": "tzoybe"
+  }
+}

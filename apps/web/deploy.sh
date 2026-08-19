@@ -1,7 +1,7 @@
 #!/bin/sh
 # One-shot deploy for NutreLuma on the NAS.
 # Run inside an SSH session on the NAS with a single command:
-#   sh /share/CACHEDEV1_DATA/Container/nutreluma/deploy.sh
+#   sh /share/CACHEDEV1_DATA/Container/nutreluma/apps/web/deploy.sh
 #
 # Does: build+start the web container (with retry), let the entrypoint apply the
 # Prisma migration, verify health, then grant ADMIN to tzoybe@msn.com.
@@ -10,7 +10,7 @@ export PATH=/share/CACHEDEV1_DATA/.qpkg/container-station/bin:$PATH
 export HOME=/tmp/nutreluma-deploy
 export DOCKER_CONFIG=$HOME/.docker
 mkdir -p "$DOCKER_CONFIG"
-cd /share/CACHEDEV1_DATA/Container/nutreluma || exit 1
+cd /share/CACHEDEV1_DATA/Container/nutreluma/apps/web || exit 1
 
 echo "==> Building & starting (with retry for the known flaky build)..."
 n=1; ec=1

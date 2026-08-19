@@ -1,0 +1,43 @@
+{
+  "name": "nutreluma-native",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "expo": "~57.0.13",
+    "expo-blur": "~57.0.2",
+    "expo-constants": "^57.0.11",
+    "expo-device": "^57.0.1",
+    "expo-file-system": "~57.0.3",
+    "expo-image-picker": "^57.0.10",
+    "expo-linear-gradient": "~57.0.1",
+    "expo-notifications": "^57.0.11",
+    "expo-secure-store": "^57.0.1",
+    "expo-sharing": "^57.0.12",
+    "expo-status-bar": "~57.0.1",
+    "lucide-react-native": "^1.31.0",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-purchases": "^10.7.1",
+    "react-native-purchases-ui": "^10.7.1",
+    "react-native-svg": "^15.15.5"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit --pretty false",
+    "eas:init": "npx eas-cli init",
+    "build:ios:preview": "npx eas-cli build --platform ios --profile preview",
+    "build:android:preview": "npx eas-cli build --platform android --profile preview",
+    "build:ios:production": "npx eas-cli build --platform ios --profile production",
+    "build:android:production": "npx eas-cli build --platform android --profile production",
+    "submit:ios": "npx eas-cli submit --platform ios --profile production",
+    "submit:android": "npx eas-cli submit --platform android --profile production"
+  },
+  "private": true
+}

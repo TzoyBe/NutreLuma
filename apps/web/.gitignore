@@ -8,16 +8,10 @@ coverage
 .env.bak-*
 .env.*.bak
 backup/
-backups/
 .env.local
 .env.*.local
 uploads
 *.log
-# archives / build info (keep repo lean)
-*.zip
-*.tar.gz
-*.tsbuildinfo
-tsconfig.tsbuildinfo
 npm-debug.log*
 .DS_Store
 Thumbs.db
