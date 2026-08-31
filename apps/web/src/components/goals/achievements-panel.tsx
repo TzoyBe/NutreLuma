@@ -29,7 +29,7 @@ import {
   filterMilestoneHistory,
   partitionMilestones,
   type MilestoneStatusFilter,
-} from '../../../../shared/milestone-display';
+} from '@/lib/milestone-display';
 
 type Milestone = {
   id: string;

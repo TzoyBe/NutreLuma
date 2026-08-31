@@ -60,7 +60,7 @@ import {
   filterMilestoneHistory,
   partitionMilestones,
   type MilestoneStatusFilter,
-} from '../shared/milestone-display';
+} from './src/milestone-display';
 import {
   BarChart3,
   Bell,

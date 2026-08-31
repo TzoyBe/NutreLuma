@@ -3,7 +3,7 @@ import {
   filterMilestoneHistory,
   partitionMilestones,
   type MilestoneStatusFilter,
-} from '../../../shared/milestone-display';
+} from '../../src/lib/milestone-display';
 
 const milestones = [
   { id: 'active', status: 'ACTIVE' },

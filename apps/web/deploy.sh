@@ -15,8 +15,12 @@ cd /share/CACHEDEV1_DATA/Container/nutreluma/apps/web || exit 1
 echo "==> Building & starting (with retry for the known flaky build)..."
 n=1; ec=1
 while [ $n -le 4 ]; do
-  if docker compose --env-file .env up --build -d; then ec=0; break; fi
-  ec=$?
+  if docker compose --env-file .env up --build -d; then
+    ec=0
+    break
+  else
+    ec=$?
+  fi
   echo "   build attempt $n failed (exit $ec) - retrying in 3s..."
   n=$((n + 1)); sleep 3
 done
