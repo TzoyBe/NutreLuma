@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChefHat, Clock3, RefreshCw, Save, ShoppingBasket } from 'lucide-react';
+import { Check, ChefHat, Clock3, RefreshCw, Save, ShoppingBasket } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +55,7 @@ export function DailyPlanPanel({ date }: { date: string }) {
   const [plan, setPlan] = React.useState<Plan | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [saved, setSaved] = React.useState<string[]>([]);
+  const [savingRecipe, setSavingRecipe] = React.useState<string | null>(null);
   const toast = useToast();
   const t = useT();
 
@@ -63,6 +64,7 @@ export function DailyPlanPanel({ date }: { date: string }) {
     setLoading(true);
     setPlan(null);
     setSaved([]);
+    setSavingRecipe(null);
 
     api
       .get<{ plan: Plan | null }>(`/api/meal-plan?date=${encodeURIComponent(date)}`)
@@ -96,12 +98,21 @@ export function DailyPlanPanel({ date }: { date: string }) {
   }
 
   async function saveRecipe(recipe: Recipe) {
+    if (savingRecipe || saved.includes(recipe.title)) return;
+    setSavingRecipe(recipe.title);
     try {
-      await api.post('/api/recipes', recipe);
+      const result = await api.post<{ id: string; recipe: Recipe }>('/api/recipes', recipe);
       setSaved((current) => (current.includes(recipe.title) ? current : [...current, recipe.title]));
-      toast.push(t('recipes.save'), 'success');
+      window.dispatchEvent(
+        new CustomEvent('nutreluma:recipe-saved', {
+          detail: { ...result, createdAt: new Date().toISOString() },
+        }),
+      );
+      toast.push(t('recipes.savedConfirmation'), 'success');
     } catch (error) {
       toast.push(error instanceof ApiClientError ? error.message : t('recipes.generateFailed'), 'error');
+    } finally {
+      setSavingRecipe(null);
     }
   }
 
@@ -147,6 +158,7 @@ export function DailyPlanPanel({ date }: { date: string }) {
                 key={`${recipe.mealType}-${recipe.title}`}
                 recipe={recipe}
                 saved={saved.includes(recipe.title)}
+                saving={savingRecipe === recipe.title}
                 onSave={() => void saveRecipe(recipe)}
               />
             ))}
@@ -172,10 +184,12 @@ export function DailyPlanPanel({ date }: { date: string }) {
 function RecipeCard({
   recipe,
   saved,
+  saving,
   onSave,
 }: {
   recipe: Recipe;
   saved: boolean;
+  saving: boolean;
   onSave: () => void;
 }) {
   const t = useT();
@@ -227,9 +241,9 @@ function RecipeCard({
           </p>
         ) : null}
         <div className="mt-auto flex gap-2 pt-2">
-          <Button size="sm" variant="outline" onClick={onSave} disabled={saved}>
-            <Save className="h-4 w-4" aria-hidden="true" />
-            {t('recipes.save')}
+          <Button className="flex-1" size="sm" onClick={onSave} disabled={saved || saving} loading={saving}>
+            {saved ? <Check className="h-4 w-4" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
+            {saving ? t('recipes.saving') : saved ? t('recipes.saved') : t('recipes.save')}
           </Button>
           <Button size="sm" variant="ghost">
             <ShoppingBasket className="h-4 w-4" aria-hidden="true" />

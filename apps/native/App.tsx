@@ -57,6 +57,11 @@ import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
 import {
+  filterMilestoneHistory,
+  partitionMilestones,
+  type MilestoneStatusFilter,
+} from '../shared/milestone-display';
+import {
   BarChart3,
   Bell,
   CalendarDays,
@@ -2984,6 +2989,20 @@ function MilestoneCard({ milestone, children }: { milestone: MilestoneItem; chil
   );
 }
 
+function MilestoneScreenHeaderNative({ title, subtitle, onBack }: { title: string; subtitle: string; onBack: () => void }) {
+  return (
+    <View style={styles.subscreenHeader}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Back to goals" onPress={onBack} style={styles.backButton}>
+        <ChevronLeft size={22} color={colors.text} />
+      </Pressable>
+      <View style={styles.mealItemCopy}>
+        <Text style={styles.headerName}>{title}</Text>
+        <Text style={styles.noticeCopy}>{subtitle}</Text>
+      </View>
+    </View>
+  );
+}
+
 function GoalsOverviewScreen({
   session,
   onOpenMaintenance,
@@ -2996,6 +3015,8 @@ function GoalsOverviewScreen({
   const [achievementTotal, setAchievementTotal] = useState(0);
   const [badges, setBadges] = useState(0);
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
+  const [milestoneView, setMilestoneView] = useState<'overview' | 'inProgress' | 'history' | 'editor'>('overview');
+  const [historyFilter, setHistoryFilter] = useState<MilestoneStatusFilter>('COMPLETED');
   const [suggestions, setSuggestions] = useState<MilestoneSuggestion[]>([]);
   const [editingGoal, setEditingGoal] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
@@ -3055,7 +3076,7 @@ function GoalsOverviewScreen({
       setBadges(
         badgesResult.badges.filter((badge) => badge.unlockedAt || badge.earnedAt).length,
       );
-      setMilestones(milestonesResult.milestones.slice(0, 10));
+      setMilestones(milestonesResult.milestones);
       setSuggestions(suggestionsResult.suggestions);
     } catch (error) {
       setMessage(apiErrorMessage(error));
@@ -3132,6 +3153,11 @@ function GoalsOverviewScreen({
     setMilestoneStartValue('');
   }
 
+  function openNewMilestone() {
+    resetMilestoneForm();
+    setMilestoneView('editor');
+  }
+
   function applySuggestion(suggestion: MilestoneSuggestion) {
     setEditingMilestoneId(null);
     setMilestoneTitle(suggestion.title);
@@ -3143,6 +3169,7 @@ function GoalsOverviewScreen({
     setMilestoneEnd(suggestion.endDate ?? '');
     setMilestoneUnit(suggestion.unit ?? '');
     setMilestoneStartValue('');
+    setMilestoneView('editor');
   }
 
   function useSuggestedDailyGoals() {
@@ -3167,6 +3194,7 @@ function GoalsOverviewScreen({
     setMilestoneEnd(milestone.endDate ?? '');
     setMilestoneUnit(milestone.unit ?? '');
     setMilestoneStartValue(milestone.startValue === null || milestone.startValue === undefined ? '' : String(milestone.startValue));
+    setMilestoneView('editor');
   }
 
   async function saveMilestone(source?: MilestoneSuggestion) {
@@ -3204,15 +3232,117 @@ function GoalsOverviewScreen({
         const next = exists
           ? current.map((milestone) => (milestone.id === result.milestone.id ? result.milestone : milestone))
           : [result.milestone, ...current];
-        return next.slice(0, 10);
+        return next;
       });
       setMessage(result.warnings?.[0]?.message ?? (editingMilestoneId ? 'Milestone saved.' : 'Milestone created.'));
       resetMilestoneForm();
+      setMilestoneView('inProgress');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : apiErrorMessage(error));
     } finally {
       setSavingMilestone(false);
     }
+  }
+
+  const { inProgress, history } = partitionMilestones(milestones);
+  const visibleHistory = filterMilestoneHistory(history, historyFilter);
+
+  if (milestoneView === 'editor') {
+    return (
+      <ScrollView contentContainerStyle={styles.dashboardContent} keyboardShouldPersistTaps="handled">
+        <MilestoneScreenHeaderNative
+          title={editingMilestoneId ? 'Edit milestone' : 'New milestone'}
+          subtitle={editingMilestoneId ? 'Update the details below, then save your changes.' : 'Create a milestone with a clear target and timeframe.'}
+          onBack={() => { resetMilestoneForm(); setMilestoneView('overview'); }}
+        />
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+        <GlassCard style={styles.authPanel}>
+          <Field label="Title" value={milestoneTitle} onChangeText={setMilestoneTitle} />
+          <Field label="Description optional" value={milestoneDescription} onChangeText={setMilestoneDescription} />
+          {!editingMilestoneId ? (
+            <ChoiceRow label="Type" value={milestoneType} options={milestoneTypes} onChange={setMilestoneType} />
+          ) : (
+            <Text style={styles.metricLabel}>Type: {milestoneTypeLabel(milestoneType)}</Text>
+          )}
+          <View style={styles.twoColumn}>
+            <Field label="Target" value={milestoneTarget} onChangeText={setMilestoneTarget} keyboardType="numeric" />
+            <Field label="Daily limit" value={milestoneThreshold} onChangeText={setMilestoneThreshold} keyboardType="numeric" />
+          </View>
+          <View style={styles.twoColumn}>
+            <Field label="Start value" value={milestoneStartValue} onChangeText={setMilestoneStartValue} keyboardType="numeric" />
+            <Field label="Unit" value={milestoneUnit} onChangeText={setMilestoneUnit} autoCapitalize="none" />
+          </View>
+          <View style={styles.twoColumn}>
+            <Field label="Start date" value={milestoneStart} onChangeText={setMilestoneStart} />
+            <Field label="End date" value={milestoneEnd} onChangeText={setMilestoneEnd} />
+          </View>
+          <View style={styles.actionRow}>
+            <Pressable onPress={() => saveMilestone()} disabled={savingMilestone} style={[styles.actionButton, styles.actionPrimary]}>
+              <Text style={styles.actionPrimaryText}>{savingMilestone ? 'Saving…' : editingMilestoneId ? 'Save changes' : 'Create milestone'}</Text>
+            </Pressable>
+            <Pressable onPress={() => { resetMilestoneForm(); setMilestoneView('overview'); }} style={styles.actionButton}>
+              <Text style={styles.actionText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </GlassCard>
+      </ScrollView>
+    );
+  }
+
+  if (milestoneView === 'inProgress') {
+    return (
+      <ScrollView contentContainerStyle={styles.dashboardContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}>
+        <MilestoneScreenHeaderNative title="In progress" subtitle="Active and paused milestones that still need your attention." onBack={() => setMilestoneView('overview')} />
+        <Pressable onPress={openNewMilestone} style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}>
+          <Plus size={18} color={colors.white} />
+          <Text style={styles.actionPrimaryText}>New milestone</Text>
+        </Pressable>
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+        <View style={styles.mealList}>
+          {inProgress.length ? inProgress.map((milestone) => (
+            <MilestoneCard key={milestone.id} milestone={milestone}>
+              <View style={styles.actionRow}>
+                <Pressable onPress={() => editMilestone(milestone)} style={styles.actionButton}>
+                  <Text style={styles.actionText}>Edit</Text>
+                </Pressable>
+                <Pressable onPress={() => milestoneAction(milestone.id, milestone.status === 'PAUSED' ? 'resume' : 'pause')} style={styles.actionButton}>
+                  <Text style={styles.actionText}>{milestone.status === 'PAUSED' ? 'Resume' : 'Pause'}</Text>
+                </Pressable>
+                <Pressable onPress={() => milestoneAction(milestone.id, 'cancel')} style={styles.actionButton}>
+                  <Text style={styles.actionText}>Cancel</Text>
+                </Pressable>
+              </View>
+            </MilestoneCard>
+          )) : (
+            <View style={styles.emptyCard}><Text style={styles.noticeTitle}>Nothing in progress</Text><Text style={styles.noticeCopy}>Start a new milestone when you are ready.</Text></View>
+          )}
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (milestoneView === 'history') {
+    const filters: MilestoneStatusFilter[] = ['COMPLETED', 'MISSED', 'CANCELLED', 'ALL'];
+    return (
+      <ScrollView contentContainerStyle={styles.dashboardContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}>
+        <MilestoneScreenHeaderNative title="History" subtitle="Completed, missed and cancelled milestones." onBack={() => setMilestoneView('overview')} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          {filters.map((filter) => {
+            const selected = historyFilter === filter;
+            return (
+              <Pressable key={filter} onPress={() => setHistoryFilter(filter)} style={[styles.filterButton, selected ? styles.filterButtonActive : null]}>
+                <Text style={[styles.actionText, selected ? styles.actionPrimaryText : null]}>{filter === 'ALL' ? 'All' : filter.charAt(0) + filter.slice(1).toLowerCase()}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        <View style={styles.mealList}>
+          {visibleHistory.length ? visibleHistory.map((milestone) => <MilestoneCard key={milestone.id} milestone={milestone} />) : (
+            <View style={styles.emptyCard}><Text style={styles.noticeTitle}>No milestones here</Text><Text style={styles.noticeCopy}>Try another history filter.</Text></View>
+          )}
+        </View>
+      </ScrollView>
+    );
   }
 
   return (
@@ -3304,6 +3434,28 @@ function GoalsOverviewScreen({
             <MetricCard value={String(badges)} label="badges" />
           </View>
 
+          <View style={styles.milestoneNavGrid}>
+            <Pressable onPress={() => setMilestoneView('inProgress')} style={styles.milestoneNavPressable}>
+              <GlassCard style={styles.milestoneNavCard}>
+                <Target size={22} color={colors.primary} />
+                <View style={styles.mealItemCopy}><Text style={styles.mealTitle}>In progress</Text><Text style={styles.noticeCopy}>Active and paused milestones</Text></View>
+                <Text style={styles.milestoneCount}>{inProgress.length}</Text>
+                <ChevronRight size={20} color={colors.mutedSoft} />
+              </GlassCard>
+            </Pressable>
+            <Pressable onPress={() => setMilestoneView('history')} style={styles.milestoneNavPressable}>
+              <GlassCard style={styles.milestoneNavCard}>
+                <CalendarDays size={22} color={colors.accent} />
+                <View style={styles.mealItemCopy}><Text style={styles.mealTitle}>History</Text><Text style={styles.noticeCopy}>Completed and past milestones</Text></View>
+                <Text style={styles.milestoneCount}>{history.length}</Text>
+                <ChevronRight size={20} color={colors.mutedSoft} />
+              </GlassCard>
+            </Pressable>
+            <Pressable onPress={openNewMilestone} style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}>
+              <Plus size={18} color={colors.white} /><Text style={styles.actionPrimaryText}>Create milestone</Text>
+            </Pressable>
+          </View>
+
           {suggestions.length ? (
             <GlassCard style={styles.authPanel}>
               <Text style={styles.sectionTitle}>Smart milestone ideas</Text>
@@ -3335,7 +3487,7 @@ function GoalsOverviewScreen({
             </GlassCard>
           ) : null}
 
-          <GlassCard style={styles.authPanel}>
+          <GlassCard style={[styles.authPanel, styles.hidden]}>
             <Text style={styles.sectionTitle}>
               {editingMilestoneId ? 'Edit milestone' : 'Custom milestone'}
             </Text>
@@ -3379,8 +3531,8 @@ function GoalsOverviewScreen({
             </View>
           </GlassCard>
 
-          <Text style={styles.sectionTitle}>Milestones</Text>
-          <View style={styles.mealList}>
+          <Text style={styles.hidden}>Milestones</Text>
+          <View style={styles.hidden}>
             {milestones.length ? (
               milestones.map((milestone) => (
                 <MilestoneCard key={milestone.id} milestone={milestone}>
@@ -3448,16 +3600,18 @@ function RecipeCard({
   onDelete,
   onSave,
   saved,
+  saving,
 }: {
   recipe: SavedRecipe['recipe'];
   onDelete?: () => void;
   onSave?: () => void;
   saved?: boolean;
+  saving?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <Pressable onPress={() => setExpanded((value) => !value)}><GlassCard style={styles.notificationCard}>
-      <View style={styles.notificationHeader}>
+    <GlassCard style={styles.notificationCard}>
+      <Pressable accessibilityRole="button" onPress={() => setExpanded((value) => !value)} style={styles.notificationHeader}>
         <View style={styles.mealItemCopy}>
           <Text style={styles.mealTitle}>{recipe.title || displayMealType(recipe.mealType)}</Text>
           <Text style={styles.metricLabel}>
@@ -3466,7 +3620,7 @@ function RecipeCard({
           </Text>
         </View>
         <Text style={styles.mealCalories}>{recipeCalories(recipe)} kcal</Text>
-      </View>
+      </Pressable>
       {recipe.description ? <Text style={styles.noticeCopy}>{recipe.description}</Text> : null}
       {recipe.macros ? (
         <Text style={styles.metricLabel}>
@@ -3506,14 +3660,21 @@ function RecipeCard({
               <Text style={styles.actionText}>Delete recipe</Text>
             </Pressable>
           ) : null}
-          {onSave ? (
-            <Pressable onPress={onSave} disabled={saved} style={styles.pageButton}>
-              <Text style={styles.actionText}>{saved ? 'Saved' : 'Save recipe'}</Text>
-            </Pressable>
-          ) : null}
         </View>
       ) : null}
-    </GlassCard></Pressable>
+      {onSave ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: Boolean(saved || saving), busy: Boolean(saving) }}
+          onPress={onSave}
+          disabled={saved || saving}
+          style={[styles.actionButton, styles.actionPrimary, styles.actionFull, saved ? styles.recipeSavedButton : null]}
+        >
+          {saving ? <ActivityIndicator size="small" color={colors.white} /> : null}
+          <Text style={styles.actionPrimaryText}>{saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save recipe'}</Text>
+        </Pressable>
+      ) : null}
+    </GlassCard>
   );
 }
 
@@ -3524,6 +3685,7 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [savingRecipeTitle, setSavingRecipeTitle] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   function extractPlanMeals(result: Awaited<ReturnType<typeof api.mealPlan>>) {
@@ -3567,6 +3729,8 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
   }
 
   async function savePlanRecipe(recipe: SavedRecipe['recipe']) {
+    if (savingRecipeTitle || (recipe.title && savedPlanTitles.includes(recipe.title))) return;
+    setSavingRecipeTitle(recipe.title ?? 'recipe');
     setMessage(null);
     try {
       const result = await api.saveRecipe(session.token, recipe);
@@ -3580,6 +3744,8 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
       setMessage('Recipe saved.');
     } catch (error) {
       setMessage(apiErrorMessage(error));
+    } finally {
+      setSavingRecipeTitle(null);
     }
   }
 
@@ -3663,6 +3829,7 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
                     key={`${recipe.title}-${index}`}
                     recipe={recipe}
                     saved={Boolean(recipe.title && savedPlanTitles.includes(recipe.title))}
+                    saving={savingRecipeTitle === (recipe.title ?? 'recipe')}
                     onSave={() => savePlanRecipe(recipe)}
                   />
                 ))}
@@ -6640,6 +6807,65 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  recipeSavedButton: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  hidden: {
+    display: 'none',
+  },
+  subscreenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 4,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.glassBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  milestoneNavGrid: {
+    gap: 12,
+  },
+  milestoneNavPressable: {
+    borderRadius: 24,
+  },
+  milestoneNavCard: {
+    minHeight: 84,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  milestoneCount: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  filterRow: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  filterButton: {
+    minHeight: 42,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.glassBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   bottomNavWrap: {
     position: 'absolute',

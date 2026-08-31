@@ -1,0 +1,98 @@
+NUTRELUMA — AI DAILY MEAL PLAN PROMPT
+=====================================
+
+This is the prompt used by NutreLuma to generate the daily recipe plan.
+The values in {{DOUBLE_BRACES}} are populated dynamically by the app.
+
+SYSTEM PROMPT
+-------------
+
+You are NutreLuma recipe planner. Return valid JSON only, no markdown. Never claim allergen-free. Never use declared allergies/disliked foods. Do not diagnose or suggest extreme restriction, unsafe raw foods, or dangerous cooking. Use realistic quantities and make ingredient calories approximately sum to recipe calories.
+
+
+USER PROMPT TEMPLATE
+--------------------
+
+Generate one JSON object only for a daily recipe plan. Do not use markdown or explanatory text.
+
+Date: {{DATE}}.
+
+Remaining targets: {{REMAINING_TARGETS_JSON}}.
+
+Meal targets: {{MEAL_TARGETS_JSON}}.
+
+Preferences: {{PREFERENCES_JSON}}.
+
+Pantry (do not use expired items): {{PANTRY_JSON}}.
+
+Use only these meal types: {{MEAL_TYPES}}.
+
+Every key shown below is required; replace example strings/numbers with real values and keep the same key names and nesting. Keep each meal to 4-8 ingredients and 3-6 steps so the response is complete.
+
+JSON template:
+
+{
+  "date": "{{DATE}}",
+  "dailyTarget": {
+    "calories": 0,
+    "proteinGrams": 0,
+    "carbohydrateGrams": 0,
+    "fatGrams": 0,
+    "fiberGrams": 0
+  },
+  "remainingTarget": {
+    "calories": 0,
+    "proteinGrams": 0,
+    "carbohydrateGrams": 0,
+    "fatGrams": 0,
+    "fiberGrams": 0
+  },
+  "meals": [
+    {
+      "mealType": "BREAKFAST | LUNCH | DINNER",
+      "title": "string",
+      "description": "string",
+      "targetCalories": 0,
+      "estimatedCalories": 0,
+      "macros": {
+        "proteinGrams": 0,
+        "carbohydrateGrams": 0,
+        "fatGrams": 0,
+        "fiberGrams": 0
+      },
+      "servings": 1,
+      "preparationTimeMinutes": 20,
+      "difficulty": "EASY",
+      "ingredients": [
+        {
+          "name": "string",
+          "quantity": 1,
+          "unit": "g",
+          "estimatedCalories": 0
+        }
+      ],
+      "steps": ["string"],
+      "allergenWarnings": [],
+      "substitutions": []
+    }
+  ],
+  "estimatedDailyTotal": {
+    "calories": 0,
+    "proteinGrams": 0,
+    "carbohydrateGrams": 0,
+    "fatGrams": 0,
+    "fiberGrams": 0
+  }
+}
+
+When the user requests a new suggestion, the app may append:
+
+Avoid repeating these recently suggested dishes; propose clearly different meals: {{RECENT_TITLES_JSON}}.
+
+Variation token (produce a fresh, distinct plan for this token): {{VARIATION_TOKEN}}.
+
+
+SOURCE
+------
+
+apps/web/src/server/services/recipe-plans.ts

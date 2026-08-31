@@ -3,9 +3,12 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  ArrowLeft,
   Check,
   ChevronRight,
+  History,
   Pause,
+  Pencil,
   Plus,
   Sparkles,
   Target,
@@ -22,6 +25,11 @@ import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 import { localizeAchievement } from '@/lib/achievement-localization';
 import { BadgeIcon } from '@/components/goals/badge-icon';
+import {
+  filterMilestoneHistory,
+  partitionMilestones,
+  type MilestoneStatusFilter,
+} from '../../../../shared/milestone-display';
 
 type Milestone = {
   id: string;
@@ -36,6 +44,8 @@ type Milestone = {
   status: string;
   percent: number;
 };
+
+type MilestoneView = 'overview' | 'inProgress' | 'history' | 'editor';
 
 type Achievement = {
   code: string;
@@ -111,13 +121,19 @@ export function AchievementsPanel({
   const t = useT();
   const english = t('achievements.achievements') === 'Achievements';
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [view, setView] = React.useState<MilestoneView>('overview');
+  const [historyFilter, setHistoryFilter] = React.useState<MilestoneStatusFilter>('COMPLETED');
+  const [editingMilestoneId, setEditingMilestoneId] = React.useState<string | null>(null);
   const [title, setTitle] = React.useState('');
   const [type, setType] = React.useState('MEAL_LOGGING_DAYS');
   const [targetValue, setTargetValue] = React.useState('5');
   const [dailyThreshold, setDailyThreshold] = React.useState('');
+  const [startDate, setStartDate] = React.useState(today);
   const [endDate, setEndDate] = React.useState('');
 
-  const activeMilestones = milestones.filter((milestone) => milestone.status === 'ACTIVE');
+  const { inProgress: inProgressMilestones, history: milestoneHistory } = partitionMilestones(milestones);
+  const visibleHistory = filterMilestoneHistory(milestoneHistory, historyFilter);
+  const activeMilestones = inProgressMilestones.filter((milestone) => milestone.status === 'ACTIVE');
   const unlockedAchievements = achievements.filter((achievement) => achievement.unlocked);
   const unlockedBadges = badges.filter((badge) => badge.unlocked);
   const nextMilestone = activeMilestones
@@ -125,14 +141,16 @@ export function AchievementsPanel({
     .sort((a, b) => b.percent - a.percent)[0];
 
   async function run(key: string, action: () => Promise<unknown>, success?: string) {
-    if (busy) return;
+    if (busy) return false;
     setBusy(key);
     try {
       await action();
       if (success) toast.push(success, 'success');
       router.refresh();
+      return true;
     } catch (error) {
       toast.push(error instanceof ApiClientError ? error.message : t('achievements.somethingWentWrong'), 'error');
+      return false;
     } finally {
       setBusy(null);
     }
@@ -143,7 +161,7 @@ export function AchievementsPanel({
       title: source?.title ?? title,
       type: source?.type ?? type,
       targetValue: source?.targetValue ?? Number(targetValue),
-      startDate: today,
+      startDate: source?.startDate ?? startDate,
       endDate: source?.endDate ?? (endDate || undefined),
       dailyThreshold:
         source?.dailyThreshold ?? (dailyThreshold ? Number(dailyThreshold) : undefined),
@@ -151,11 +169,156 @@ export function AchievementsPanel({
   }
 
   function applySuggestion(suggestion: Suggestion) {
+    setEditingMilestoneId(null);
     setTitle(suggestion.title);
     setType(suggestion.type);
     setTargetValue(String(suggestion.targetValue));
     setDailyThreshold(suggestion.dailyThreshold ? String(suggestion.dailyThreshold) : '');
+    setStartDate(suggestion.startDate || today);
     setEndDate(suggestion.endDate);
+    setView('editor');
+  }
+
+  function resetMilestoneForm() {
+    setEditingMilestoneId(null);
+    setTitle('');
+    setType('MEAL_LOGGING_DAYS');
+    setTargetValue('5');
+    setDailyThreshold('');
+    setStartDate(today);
+    setEndDate('');
+  }
+
+  function createMilestone() {
+    resetMilestoneForm();
+    setView('editor');
+  }
+
+  function editMilestone(milestone: Milestone) {
+    setEditingMilestoneId(milestone.id);
+    setTitle(milestone.title);
+    setType(milestone.type);
+    setTargetValue(String(milestone.targetValue));
+    setDailyThreshold(milestone.dailyThreshold ? String(milestone.dailyThreshold) : '');
+    setStartDate(milestone.startDate || today);
+    setEndDate(milestone.endDate ?? '');
+    setView('editor');
+  }
+
+  if (view === 'inProgress') {
+    return (
+      <div className="space-y-5">
+        <MilestoneScreenHeader
+          title={t('achievements.inProgress')}
+          subtitle={t('achievements.inProgressDescription')}
+          onBack={() => setView('overview')}
+          action={<Button type="button" onClick={createMilestone}><Plus className="h-4 w-4" aria-hidden="true" />{t('achievements.createMilestone')}</Button>}
+        />
+        <div className="space-y-3">
+          {inProgressMilestones.length ? inProgressMilestones.map((milestone) => (
+            <MilestoneRow key={milestone.id} milestone={milestone}>
+              <Button type="button" size="sm" variant="outline" onClick={() => editMilestone(milestone)}>
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+                {t('common.edit')}
+              </Button>
+              {milestone.status === 'ACTIVE' ? (
+                <Button type="button" size="sm" variant="ghost" loading={busy === `pause:${milestone.id}`} onClick={() => void run(`pause:${milestone.id}`, () => api.post(`/api/milestones/${milestone.id}/pause`))}>
+                  <Pause className="h-4 w-4" aria-hidden="true" />{t('achievements.pause')}
+                </Button>
+              ) : (
+                <Button type="button" size="sm" variant="ghost" loading={busy === `resume:${milestone.id}`} onClick={() => void run(`resume:${milestone.id}`, () => api.post(`/api/milestones/${milestone.id}/resume`))}>
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />{t('achievements.resume')}
+                </Button>
+              )}
+              <Button type="button" size="sm" variant="ghost" loading={busy === `cancel:${milestone.id}`} onClick={() => void run(`cancel:${milestone.id}`, () => api.post(`/api/milestones/${milestone.id}/cancel`))}>
+                <X className="h-4 w-4" aria-hidden="true" />{t('achievements.cancelGoal')}
+              </Button>
+            </MilestoneRow>
+          )) : <EmptyState text={t('achievements.noInProgress')} />}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'history') {
+    const filters: MilestoneStatusFilter[] = ['COMPLETED', 'MISSED', 'CANCELLED', 'ALL'];
+    return (
+      <div className="space-y-5">
+        <MilestoneScreenHeader
+          title={t('achievements.history')}
+          subtitle={t('achievements.historyDescription')}
+          onBack={() => setView('overview')}
+        />
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('achievements.historyFilters')}>
+          {filters.map((filter) => (
+            <Button key={filter} type="button" size="sm" variant={historyFilter === filter ? 'primary' : 'outline'} aria-pressed={historyFilter === filter} onClick={() => setHistoryFilter(filter)}>
+              {filter === 'ALL' ? t('achievements.all') : filter === 'COMPLETED' ? t('achievements.completed') : filter === 'MISSED' ? t('achievements.missed') : t('achievements.cancelled')}
+            </Button>
+          ))}
+        </div>
+        <div className="space-y-3">
+          {visibleHistory.length ? visibleHistory.map((milestone) => <MilestoneRow key={milestone.id} milestone={milestone} />) : <EmptyState text={t('achievements.noHistory')} />}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'editor') {
+    const editing = Boolean(editingMilestoneId);
+    return (
+      <div className="space-y-5">
+        <MilestoneScreenHeader
+          title={editing ? t('achievements.editMilestone') : t('achievements.createMilestone')}
+          subtitle={editing ? t('achievements.editMilestoneDescription') : t('achievements.customMilestoneDescription')}
+          onBack={() => setView(editing ? 'inProgress' : 'overview')}
+        />
+        <Card className="mx-auto w-full max-w-2xl border-primary/20">
+          <CardContent className="pt-6">
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void (async () => {
+                  const success = await run(
+                    editing ? `edit:${editingMilestoneId}` : 'create',
+                    () => editing
+                      ? api.patch(`/api/milestones/${editingMilestoneId}`, milestonePayload())
+                      : api.post('/api/milestones', milestonePayload()),
+                    editing ? t('achievements.milestoneSaved') : t('achievements.milestoneCreated'),
+                  );
+                  if (success) {
+                    resetMilestoneForm();
+                    setView('inProgress');
+                  }
+                })();
+              }}
+            >
+              <Field label={t('achievements.title')} htmlFor="milestone-title">
+                <Input id="milestone-title" value={title} onChange={(event) => setTitle(event.target.value)} required autoFocus />
+              </Field>
+              <Field label={t('achievements.type')} htmlFor="milestone-type">
+                <Select id="milestone-type" value={type} disabled={editing} onChange={(event) => setType(event.target.value)}>
+                  {TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </Select>
+              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={t('achievements.target')} htmlFor="milestone-target"><Input id="milestone-target" type="number" min={1} value={targetValue} onChange={(event) => setTargetValue(event.target.value)} required /></Field>
+                <Field label={t('achievements.dailyLimit')} htmlFor="milestone-threshold"><Input id="milestone-threshold" type="number" min={1} value={dailyThreshold} onChange={(event) => setDailyThreshold(event.target.value)} /></Field>
+                <Field label={t('achievements.startDate')} htmlFor="milestone-start"><Input id="milestone-start" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} required /></Field>
+                <Field label={t('achievements.end')} htmlFor="milestone-end"><Input id="milestone-end" type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></Field>
+              </div>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button type="button" variant="ghost" onClick={() => setView(editing ? 'inProgress' : 'overview')}>{t('common.cancel')}</Button>
+                <Button type="submit" loading={busy === (editing ? `edit:${editingMilestoneId}` : 'create')}>
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                  {editing ? t('achievements.saveChanges') : t('achievements.create')}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -228,7 +391,24 @@ export function AchievementsPanel({
             </CardContent>
           </Card>
 
-          <Card id="milestones">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <MilestoneNavCard
+              icon={Target}
+              title={t('achievements.inProgress')}
+              description={t('achievements.inProgressDescription')}
+              count={inProgressMilestones.length}
+              onClick={() => setView('inProgress')}
+            />
+            <MilestoneNavCard
+              icon={History}
+              title={t('achievements.history')}
+              description={t('achievements.historyDescription')}
+              count={milestoneHistory.length}
+              onClick={() => setView('history')}
+            />
+          </div>
+
+          <Card id="milestones" className="hidden">
             <CardHeader>
               <CardTitle>{t('achievements.milestones')}</CardTitle>
               <CardDescription>{t('achievements.milestonesDescription')}</CardDescription>
@@ -315,7 +495,20 @@ export function AchievementsPanel({
         </div>
 
         <aside className="space-y-5">
-          <Card>
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle>{t('achievements.createMilestone')}</CardTitle>
+              <CardDescription>{t('achievements.customMilestoneDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button type="button" block onClick={createMilestone}>
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                {t('achievements.createMilestone')}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hidden">
             <CardHeader>
               <CardTitle>{t('achievements.customMilestone')}</CardTitle>
               <CardDescription>{t('achievements.customMilestoneDescription')}</CardDescription>
@@ -451,6 +644,92 @@ function SummaryTile({
           <p className="text-2xl font-semibold leading-none">{value}</p>
           <p className="mt-1 text-xs text-muted-foreground">{label}</p>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MilestoneScreenHeader({
+  title,
+  subtitle,
+  onBack,
+  action,
+}: {
+  title: string;
+  subtitle: string;
+  onBack: () => void;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <Button type="button" size="icon" variant="outline" onClick={onBack} aria-label="Back">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        </Button>
+        <div>
+          <h2 className="text-xl font-semibold">{title}</h2>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function MilestoneNavCard({
+  icon: Icon,
+  title,
+  description,
+  count,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+  title: string;
+  description: string;
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} className="group rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <Card className="h-full transition-colors group-hover:border-primary/35">
+        <CardContent className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" aria-hidden={true} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center justify-between gap-3">
+              <span className="font-semibold">{title}</span>
+              <span className="text-xl font-semibold tabular-nums">{count}</span>
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">{description}</span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </CardContent>
+      </Card>
+    </button>
+  );
+}
+
+function MilestoneRow({ milestone, children }: { milestone: Milestone; children?: React.ReactNode }) {
+  return (
+    <Card id={`milestone-${milestone.id}`} className="scroll-mt-28">
+      <CardContent className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold">{milestone.title}</p>
+              <span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-medium', statusClass(milestone.status))}>
+                {statusLabels[milestone.status] ?? milestone.status}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {metric(milestone.currentValue)} / {metric(milestone.targetValue)} {milestone.unit ?? ''}
+              {milestone.endDate ? ` · ${milestone.endDate}` : ''}
+            </p>
+          </div>
+          {children ? <div className="flex flex-wrap gap-1">{children}</div> : null}
+        </div>
+        <Progress value={Math.min(milestone.percent, 100)} max={100} label={`${milestone.percent}%`} />
       </CardContent>
     </Card>
   );
