@@ -55,6 +55,8 @@ import { GlassBackdrop } from './src/backdrop';
 import { GlassCard } from './src/glass-card';
 import { OrbitStage, OrbitRow, OrbitCenter, Satellite } from './src/orbit-cluster';
 import { MealReel, MealReelCard } from './src/meal-reel';
+import { GlassSheet } from './src/glass-sheet';
+import { SwipeableRow } from './src/swipeable-row';
 import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
@@ -411,6 +413,28 @@ function MealPhoto({
       style={style}
       onError={() => setFailed(true)}
     />
+  );
+}
+
+/** Ξεχωριστή glass κάρτα ανά κατηγορία ρυθμίσεων (About you / Body / κ.λπ.) —
+ * αντί να στριμώχνονται όλα τα fields σε ένα ενιαίο block. */
+function CategorySection({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <GlassCard style={styles.categoryCard}>
+      <View style={styles.categoryHeader}>
+        <View style={styles.categoryIcon}>{icon}</View>
+        <Text style={styles.categoryTitle}>{title}</Text>
+      </View>
+      {children}
+    </GlassCard>
   );
 }
 
@@ -2020,15 +2044,17 @@ function WeightScreen({
         <View style={styles.mealList}>
           {entries.length ? (
             entries.map((entry) => (
-              <Pressable key={entry.id} onLongPress={() => confirmDelete(entry)} style={styles.mealCard}>
-                <View style={styles.mealItemCopy}>
-                  <Text style={styles.mealTitle}>{entry.entryDate}</Text>
-                  <Text style={styles.metricLabel}>
-                    {entry.notes ? entry.notes : 'Long press to delete'}
-                  </Text>
+              <SwipeableRow key={entry.id} onDelete={() => confirmDelete(entry)}>
+                <View style={styles.mealCard}>
+                  <View style={styles.mealItemCopy}>
+                    <Text style={styles.mealTitle}>{entry.entryDate}</Text>
+                    <Text style={styles.metricLabel}>
+                      {entry.notes ? entry.notes : 'Swipe left to delete'}
+                    </Text>
+                  </View>
+                  <Text style={styles.mealCalories}>{entry.weightKg} kg</Text>
                 </View>
-                <Text style={styles.mealCalories}>{entry.weightKg} kg</Text>
-              </Pressable>
+              </SwipeableRow>
             ))
           ) : (
             <View style={styles.emptyCard}>
@@ -2105,6 +2131,24 @@ function HistoryScreen({
     setMinCalories('');
     setMaxCalories('');
     setPage(1);
+  }
+
+  function confirmDeleteMeal(meal: MealSummary) {
+    Alert.alert('Delete meal?', meal.title || displayMealType(meal.mealType), [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.deleteMeal(session.token, meal.id);
+            await load(page, true);
+          } catch (error) {
+            setMessage(apiErrorMessage(error));
+          }
+        },
+      },
+    ]);
   }
 
   useEffect(() => {
@@ -2189,18 +2233,20 @@ function HistoryScreen({
             </GlassCard>
           ) : meals.length ? (
             meals.map((meal) => (
-              <Pressable key={meal.id} onPress={() => onOpenMeal(meal.id)} style={styles.mealCard}>
-                <View style={styles.mealItemCopy}>
-                  <Text style={styles.mealTitle}>{meal.title || displayMealType(meal.mealType)}</Text>
-                  <Text style={styles.metricLabel}>
-                    {displayMealType(meal.mealType)} · {formatNotificationDate(meal.mealDateTime)} ·{' '}
-                    {meal.status.toLowerCase()}
+              <SwipeableRow key={meal.id} onDelete={() => confirmDeleteMeal(meal)}>
+                <Pressable onPress={() => onOpenMeal(meal.id)} style={styles.mealCard}>
+                  <View style={styles.mealItemCopy}>
+                    <Text style={styles.mealTitle}>{meal.title || displayMealType(meal.mealType)}</Text>
+                    <Text style={styles.metricLabel}>
+                      {displayMealType(meal.mealType)} · {formatNotificationDate(meal.mealDateTime)} ·{' '}
+                      {meal.status.toLowerCase()}
+                    </Text>
+                  </View>
+                  <Text style={styles.mealCalories}>
+                    {Math.round(meal.finalCalories ?? meal.aiEstimatedCalories ?? 0)} kcal
                   </Text>
-                </View>
-                <Text style={styles.mealCalories}>
-                  {Math.round(meal.finalCalories ?? meal.aiEstimatedCalories ?? 0)} kcal
-                </Text>
-              </Pressable>
+                </Pressable>
+              </SwipeableRow>
             ))
           ) : (
             <View style={styles.emptyCard}>
@@ -4720,30 +4766,35 @@ function ProfileOverviewScreen({
             })()}
           </View>
         </View>
+      </GlassCard>
 
-        <Text style={styles.fieldGroupLabel}>About you</Text>
+      <CategorySection icon={<UserCircle2 size={18} color={colors.primary} />} title="About you">
         <Field label="Birth date" value={profileBirthDate} onChangeText={setProfileBirthDate} />
         <ChoiceRow label="Gender" value={profileGender} options={genders} onChange={setProfileGender} />
+      </CategorySection>
 
-        <Text style={styles.fieldGroupLabel}>Body</Text>
+      <CategorySection icon={<Scale size={18} color={colors.primary} />} title="Body">
         <View style={styles.twoColumn}>
           <Field label="Height cm" value={profileHeight} onChangeText={setProfileHeight} keyboardType="numeric" />
           <Field label="Current kg" value={profileCurrentWeight} onChangeText={setProfileCurrentWeight} keyboardType="numeric" />
         </View>
         <Field label="Target kg" value={profileTargetWeight} onChangeText={setProfileTargetWeight} keyboardType="numeric" />
+      </CategorySection>
 
-        <Text style={styles.fieldGroupLabel}>Activity &amp; goal</Text>
+      <CategorySection icon={<Target size={18} color={colors.primary} />} title="Activity & goal">
         <ChoiceRow label="Activity" value={profileActivity} options={activityLevels} onChange={setProfileActivity} />
         <ChoiceRow label="Goal" value={profileGoal} options={goals} onChange={setProfileGoal} />
+      </CategorySection>
 
-        <Text style={styles.fieldGroupLabel}>Preferences</Text>
+      <CategorySection icon={<Settings size={18} color={colors.primary} />} title="Preferences">
         <Field label="Daily calories (optional)" value={profileCalories} onChangeText={setProfileCalories} keyboardType="numeric" />
         <Field label="Timezone" value={profileTimezone} onChangeText={setProfileTimezone} autoCapitalize="none" />
         {healthProfile?.suggestedDailyCalorieTarget ? (
           <Text style={styles.noticeCopy}>Suggested target: {healthProfile.suggestedDailyCalorieTarget} kcal</Text>
         ) : null}
-        <PillButton label={savingProfile ? 'Saving...' : 'Save health profile'} onPress={saveHealthProfile} disabled={savingProfile} />
-      </GlassCard>
+      </CategorySection>
+
+      <PillButton label={savingProfile ? 'Saving...' : 'Save health profile'} onPress={saveHealthProfile} disabled={savingProfile} />
         </>
       ) : null}
 
@@ -5093,9 +5144,7 @@ function CalendarModal({
   const nextMonthDisabled = viewMonth >= maxDate.slice(0, 7);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <Pressable style={styles.calendarCard} onPress={() => {}}>
+    <GlassSheet visible={visible} onClose={onClose}>
           <View style={styles.calendarHeader}>
             <Pressable onPress={() => shiftMonth(-1)} style={styles.dateNavArrow} hitSlop={8}>
               <ChevronLeft size={18} color={colors.text} />
@@ -5152,9 +5201,7 @@ function CalendarModal({
           <Pressable onPress={() => onSelect(maxDate)} style={styles.calendarTodayButton}>
             <Text style={styles.calendarTodayText}>Today</Text>
           </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
+    </GlassSheet>
   );
 }
 
@@ -5534,83 +5581,70 @@ function DashboardScreen({
         ) : null}
       </MealReel>
 
-      <Modal visible={showTargets} transparent animationType="fade" onRequestClose={() => setShowTargets(false)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setShowTargets(false)}>
-          <Pressable style={styles.calendarCard} onPress={() => {}}>
-            <Text style={styles.sectionTitle}>Water &amp; steps</Text>
-            <Text style={styles.noticeCopy}>Set your daily targets and log steps.</Text>
+      <GlassSheet visible={showTargets} onClose={() => setShowTargets(false)}>
+        <Text style={styles.sectionTitle}>Water &amp; steps</Text>
+        <Text style={styles.noticeCopy}>Set your daily targets and log steps.</Text>
 
-            <Field
-              label="Daily water target (ml)"
-              value={targetWaterInput}
-              onChangeText={setTargetWaterInput}
-              keyboardType="numeric"
-            />
-            <Field
-              label="Daily steps target"
-              value={targetStepsInput}
-              onChangeText={setTargetStepsInput}
-              keyboardType="numeric"
-            />
-            <PillButton
-              label={savingTargets ? 'Saving...' : 'Save targets'}
-              onPress={saveTargets}
-              disabled={savingTargets}
-            />
+        <Field
+          label="Daily water target (ml)"
+          value={targetWaterInput}
+          onChangeText={setTargetWaterInput}
+          keyboardType="numeric"
+        />
+        <Field
+          label="Daily steps target"
+          value={targetStepsInput}
+          onChangeText={setTargetStepsInput}
+          keyboardType="numeric"
+        />
+        <PillButton
+          label={savingTargets ? 'Saving...' : 'Save targets'}
+          onPress={saveTargets}
+          disabled={savingTargets}
+        />
 
-            <Pressable onPress={() => setShowTargets(false)} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Close</Text>
-            </Pressable>
-          </Pressable>
+        <Pressable onPress={() => setShowTargets(false)} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Close</Text>
         </Pressable>
-      </Modal>
+      </GlassSheet>
 
-      <Modal
-        visible={showAddChoice}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowAddChoice(false)}
-      >
-        <Pressable style={styles.modalBackdrop} onPress={() => setShowAddChoice(false)}>
-          <Pressable style={styles.calendarCard} onPress={() => {}}>
-            <Text style={styles.sectionTitle}>Add</Text>
-            <Pressable
-              style={styles.addChoiceRow}
-              onPress={() => {
-                setShowAddChoice(false);
-                onAddMeal();
-              }}
-            >
-              <View style={styles.addChoiceIcon}>
-                <Plus size={20} color={colors.primary} />
-              </View>
-              <View style={styles.mealCardCopy}>
-                <Text style={styles.mealTitle}>Add meal</Text>
-                <Text style={styles.metricLabel}>Photo, gallery or manual entry</Text>
-              </View>
-            </Pressable>
-            <Pressable
-              style={styles.addChoiceRow}
-              onPress={() => {
-                setShowAddChoice(false);
-                onOpenWeight();
-              }}
-            >
-              <View style={styles.addChoiceIcon}>
-                <Scale size={20} color={colors.primary} />
-              </View>
-              <View style={styles.mealCardCopy}>
-                <Text style={styles.mealTitle}>Add weight</Text>
-                <Text style={styles.metricLabel}>Log today's weigh-in</Text>
-              </View>
-            </Pressable>
-
-            <Pressable onPress={() => setShowAddChoice(false)} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Cancel</Text>
-            </Pressable>
-          </Pressable>
+      <GlassSheet visible={showAddChoice} onClose={() => setShowAddChoice(false)}>
+        <Text style={styles.sectionTitle}>Add</Text>
+        <Pressable
+          style={styles.addChoiceRow}
+          onPress={() => {
+            setShowAddChoice(false);
+            onAddMeal();
+          }}
+        >
+          <View style={styles.addChoiceIcon}>
+            <Plus size={20} color={colors.primary} />
+          </View>
+          <View style={styles.mealCardCopy}>
+            <Text style={styles.mealTitle}>Add meal</Text>
+            <Text style={styles.metricLabel}>Photo, gallery or manual entry</Text>
+          </View>
         </Pressable>
-      </Modal>
+        <Pressable
+          style={styles.addChoiceRow}
+          onPress={() => {
+            setShowAddChoice(false);
+            onOpenWeight();
+          }}
+        >
+          <View style={styles.addChoiceIcon}>
+            <Scale size={20} color={colors.primary} />
+          </View>
+          <View style={styles.mealCardCopy}>
+            <Text style={styles.mealTitle}>Add weight</Text>
+            <Text style={styles.metricLabel}>Log today's weigh-in</Text>
+          </View>
+        </Pressable>
+
+        <Pressable onPress={() => setShowAddChoice(false)} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Cancel</Text>
+        </Pressable>
+      </GlassSheet>
     </ScrollView>
     {isToday ? (
       <GradientFab onPress={() => setShowAddChoice(true)} style={styles.dashboardFab}>
@@ -5662,25 +5696,30 @@ export default function App() {
   // iOS gestures: one-finger swipe από την αριστερή άκρη → back,
   // από τη δεξιά άκρη → forward. Διεκδικεί τον responder μόνο σε καθαρά
   // οριζόντια κίνηση που ξεκινά στην άκρη, ώστε να μη μπλοκάρει το scroll.
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_evt, gesture) => {
-          if (Platform.OS !== 'ios') return false;
-          const horizontal =
-            Math.abs(gesture.dx) > 16 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.7;
-          if (!horizontal) return false;
-          if (gesture.x0 <= 28 && gesture.dx > 0) return true;
-          if (gesture.x0 >= windowWidth - 28 && gesture.dx < 0) return true;
-          return false;
-        },
-        onPanResponderRelease: (_evt, gesture) => {
-          if (gesture.x0 <= 40 && gesture.dx > 60) goBack();
-          else if (gesture.x0 >= windowWidth - 40 && gesture.dx < -60) goForward();
-        },
-      }),
-    [windowWidth, goBack, goForward],
-  );
+  const panResponder = useMemo(() => {
+    // Κοινή λογική για capture ΚΑΙ bubble phase: το claim πρέπει να γίνεται
+    // στο capture (πριν προλάβει να το πάρει ένα εσωτερικό ScrollView/carousel
+    // πάνω σε οθόνες όπως το Meal Detail), αλλιώς το edge-swipe δούλευε άτακτα
+    // ανάλογα με το τι είχε από κάτω η κάθε οθόνη.
+    const shouldClaim = (gesture: { dx: number; dy: number; x0: number }) => {
+      if (Platform.OS !== 'ios') return false;
+      const horizontal = Math.abs(gesture.dx) > 16 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.7;
+      if (!horizontal) return false;
+      if (gesture.x0 <= 28 && gesture.dx > 0) return true;
+      if (gesture.x0 >= windowWidth - 28 && gesture.dx < 0) return true;
+      return false;
+    };
+    return PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_evt, gesture) => shouldClaim(gesture),
+      onMoveShouldSetPanResponder: (_evt, gesture) => shouldClaim(gesture),
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (_evt, gesture) => {
+        if (gesture.x0 <= 40 && gesture.dx > 60) goBack();
+        else if (gesture.x0 >= windowWidth - 40 && gesture.dx < -60) goForward();
+      },
+    });
+  }, [windowWidth, goBack, goForward]);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -6129,6 +6168,28 @@ const styles = StyleSheet.create({
   authPanel: {
     padding: 18,
     gap: 12,
+  },
+  categoryCard: {
+    padding: 18,
+    gap: 12,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  categoryIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+  },
+  categoryTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
   },
   kicker: {
     color: colors.accent,
