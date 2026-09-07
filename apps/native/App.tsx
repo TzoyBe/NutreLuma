@@ -54,7 +54,6 @@ import { AiLoadingCard, AiSpinner } from './src/ai-loader';
 import { GlassBackdrop } from './src/backdrop';
 import { GlassCard } from './src/glass-card';
 import { OrbitStage, OrbitRow, OrbitCenter, Satellite } from './src/orbit-cluster';
-import { StatusIsland } from './src/status-island';
 import { MealReel, MealReelCard } from './src/meal-reel';
 import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
@@ -72,7 +71,6 @@ import {
   ChefHat,
   ChevronLeft,
   ChevronRight,
-  Flame,
   LayoutDashboard,
   LineChart,
   Plus,
@@ -5409,20 +5407,7 @@ function DashboardScreen({
 
       <DateNav date={date} maxDate={today} onChange={setDate} />
 
-      {!loading && target ? (
-        <StatusIsland icon={<Flame size={14} color={overTarget ? colors.danger : colors.accent} />}>
-          {overTarget
-            ? `${Math.abs(remaining ?? 0)} kcal over target`
-            : `${Math.abs(remaining ?? 0)} kcal remaining today`}
-        </StatusIsland>
-      ) : null}
-
-      <View style={styles.progressSectionHeader}>
-        <Text style={styles.sectionTitle}>{isToday ? "Today's progress" : "Day's progress"}</Text>
-        <Pressable onPress={onOpenGoals} hitSlop={8}>
-          <Text style={styles.linkText}>Set goals</Text>
-        </Pressable>
-      </View>
+      <Text style={styles.sectionTitle}>{isToday ? "Today's progress" : "Day's progress"}</Text>
 
       {loading ? (
         <View style={styles.orbitLoading}>
@@ -5482,6 +5467,26 @@ function DashboardScreen({
               );
             })}
           </OrbitRow>
+
+          {/* Water/steps: ΧΩΡΙΣ Satellite float animation ούτε GlassCard — μένουν
+              στο ίδιο cluster οπτικά, αλλά η κίνηση δεν πρέπει να παρεμβαίνει
+              στο pan-to-set gesture τους. */}
+          <OrbitRow>
+            <WaterGauge
+              consumedMl={waterMl}
+              targetMl={waterTarget}
+              scaleMax={1.5 * (waterTarget ?? 3000)}
+              onCommit={isToday ? commitWater : undefined}
+              onDragStateChange={(d) => setScrollEnabled(!d)}
+            />
+            <StepsGauge
+              steps={steps}
+              targetSteps={stepsTarget ?? STEPS_FALLBACK}
+              scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
+              onCommit={isToday ? commitSteps : undefined}
+              onDragStateChange={(d) => setScrollEnabled(!d)}
+            />
+          </OrbitRow>
         </OrbitStage>
       )}
 
@@ -5500,26 +5505,6 @@ function DashboardScreen({
           </Pressable>
         </View>
       ) : null}
-      <View style={styles.macroGaugeGrid}>
-        <GlassCard style={styles.macroGaugeCard}>
-          <WaterGauge
-            consumedMl={waterMl}
-            targetMl={waterTarget}
-            scaleMax={1.5 * (waterTarget ?? 3000)}
-            onCommit={isToday ? commitWater : undefined}
-            onDragStateChange={(d) => setScrollEnabled(!d)}
-          />
-        </GlassCard>
-        <GlassCard style={styles.macroGaugeCard}>
-          <StepsGauge
-            steps={steps}
-            targetSteps={stepsTarget ?? STEPS_FALLBACK}
-            scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
-            onCommit={isToday ? commitSteps : undefined}
-            onDragStateChange={(d) => setScrollEnabled(!d)}
-          />
-        </GlassCard>
-      </View>
 
       <View style={styles.actionRow}>
         <Pressable onPress={onOpenWeight} style={styles.actionButton}>
@@ -6665,17 +6650,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 220,
-  },
-  macroGaugeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  macroGaugeCard: {
-    width: '48%',
-    paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   waterAddRow: {
     flexDirection: 'row',
