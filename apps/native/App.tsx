@@ -53,6 +53,10 @@ import { GoalTargets } from './src/goal-targets';
 import { AiLoadingCard, AiSpinner } from './src/ai-loader';
 import { GlassBackdrop } from './src/backdrop';
 import { GlassCard } from './src/glass-card';
+import { OrbitStage, OrbitCenter, Satellite } from './src/orbit-cluster';
+import { StatusIsland } from './src/status-island';
+import { MealReel, MealReelCard, AddMealReelCard } from './src/meal-reel';
+import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
@@ -65,9 +69,11 @@ import {
   BarChart3,
   Bell,
   CalendarDays,
+  Camera,
   ChefHat,
   ChevronLeft,
   ChevronRight,
+  Flame,
   LayoutDashboard,
   LineChart,
   Plus,
@@ -5359,6 +5365,7 @@ function DashboardScreen({
   ] as const;
 
   return (
+    <View style={styles.dashboardRoot}>
     <ScrollView
       contentContainerStyle={styles.dashboardContent}
       scrollEnabled={scrollEnabled}
@@ -5404,15 +5411,19 @@ function DashboardScreen({
       <DateNav date={date} maxDate={today} onChange={setDate} />
 
       <View style={styles.actionRow}>
-        <Pressable onPress={onAddMeal} style={[styles.actionButton, styles.actionPrimary]}>
-          <Plus size={18} color={colors.white} />
-          <Text style={styles.actionPrimaryText}>Add meal</Text>
-        </Pressable>
         <Pressable onPress={onOpenWeight} style={styles.actionButton}>
           <Scale size={18} color={colors.primary} />
           <Text style={styles.actionText}>Weight</Text>
         </Pressable>
       </View>
+
+      {!loading && target ? (
+        <StatusIsland icon={<Flame size={14} color={overTarget ? colors.danger : colors.accent} />}>
+          {overTarget
+            ? `${Math.abs(remaining ?? 0)} kcal over target`
+            : `${Math.abs(remaining ?? 0)} kcal remaining today`}
+        </StatusIsland>
+      ) : null}
 
       <View style={styles.progressSectionHeader}>
         <Text style={styles.sectionTitle}>{isToday ? "Today's progress" : "Day's progress"}</Text>
@@ -5422,12 +5433,12 @@ function DashboardScreen({
       </View>
 
       {loading ? (
-        <GlassCard style={styles.gaugeCard}>
+        <View style={styles.orbitLoading}>
           <ActivityIndicator color={colors.primary} />
-        </GlassCard>
+        </View>
       ) : (
-        <>
-          <GlassCard style={styles.gaugeCard}>
+        <OrbitStage height={344}>
+          <OrbitCenter>
             <CalorieGauge
               consumed={consumed}
               target={target}
@@ -5442,26 +5453,25 @@ function DashboardScreen({
                 kcal: 'kcal',
               }}
             />
-          </GlassCard>
+          </OrbitCenter>
 
-          <View style={styles.macroGaugeGrid}>
-            {macroConfig.map(({ key, label, color }) => {
-              const macro = macroMap[key] ?? {};
-              const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
-              return (
-                <GlassCard key={key} style={styles.macroGaugeCard}>
-                  <MacroGauge
-                    label={label}
-                    consumed={macro.consumed ?? 0}
-                    target={macroTarget}
-                    over={macro.overTarget ?? false}
-                    color={color}
-                  />
-                </GlassCard>
-              );
-            })}
-          </View>
-        </>
+          {macroConfig.map(({ key, label, color }, index) => {
+            const macro = macroMap[key] ?? {};
+            const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
+            const position = (['top-left', 'top-right', 'bottom-center'] as const)[index];
+            return (
+              <Satellite key={key} position={position} delay={index * 260}>
+                <MacroGauge
+                  label={label}
+                  consumed={macro.consumed ?? 0}
+                  target={macroTarget}
+                  over={macro.overTarget ?? false}
+                  color={color}
+                />
+              </Satellite>
+            );
+          })}
+        </OrbitStage>
       )}
 
       {error ? (
@@ -5502,33 +5512,25 @@ function DashboardScreen({
       </View>
 
       <Text style={styles.sectionTitle}>Meals</Text>
-      <View style={styles.mealList}>
-        {meals.length ? (
-          meals.map((meal) => (
-            <Pressable key={meal.id} onPress={() => onOpenMeal(meal.id)}>
-              <GlassCard style={styles.mealCard}>
-                <View style={styles.mealCardLeft}>
-                  <MealPhoto token={session.token} mealId={meal.id} style={styles.mealThumb} />
-                  <View style={styles.mealCardCopy}>
-                    <Text style={styles.mealTitle}>{meal.title || meal.mealType || 'Meal'}</Text>
-                    <Text style={styles.metricLabel}>
-                      {[formatMealTime(meal.mealDateTime), meal.analysisStatus ?? 'saved']
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.mealCalories}>{Math.round(meal.finalCalories ?? 0)} kcal</Text>
-              </GlassCard>
-            </Pressable>
-          ))
-        ) : (
+      <MealReel>
+        <AddMealReelCard onPress={onAddMeal} label="Add meal" />
+        {meals.map((meal) => (
+          <MealReelCard
+            key={meal.id}
+            onPress={() => onOpenMeal(meal.id)}
+            photo={<MealPhoto token={session.token} mealId={meal.id} style={StyleSheet.absoluteFill} />}
+            title={meal.title || meal.mealType || 'Meal'}
+            meta={formatMealTime(meal.mealDateTime) ?? ''}
+            kcal={meal.finalCalories ?? 0}
+          />
+        ))}
+        {!meals.length ? (
           <GlassCard style={styles.emptyCard}>
             <Text style={styles.noticeTitle}>No meals yet</Text>
             <Text style={styles.noticeCopy}>Add your first meal from camera or gallery.</Text>
           </GlassCard>
-        )}
-      </View>
+        ) : null}
+      </MealReel>
 
       <Modal visible={showTargets} transparent animationType="fade" onRequestClose={() => setShowTargets(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setShowTargets(false)}>
@@ -5561,6 +5563,12 @@ function DashboardScreen({
         </Pressable>
       </Modal>
     </ScrollView>
+    {isToday ? (
+      <GradientFab onPress={onAddMeal} style={styles.dashboardFab}>
+        <Camera size={24} color={colors.white} />
+      </GradientFab>
+    ) : null}
+    </View>
   );
 }
 
@@ -6182,6 +6190,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '900',
+  },
+  dashboardRoot: {
+    flex: 1,
+  },
+  dashboardFab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 118,
+  },
+  orbitLoading: {
+    height: 344,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dashboardContent: {
     padding: 16,
