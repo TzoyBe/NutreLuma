@@ -53,9 +53,9 @@ import { GoalTargets } from './src/goal-targets';
 import { AiLoadingCard, AiSpinner } from './src/ai-loader';
 import { GlassBackdrop } from './src/backdrop';
 import { GlassCard } from './src/glass-card';
-import { OrbitStage, OrbitCenter, Satellite } from './src/orbit-cluster';
+import { OrbitStage, OrbitRow, OrbitCenter, Satellite } from './src/orbit-cluster';
 import { StatusIsland } from './src/status-island';
-import { MealReel, MealReelCard, AddMealReelCard } from './src/meal-reel';
+import { MealReel, MealReelCard } from './src/meal-reel';
 import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
@@ -69,7 +69,6 @@ import {
   BarChart3,
   Bell,
   CalendarDays,
-  Camera,
   ChefHat,
   ChevronLeft,
   ChevronRight,
@@ -5016,18 +5015,18 @@ function DateNav({
   };
 
   return (
-    <View style={styles.dateNavRow}>
+    <View style={styles.dateNavPill}>
       <Pressable
         onPress={() => go(addDaysISO(date, -1))}
-        style={styles.dateNavArrow}
+        style={styles.dateNavArrowFlat}
         hitSlop={8}
         accessibilityLabel="Previous day"
       >
         <ChevronLeft size={18} color={colors.text} />
       </Pressable>
 
-      <Pressable onPress={() => setPickerOpen(true)} style={styles.dateNavCenter} hitSlop={4}>
-        <CalendarDays size={16} color={colors.primary} />
+      <Pressable onPress={() => setPickerOpen(true)} style={styles.dateNavCenterFlat} hitSlop={4}>
+        <CalendarDays size={15} color={colors.primary} />
         <Text style={styles.dateNavLabel}>
           {isToday ? 'Today' : formatDayISOHuman(date)}
         </Text>
@@ -5035,7 +5034,7 @@ function DateNav({
 
       <Pressable
         onPress={() => go(addDaysISO(date, 1))}
-        style={[styles.dateNavArrow, isToday && styles.dateNavArrowDisabled]}
+        style={[styles.dateNavArrowFlat, isToday && styles.dateNavArrowDisabled]}
         disabled={isToday}
         hitSlop={8}
         accessibilityLabel="Next day"
@@ -5410,13 +5409,6 @@ function DashboardScreen({
 
       <DateNav date={date} maxDate={today} onChange={setDate} />
 
-      <View style={styles.actionRow}>
-        <Pressable onPress={onOpenWeight} style={styles.actionButton}>
-          <Scale size={18} color={colors.primary} />
-          <Text style={styles.actionText}>Weight</Text>
-        </Pressable>
-      </View>
-
       {!loading && target ? (
         <StatusIsland icon={<Flame size={14} color={overTarget ? colors.danger : colors.accent} />}>
           {overTarget
@@ -5437,7 +5429,25 @@ function DashboardScreen({
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : (
-        <OrbitStage height={344}>
+        <OrbitStage>
+          <OrbitRow>
+            {macroConfig.slice(0, 2).map(({ key, label, color }, index) => {
+              const macro = macroMap[key] ?? {};
+              const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
+              return (
+                <Satellite key={key} delay={index * 260}>
+                  <MacroGauge
+                    label={label}
+                    consumed={macro.consumed ?? 0}
+                    target={macroTarget}
+                    over={macro.overTarget ?? false}
+                    color={color}
+                  />
+                </Satellite>
+              );
+            })}
+          </OrbitRow>
+
           <OrbitCenter>
             <CalorieGauge
               consumed={consumed}
@@ -5455,22 +5465,23 @@ function DashboardScreen({
             />
           </OrbitCenter>
 
-          {macroConfig.map(({ key, label, color }, index) => {
-            const macro = macroMap[key] ?? {};
-            const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
-            const position = (['top-left', 'top-right', 'bottom-center'] as const)[index];
-            return (
-              <Satellite key={key} position={position} delay={index * 260}>
-                <MacroGauge
-                  label={label}
-                  consumed={macro.consumed ?? 0}
-                  target={macroTarget}
-                  over={macro.overTarget ?? false}
-                  color={color}
-                />
-              </Satellite>
-            );
-          })}
+          <OrbitRow>
+            {macroConfig.slice(2, 4).map(({ key, label, color }, index) => {
+              const macro = macroMap[key] ?? {};
+              const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
+              return (
+                <Satellite key={key} delay={index * 260 + 520}>
+                  <MacroGauge
+                    label={label}
+                    consumed={macro.consumed ?? 0}
+                    target={macroTarget}
+                    over={macro.overTarget ?? false}
+                    color={color}
+                  />
+                </Satellite>
+              );
+            })}
+          </OrbitRow>
         </OrbitStage>
       )}
 
@@ -5481,15 +5492,14 @@ function DashboardScreen({
         </View>
       ) : null}
 
-      <View style={styles.progressSectionHeader}>
-        <Text style={styles.sectionTitle}>{isToday ? 'Today' : 'That day'}</Text>
-        {isToday ? (
+      {isToday ? (
+        <View style={styles.progressSectionHeaderEnd}>
           <Pressable onPress={openTargets} hitSlop={8} style={styles.gaugeSettingsButton}>
             <Settings size={16} color={colors.muted} />
             <Text style={styles.linkText}>Targets</Text>
           </Pressable>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
       <View style={styles.macroGaugeGrid}>
         <GlassCard style={styles.macroGaugeCard}>
           <WaterGauge
@@ -5511,9 +5521,15 @@ function DashboardScreen({
         </GlassCard>
       </View>
 
+      <View style={styles.actionRow}>
+        <Pressable onPress={onOpenWeight} style={styles.actionButton}>
+          <Scale size={18} color={colors.primary} />
+          <Text style={styles.actionText}>Weight</Text>
+        </Pressable>
+      </View>
+
       <Text style={styles.sectionTitle}>Meals</Text>
       <MealReel>
-        <AddMealReelCard onPress={onAddMeal} label="Add meal" />
         {meals.map((meal) => (
           <MealReelCard
             key={meal.id}
@@ -5565,7 +5581,7 @@ function DashboardScreen({
     </ScrollView>
     {isToday ? (
       <GradientFab onPress={onAddMeal} style={styles.dashboardFab}>
-        <Camera size={24} color={colors.white} />
+        <Plus size={26} color={colors.white} />
       </GradientFab>
     ) : null}
     </View>
@@ -6505,10 +6521,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 4,
   },
-  dateNavRow: {
+  progressSectionHeaderEnd: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'flex-end',
+    marginTop: 4,
   },
   dateNavArrow: {
     width: 44,
@@ -6520,20 +6537,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  dateNavPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    backgroundColor: colors.glassBg,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  dateNavArrowFlat: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dateNavArrowDisabled: {
     opacity: 0.45,
   },
-  dateNavCenter: {
+  dateNavCenterFlat: {
     flex: 1,
-    height: 44,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 16,
-    backgroundColor: colors.glassBg,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   dateNavLabel: {
     color: colors.text,

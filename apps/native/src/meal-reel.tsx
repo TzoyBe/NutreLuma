@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Plus } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, signatureGradient } from './theme';
+import { colors } from './theme';
 
 const CARD_W = 116;
 const CARD_H = 156;
@@ -52,22 +50,6 @@ export function MealReelCard({
   );
 }
 
-export function AddMealReelCard({ onPress, label }: { onPress: () => void; label: string }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.card, styles.addCard]}>
-      <LinearGradient
-        colors={signatureGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.addBubble}
-      >
-        <Plus size={22} color={colors.white} />
-      </LinearGradient>
-      <Text style={styles.addLabel}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   reel: {
     gap: 12,
@@ -104,25 +86,5 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontWeight: '600',
     marginTop: 1,
-  },
-  addCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  addBubble: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.muted,
-    textAlign: 'center',
-    paddingHorizontal: 6,
   },
 });
