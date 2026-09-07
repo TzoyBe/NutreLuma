@@ -719,4 +719,155 @@
       transform: translateY(126px) rotate(18deg) scale(1);
     }
   }
+
+  /* ---- Glass Reel: floating orbit cluster + status island + meal reel ---- */
+
+  .orbit-stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22rem;
+    padding: 1rem;
+  }
+
+  .orbit-center {
+    position: relative;
+    z-index: 2;
+  }
+
+  .orbit-satellite {
+    position: absolute;
+    z-index: 1;
+    animation: orbit-float 5.5s ease-in-out infinite;
+  }
+
+  .orbit-satellite.pos-tl {
+    top: 0.25rem;
+    left: 2%;
+    animation-delay: 0s;
+  }
+
+  .orbit-satellite.pos-tr {
+    top: 1.25rem;
+    right: 2%;
+    animation-delay: 0.6s;
+  }
+
+  .orbit-satellite.pos-bl {
+    bottom: 0.5rem;
+    left: 8%;
+    animation-delay: 1.2s;
+  }
+
+  .orbit-satellite.pos-br {
+    bottom: 0;
+    right: 8%;
+    animation-delay: 1.8s;
+  }
+
+  @keyframes orbit-float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .status-island {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: center;
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    background: rgba(5, 6, 13, 0.55);
+    border: 1px solid hsl(var(--glass-border) / 0.3);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .meal-reel {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-block: 0.25rem;
+    scroll-snap-type: x proximity;
+  }
+
+  .meal-reel-card {
+    scroll-snap-align: start;
+    flex: 0 0 7.5rem;
+    height: 9.5rem;
+    border-radius: 1.375rem;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid hsl(var(--glass-border) / var(--glass-border-opacity));
+    background: hsl(var(--card));
+    transition: transform 180ms ease;
+  }
+
+  .meal-reel-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .meal-reel-card img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .meal-reel-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0.5rem 0.6rem;
+    background: rgba(5, 6, 13, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid hsl(var(--glass-border) / 0.2);
+  }
+
+  .meal-reel-add {
+    flex: 0 0 7.5rem;
+    height: 9.5rem;
+    border-radius: 1.375rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: hsl(var(--glass-border) / 0.06);
+    border: 1px solid hsl(var(--glass-border) / 0.18);
+    color: hsl(var(--muted-foreground));
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.5rem;
+  }
+
+  .meal-reel-add-bubble {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ffb703, #2563eb, #7c3aed);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.45);
+    color: white;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orbit-satellite {
+      animation: none;
+    }
+  }
 }
