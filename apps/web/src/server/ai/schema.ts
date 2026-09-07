@@ -63,6 +63,10 @@ export const aiSuccessSchema = z
     items: z.array(aiItemSchema).min(1).max(30),
     macros: aiMacrosSchema.optional(),
     clarificationQuestions: z.array(aiClarificationSchema).max(6).optional(),
+    // Σύντομος, φυσικός τίτλος πιάτου (π.χ. "Grilled Chicken & Rice") —
+    // χρησιμοποιείται μόνο ως προτεινόμενος τίτλος/σημείωση γεύματος, ποτέ
+    // δεν αντικαθιστά τίτλο/σημείωση που έδωσε ήδη ο χρήστης.
+    title: z.string().trim().max(80).optional(),
     // Το `summary` είναι το νέο όνομα του `internalReasoningSummary`.
     summary: z.string().trim().max(400).optional(),
     internalReasoningSummary: z.string().trim().max(400).optional(),
@@ -112,6 +116,8 @@ export interface NormalizedAnalysis {
   items: NormalizedItem[];
   macros: AnalysisMacros;
   clarifications: NormalizedClarification[];
+  /** Προτεινόμενος τίτλος γεύματος βάσει του πιάτου που εντοπίστηκε. */
+  title: string;
   /** Σύντομο summary μόνο για debugging — ποτέ chain-of-thought, ποτέ στον χρήστη. */
   internalReasoningSummary: string;
 }
@@ -283,6 +289,14 @@ export function normalizeAnalysis(data: AiSuccess): NormalizedAnalysis {
     })
     .slice(0, 6);
 
+  // Αν το μοντέλο δεν έδωσε τίτλο, σχηματίζουμε έναν από τα ονόματα των
+  // τροφίμων (π.χ. "Chicken, Rice & Salad") αντί να μείνει κενός.
+  const fallbackTitle = items
+    .slice(0, 3)
+    .map((item) => item.name)
+    .join(', ');
+  const title = sanitizeText(data.title ?? '', 80) || fallbackTitle;
+
   return {
     totalCalories: total,
     minCalories: totalRange.min,
@@ -291,6 +305,7 @@ export function normalizeAnalysis(data: AiSuccess): NormalizedAnalysis {
     items,
     macros,
     clarifications,
+    title,
     internalReasoningSummary: sanitizeText(
       data.summary ?? data.internalReasoningSummary ?? '',
       400,

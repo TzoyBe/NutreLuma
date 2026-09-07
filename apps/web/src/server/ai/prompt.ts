@@ -35,6 +35,7 @@ Return valid JSON only. Do not return Markdown, explanations outside the JSON, o
 Required schema:
 
 {
+  "title": string,
   "mostLikelyCalories": integer,
   "minimumCalories": integer,
   "maximumCalories": integer,
@@ -72,6 +73,9 @@ Required schema:
 
 Rules:
 
+- "title" is a short, natural dish name a person would use to label this meal in a
+  food diary (2 to 6 words, e.g. "Grilled Chicken & Rice", "Greek Salad with Feta").
+  Base it only on what is visible, not on any assumed cuisine or occasion.
 - mostLikelyCalories must equal approximately the sum of item mostLikelyCalories.
 - minimumCalories <= mostLikelyCalories <= maximumCalories. The range must reflect
   genuine uncertainty about portion size and preparation, not a fixed percentage.
@@ -122,11 +126,12 @@ You are given your previous estimate and the user's answers to clarification que
 Produce an updated estimate that takes those answers into account.
 
 Return valid JSON only, using exactly the same schema as the original analysis, including
-"mostLikelyCalories", "minimumCalories", "maximumCalories", "confidence", "macros", "items"
-and "summary".
+"title", "mostLikelyCalories", "minimumCalories", "maximumCalories", "confidence", "macros",
+"items" and "summary".
 
 Rules:
 
+- Keep "title" unchanged unless an answer clearly changes what the dish is.
 - Apply the answers to the specific items they affect, not uniformly to the whole meal.
 - An answer that removes uncertainty should narrow the min/max range and raise confidence.
 - "Δεν γνωρίζω" answers add no information: keep that item's estimate and range unchanged.

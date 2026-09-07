@@ -475,9 +475,23 @@ async function persistAnalysis(params: {
   await prisma.$transaction(async (tx) => {
     await tx.mealItem.deleteMany({ where: { mealId } });
 
+    // Ο τίτλος/η σημείωση συμπληρώνονται από το AI μόνο όταν είναι κενά —
+    // ποτέ δεν αντικαθιστούν κάτι που έγραψε ήδη ο χρήστης.
+    const existing = await tx.meal.findUnique({
+      where: { id: mealId },
+      select: { title: true, notes: true },
+    });
+    const titleFromAi = !existing?.title?.trim() && analysis.title ? { title: analysis.title } : {};
+    const notesFromAi =
+      !existing?.notes?.trim() && analysis.internalReasoningSummary
+        ? { notes: analysis.internalReasoningSummary }
+        : {};
+
     await tx.meal.update({
       where: { id: mealId },
       data: {
+        ...titleFromAi,
+        ...notesFromAi,
         analysisStatus: 'COMPLETED',
         status: 'REVIEW_REQUIRED',
         aiEstimatedCalories: analysis.totalCalories,

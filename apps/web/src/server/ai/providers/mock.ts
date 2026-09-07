@@ -16,6 +16,14 @@ interface MockItem {
   fatGrams: number;
 }
 
+const TITLES = [
+  'Grilled Chicken & Rice',
+  'Greek Salad with Bread',
+  'Pasta with Tomato Sauce',
+  'Greek Yogurt with Honey',
+  'Souvlaki Pita & Fries',
+];
+
 const MENU: MockItem[][] = [
   [
     {
@@ -169,6 +177,7 @@ export class MockVisionProvider implements VisionProvider {
 
     return {
       text: JSON.stringify({
+        title: TITLES[index],
         mostLikelyCalories,
         minimumCalories: Math.round(mostLikelyCalories * (1 - spread)),
         maximumCalories: Math.round(mostLikelyCalories * (1 + spread)),
