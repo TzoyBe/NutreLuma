@@ -5195,6 +5195,7 @@ function DashboardScreen({
   const [addingWater, setAddingWater] = useState(false);
   const [goalDetail, setGoalDetail] = useState<Awaited<ReturnType<typeof api.goals>>['goal'] | null>(null);
   const [showTargets, setShowTargets] = useState(false);
+  const [showAddChoice, setShowAddChoice] = useState(false);
   const [targetWaterInput, setTargetWaterInput] = useState('');
   const [targetStepsInput, setTargetStepsInput] = useState('');
   const [savingTargets, setSavingTargets] = useState(false);
@@ -5563,9 +5564,56 @@ function DashboardScreen({
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal
+        visible={showAddChoice}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAddChoice(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowAddChoice(false)}>
+          <Pressable style={styles.calendarCard} onPress={() => {}}>
+            <Text style={styles.sectionTitle}>Add</Text>
+            <Pressable
+              style={styles.addChoiceRow}
+              onPress={() => {
+                setShowAddChoice(false);
+                onAddMeal();
+              }}
+            >
+              <View style={styles.addChoiceIcon}>
+                <Plus size={20} color={colors.primary} />
+              </View>
+              <View style={styles.mealCardCopy}>
+                <Text style={styles.mealTitle}>Add meal</Text>
+                <Text style={styles.metricLabel}>Photo, gallery or manual entry</Text>
+              </View>
+            </Pressable>
+            <Pressable
+              style={styles.addChoiceRow}
+              onPress={() => {
+                setShowAddChoice(false);
+                onOpenWeight();
+              }}
+            >
+              <View style={styles.addChoiceIcon}>
+                <Scale size={20} color={colors.primary} />
+              </View>
+              <View style={styles.mealCardCopy}>
+                <Text style={styles.mealTitle}>Add weight</Text>
+                <Text style={styles.metricLabel}>Log today's weigh-in</Text>
+              </View>
+            </Pressable>
+
+            <Pressable onPress={() => setShowAddChoice(false)} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
     {isToday ? (
-      <GradientFab onPress={onAddMeal} style={styles.dashboardFab}>
+      <GradientFab onPress={() => setShowAddChoice(true)} style={styles.dashboardFab}>
         <Plus size={26} color={colors.white} />
       </GradientFab>
     ) : null}
@@ -6708,6 +6756,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingRight: 12,
+  },
+  addChoiceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.glassBorder,
+  },
+  addChoiceIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
   },
   mealCardCopy: {
     flex: 1,
