@@ -2045,7 +2045,7 @@ function WeightScreen({
           {entries.length ? (
             entries.map((entry) => (
               <SwipeableRow key={entry.id} onDelete={() => confirmDelete(entry)}>
-                <View style={styles.mealCard}>
+                <GlassCard style={styles.mealCard}>
                   <View style={styles.mealItemCopy}>
                     <Text style={styles.mealTitle}>{entry.entryDate}</Text>
                     <Text style={styles.metricLabel}>
@@ -2053,7 +2053,7 @@ function WeightScreen({
                     </Text>
                   </View>
                   <Text style={styles.mealCalories}>{entry.weightKg} kg</Text>
-                </View>
+                </GlassCard>
               </SwipeableRow>
             ))
           ) : (
@@ -2234,17 +2234,19 @@ function HistoryScreen({
           ) : meals.length ? (
             meals.map((meal) => (
               <SwipeableRow key={meal.id} onDelete={() => confirmDeleteMeal(meal)}>
-                <Pressable onPress={() => onOpenMeal(meal.id)} style={styles.mealCard}>
-                  <View style={styles.mealItemCopy}>
-                    <Text style={styles.mealTitle}>{meal.title || displayMealType(meal.mealType)}</Text>
-                    <Text style={styles.metricLabel}>
-                      {displayMealType(meal.mealType)} · {formatNotificationDate(meal.mealDateTime)} ·{' '}
-                      {meal.status.toLowerCase()}
+                <Pressable onPress={() => onOpenMeal(meal.id)}>
+                  <GlassCard style={styles.mealCard}>
+                    <View style={styles.mealItemCopy}>
+                      <Text style={styles.mealTitle}>{meal.title || displayMealType(meal.mealType)}</Text>
+                      <Text style={styles.metricLabel}>
+                        {displayMealType(meal.mealType)} · {formatNotificationDate(meal.mealDateTime)} ·{' '}
+                        {meal.status.toLowerCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.mealCalories}>
+                      {Math.round(meal.finalCalories ?? meal.aiEstimatedCalories ?? 0)} kcal
                     </Text>
-                  </View>
-                  <Text style={styles.mealCalories}>
-                    {Math.round(meal.finalCalories ?? meal.aiEstimatedCalories ?? 0)} kcal
-                  </Text>
+                  </GlassCard>
                 </Pressable>
               </SwipeableRow>
             ))
@@ -5455,7 +5457,15 @@ function DashboardScreen({
 
       <DateNav date={date} maxDate={today} onChange={setDate} />
 
-      <Text style={styles.sectionTitle}>{isToday ? "Today's progress" : "Day's progress"}</Text>
+      <View style={styles.progressSectionHeader}>
+        <Text style={styles.sectionTitle}>{isToday ? "Today's progress" : "Day's progress"}</Text>
+        {isToday ? (
+          <Pressable onPress={openTargets} hitSlop={8} style={styles.gaugeSettingsButton}>
+            <Settings size={16} color={colors.muted} />
+            <Text style={styles.linkText}>Targets</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       {loading ? (
         <View style={styles.orbitLoading}>
@@ -5463,22 +5473,41 @@ function DashboardScreen({
         </View>
       ) : (
         <OrbitStage>
+          {/* Σειρά 1: protein — water — carbs. Σειρά 2: fat — steps — fiber.
+              Το μικρότερο μέγεθος (104 αντί για 132/140) δίνεται με πραγματικά
+              props (scale/size) στα ίδια τα gauges — ΟΧΙ με CSS transform —
+              ώστε η μαθηματική του drag-to-set gesture (που βασίζεται σε
+              πραγματικό locationX/Y σε pixels) να παραμένει σωστή. Water/Steps
+              ΧΩΡΙΣ Satellite float animation για τον ίδιο λόγο. */}
           <OrbitRow>
-            {macroConfig.slice(0, 2).map(({ key, label, color }, index) => {
-              const macro = macroMap[key] ?? {};
-              const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
-              return (
-                <Satellite key={key} delay={index * 260}>
-                  <MacroGauge
-                    label={label}
-                    consumed={macro.consumed ?? 0}
-                    target={macroTarget}
-                    over={macro.overTarget ?? false}
-                    color={color}
-                  />
-                </Satellite>
-              );
-            })}
+            <Satellite delay={0}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[0].label}
+                consumed={macroMap[macroConfig[0].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[0].key]?.target ?? null}
+                over={macroMap[macroConfig[0].key]?.overTarget ?? false}
+                color={macroConfig[0].color}
+              />
+            </Satellite>
+            <WaterGauge
+              size={104}
+              consumedMl={waterMl}
+              targetMl={waterTarget}
+              scaleMax={1.5 * (waterTarget ?? 3000)}
+              onCommit={isToday ? commitWater : undefined}
+              onDragStateChange={(d) => setScrollEnabled(!d)}
+            />
+            <Satellite delay={260}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[1].label}
+                consumed={macroMap[macroConfig[1].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[1].key]?.target ?? null}
+                over={macroMap[macroConfig[1].key]?.overTarget ?? false}
+                color={macroConfig[1].color}
+              />
+            </Satellite>
           </OrbitRow>
 
           <OrbitCenter>
@@ -5499,41 +5528,34 @@ function DashboardScreen({
           </OrbitCenter>
 
           <OrbitRow>
-            {macroConfig.slice(2, 4).map(({ key, label, color }, index) => {
-              const macro = macroMap[key] ?? {};
-              const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
-              return (
-                <Satellite key={key} delay={index * 260 + 520}>
-                  <MacroGauge
-                    label={label}
-                    consumed={macro.consumed ?? 0}
-                    target={macroTarget}
-                    over={macro.overTarget ?? false}
-                    color={color}
-                  />
-                </Satellite>
-              );
-            })}
-          </OrbitRow>
-
-          {/* Water/steps: ΧΩΡΙΣ Satellite float animation ούτε GlassCard — μένουν
-              στο ίδιο cluster οπτικά, αλλά η κίνηση δεν πρέπει να παρεμβαίνει
-              στο pan-to-set gesture τους. */}
-          <OrbitRow>
-            <WaterGauge
-              consumedMl={waterMl}
-              targetMl={waterTarget}
-              scaleMax={1.5 * (waterTarget ?? 3000)}
-              onCommit={isToday ? commitWater : undefined}
-              onDragStateChange={(d) => setScrollEnabled(!d)}
-            />
+            <Satellite delay={520}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[2].label}
+                consumed={macroMap[macroConfig[2].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[2].key]?.target ?? null}
+                over={macroMap[macroConfig[2].key]?.overTarget ?? false}
+                color={macroConfig[2].color}
+              />
+            </Satellite>
             <StepsGauge
+              size={104}
               steps={steps}
               targetSteps={stepsTarget ?? STEPS_FALLBACK}
               scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
               onCommit={isToday ? commitSteps : undefined}
               onDragStateChange={(d) => setScrollEnabled(!d)}
             />
+            <Satellite delay={780}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[3].label}
+                consumed={macroMap[macroConfig[3].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[3].key]?.target ?? null}
+                over={macroMap[macroConfig[3].key]?.overTarget ?? false}
+                color={macroConfig[3].color}
+              />
+            </Satellite>
           </OrbitRow>
         </OrbitStage>
       )}
@@ -5544,22 +5566,6 @@ function DashboardScreen({
           <PillButton label="Try again" onPress={() => load()} variant="ghost" />
         </View>
       ) : null}
-
-      {isToday ? (
-        <View style={styles.progressSectionHeaderEnd}>
-          <Pressable onPress={openTargets} hitSlop={8} style={styles.gaugeSettingsButton}>
-            <Settings size={16} color={colors.muted} />
-            <Text style={styles.linkText}>Targets</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      <View style={styles.actionRow}>
-        <Pressable onPress={onOpenWeight} style={styles.actionButton}>
-          <Scale size={18} color={colors.primary} />
-          <Text style={styles.actionText}>Weight</Text>
-        </Pressable>
-      </View>
 
       <Text style={styles.sectionTitle}>Meals</Text>
       <MealReel>
@@ -5609,37 +5615,36 @@ function DashboardScreen({
       </GlassSheet>
 
       <GlassSheet visible={showAddChoice} onClose={() => setShowAddChoice(false)}>
-        <Text style={styles.sectionTitle}>Add</Text>
-        <Pressable
-          style={styles.addChoiceRow}
-          onPress={() => {
-            setShowAddChoice(false);
-            onAddMeal();
-          }}
-        >
-          <View style={styles.addChoiceIcon}>
-            <Plus size={20} color={colors.primary} />
-          </View>
-          <View style={styles.mealCardCopy}>
-            <Text style={styles.mealTitle}>Add meal</Text>
-            <Text style={styles.metricLabel}>Photo, gallery or manual entry</Text>
-          </View>
-        </Pressable>
-        <Pressable
-          style={styles.addChoiceRow}
-          onPress={() => {
-            setShowAddChoice(false);
-            onOpenWeight();
-          }}
-        >
-          <View style={styles.addChoiceIcon}>
-            <Scale size={20} color={colors.primary} />
-          </View>
-          <View style={styles.mealCardCopy}>
-            <Text style={styles.mealTitle}>Add weight</Text>
-            <Text style={styles.metricLabel}>Log today's weigh-in</Text>
-          </View>
-        </Pressable>
+        <Text style={styles.sectionTitle}>What do you want to add?</Text>
+        <View style={styles.addChoiceCards}>
+          <Pressable
+            style={({ pressed }) => [styles.addChoiceCard, pressed && styles.addChoiceCardPressed]}
+            onPress={() => {
+              setShowAddChoice(false);
+              onAddMeal();
+            }}
+          >
+            <View style={[styles.addChoiceCardIcon, { backgroundColor: colors.primarySoft }]}>
+              <Plus size={26} color={colors.primary} />
+            </View>
+            <Text style={styles.addChoiceCardTitle}>Add meal</Text>
+            <Text style={styles.addChoiceCardSubtitle}>Photo, gallery or manual entry</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.addChoiceCard, pressed && styles.addChoiceCardPressed]}
+            onPress={() => {
+              setShowAddChoice(false);
+              onOpenWeight();
+            }}
+          >
+            <View style={[styles.addChoiceCardIcon, { backgroundColor: colors.accentSoft }]}>
+              <Scale size={26} color={colors.accent} />
+            </View>
+            <Text style={styles.addChoiceCardTitle}>Add weight</Text>
+            <Text style={styles.addChoiceCardSubtitle}>Log today's weigh-in</Text>
+          </Pressable>
+        </View>
 
         <Pressable onPress={() => setShowAddChoice(false)} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Cancel</Text>
@@ -6818,21 +6823,42 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingRight: 12,
   },
-  addChoiceRow: {
+  addChoiceCards: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.glassBorder,
+    gap: 12,
   },
-  addChoiceIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
+  addChoiceCard: {
+    flex: 1,
+    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
+    gap: 10,
+    padding: 16,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    backgroundColor: colors.glassBgSoft,
+  },
+  addChoiceCardPressed: {
+    backgroundColor: colors.glassBg,
+    borderColor: colors.borderStrong,
+  },
+  addChoiceCardIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addChoiceCardTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  addChoiceCardSubtitle: {
+    color: colors.muted,
+    fontSize: 11.5,
+    textAlign: 'center',
   },
   mealCardCopy: {
     flex: 1,

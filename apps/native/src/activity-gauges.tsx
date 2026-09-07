@@ -27,14 +27,13 @@ import { angleFraction, applyAntiWrap, snapValue } from './radial-gauge-math';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const SIZE = 140;
-const CENTER = SIZE / 2;
-const RADIUS = 56;
-const STROKE = 12;
-const CIRC = 2 * Math.PI * RADIUS;
+const SIZE_BASE = 140;
+const RADIUS_BASE = 56;
+const STROKE_BASE = 12;
 const SNAP = 50;
 
 function Ring({
+  size,
   fraction,
   dragging,
   interactive,
@@ -43,6 +42,7 @@ function Ring({
   glow,
   uid,
 }: {
+  size: number;
   fraction: number;
   dragging: boolean;
   interactive: boolean;
@@ -51,6 +51,10 @@ function Ring({
   glow: string;
   uid: string;
 }) {
+  const CENTER = size / 2;
+  const RADIUS = RADIUS_BASE * (size / SIZE_BASE);
+  const STROKE = STROKE_BASE * (size / SIZE_BASE);
+  const CIRC = 2 * Math.PI * RADIUS;
   const anim = useRef(new Animated.Value(0)).current;
   const clamped = Math.max(0, Math.min(1, fraction));
 
@@ -74,7 +78,7 @@ function Ring({
   const knobY = CENTER + RADIUS * Math.sin(knobAngle);
 
   return (
-    <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <Defs>
         <LinearGradient id={`ringGrad${uid}`} x1="0" y1="0" x2="1" y2="1">
           <Stop offset="0" stopColor={from} />
@@ -151,6 +155,7 @@ function InteractiveGauge({
   glow,
   uid,
   interactive,
+  size,
   onCommit,
   onDragStateChange,
   renderCenter,
@@ -163,6 +168,7 @@ function InteractiveGauge({
   glow: string;
   uid: string;
   interactive: boolean;
+  size: number;
   onCommit?: (newTotal: number) => void;
   onDragStateChange?: (dragging: boolean) => void;
   renderCenter: (display: number) => ReactNode;
@@ -171,6 +177,7 @@ function InteractiveGauge({
   const [preview, setPreview] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const prev = useRef<number | null>(null);
+  const center = size / 2;
 
   const display = preview ?? value;
   const fraction = max > 0 ? display / max : 0;
@@ -193,14 +200,14 @@ function InteractiveGauge({
           onDragStateChange?.(true);
           prev.current = Math.max(0, Math.min(1, value / max));
           const { locationX, locationY } = e.nativeEvent;
-          const raw = angleFraction(CENTER, CENTER, locationX, locationY);
+          const raw = angleFraction(center, center, locationX, locationY);
           const f = applyAntiWrap(raw, prev.current);
           prev.current = f;
           setPreview(snapValue(f, max, SNAP));
         },
         onPanResponderMove: (e) => {
           const { locationX, locationY } = e.nativeEvent;
-          const raw = angleFraction(CENTER, CENTER, locationX, locationY);
+          const raw = angleFraction(center, center, locationX, locationY);
           const f = applyAntiWrap(raw, prev.current);
           prev.current = f;
           setPreview(snapValue(f, max, SNAP));
@@ -221,15 +228,16 @@ function InteractiveGauge({
         },
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [interactive, max, value, preview, onCommit, onDragStateChange],
+    [interactive, max, value, preview, onCommit, onDragStateChange, center],
   );
 
   return (
     <View style={styles.wrap}>
-      <View style={{ width: SIZE, height: SIZE }} {...(interactive ? pan.panHandlers : {})}>
+      <View style={{ width: size, height: size }} {...(interactive ? pan.panHandlers : {})}>
         {/* pointerEvents none => κάθε touch πάει στο εξωτερικό View (σταθερό locationX/Y). */}
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
           <Ring
+            size={size}
             fraction={fraction}
             dragging={dragging}
             interactive={interactive}
@@ -252,12 +260,14 @@ export function WaterGauge({
   consumedMl,
   targetMl,
   scaleMax,
+  size = SIZE_BASE,
   onCommit,
   onDragStateChange,
 }: {
   consumedMl: number;
   targetMl: number | null;
   scaleMax?: number;
+  size?: number;
   onCommit?: (newTotal: number) => void;
   onDragStateChange?: (dragging: boolean) => void;
 }) {
@@ -268,6 +278,7 @@ export function WaterGauge({
     <InteractiveGauge
       value={consumedMl}
       max={max}
+      size={size}
       from="#38BDF8"
       to="#2563EB"
       glow="#38BDF8"
@@ -293,12 +304,14 @@ export function StepsGauge({
   steps,
   targetSteps,
   scaleMax,
+  size = SIZE_BASE,
   onCommit,
   onDragStateChange,
 }: {
   steps: number;
   targetSteps: number | null;
   scaleMax?: number;
+  size?: number;
   onCommit?: (newTotal: number) => void;
   onDragStateChange?: (dragging: boolean) => void;
 }) {
@@ -309,6 +322,7 @@ export function StepsGauge({
     <InteractiveGauge
       value={steps}
       max={max}
+      size={size}
       from="#2DD4BF"
       to="#10B981"
       glow="#10B981"

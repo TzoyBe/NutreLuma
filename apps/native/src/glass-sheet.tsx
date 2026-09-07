@@ -12,9 +12,18 @@ import {
 import { colors } from './theme';
 
 /**
- * Bottom-sheet modal με native iOS αίσθηση: swipe-down για κλείσιμο (πέρα από
- * το tap-έξω που υπήρχε ήδη). Drop-in αντικαταστάτης του επαναλαμβανόμενου
- * `<Modal><Pressable modalBackdrop><Pressable calendarCard>` pattern.
+ * Bottom-sheet modal με native iOS αίσθηση: swipe-down από τη λαβή (grabber)
+ * για κλείσιμο, πέρα από το tap-έξω που υπήρχε ήδη. Drop-in αντικαταστάτης
+ * του επαναλαμβανόμενου `<Modal><Pressable modalBackdrop><Pressable calendarCard>`
+ * pattern.
+ *
+ * Σημαντικό layout detail: το `gap` πρέπει να εφαρμόζεται στον ΆΜΕΣΟ γονέα της
+ * λαβής + του περιεχομένου (`cardInner`), όχι στο εξωτερικό Animated.View —
+ * αλλιώς όλα τα children του καλούντος (τίτλος, fields, κουμπιά) κολλάνε
+ * χωρίς κενό μεταξύ τους, αφού θα ήταν όλα μέσα σε ΕΝΑ μοναδικό Pressable
+ * child. Επίσης το PanResponder μένει ΜΟΝΟ στη λαβή — δεν αναμειγνύεται ποτέ
+ * με το Pressable που καταπίνει τα taps, γιατί ο συνδυασμός PanResponder +
+ * Pressable στο ΙΔΙΟ node είναι εύθραυστος.
  */
 export function GlassSheet({
   visible,
@@ -59,13 +68,14 @@ export function GlassSheet({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Animated.View
-          style={[styles.card, cardStyle, { transform: [{ translateY }] }]}
-          {...panResponder.panHandlers}
-        >
+        <Animated.View style={[styles.cardOuter, cardStyle, { transform: [{ translateY }] }]}>
           <Pressable onPress={() => {}}>
-            <View style={styles.grabber} />
-            {children}
+            <View style={styles.cardInner}>
+              <View style={styles.grabberZone} {...panResponder.panHandlers}>
+                <View style={styles.grabber} />
+              </View>
+              {children}
+            </View>
           </Pressable>
         </Animated.View>
       </Pressable>
@@ -81,22 +91,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
-  card: {
+  cardOuter: {
     width: '100%',
     maxWidth: 420,
     borderRadius: 28,
-    padding: 20,
-    gap: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.glassBorder,
+    overflow: 'hidden',
+  },
+  cardInner: {
+    padding: 20,
+    paddingTop: 6,
+    gap: 12,
+  },
+  grabberZone: {
+    alignItems: 'center',
+    paddingVertical: 10,
   },
   grabber: {
-    alignSelf: 'center',
     width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: colors.glassBorder,
-    marginBottom: 6,
   },
 });
