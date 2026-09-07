@@ -73,6 +73,7 @@ import {
   ChefHat,
   ChevronLeft,
   ChevronRight,
+  Droplet,
   LayoutDashboard,
   LineChart,
   Plus,
@@ -4356,6 +4357,10 @@ function ProfileOverviewScreen({
   const [profileGoal, setProfileGoal] = useState('MAINTAIN');
   const [profileCalories, setProfileCalories] = useState('');
   const [profileTimezone, setProfileTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Athens');
+  const [goalDetail, setGoalDetail] = useState<Awaited<ReturnType<typeof api.goals>>['goal'] | null>(null);
+  const [targetWaterInput, setTargetWaterInput] = useState('');
+  const [targetStepsInput, setTargetStepsInput] = useState('');
+  const [savingActivityTargets, setSavingActivityTargets] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
@@ -4428,18 +4433,58 @@ function ProfileOverviewScreen({
     setLoading(true);
     setMessage(null);
     try {
-      const [billingResult, profileResult, intelligenceResult] = await Promise.all([
+      const [billingResult, profileResult, intelligenceResult, goalsResult] = await Promise.all([
         api.billing(session.token),
         api.profile(session.token),
         api.intelligence(session.token).catch(() => null),
+        api.goals(session.token).catch(() => null),
       ]);
       setBilling(billingResult);
       hydrateProfileForm(profileResult.profile);
       if (intelligenceResult) setIntelligence(intelligenceResult);
+      setGoalDetail(goalsResult?.goal ?? null);
+      setTargetWaterInput(goalsResult?.goal?.waterMl ? String(goalsResult.goal.waterMl) : '');
+      setTargetStepsInput(goalsResult?.goal?.stepsTarget ? String(goalsResult.goal.stepsTarget) : '');
     } catch (error) {
       setMessage(apiErrorMessage(error));
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Το setGoal αντικαθιστά ολόκληρη την εγγραφή, οπότε στέλνουμε ΚΑΙ τα υπάρχοντα
+  // calorie/macros ώστε να μη χαθούν όταν αλλάζουμε μόνο τους στόχους νερού/βημάτων.
+  async function saveActivityTargets() {
+    if (savingActivityTargets) return;
+    const calorieTarget = goalDetail?.calorieTarget;
+    if (!calorieTarget) {
+      setMessage('Set your calorie goal first, in the Goals tab.');
+      return;
+    }
+    const num = (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const parsed = Number(trimmed);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    setSavingActivityTargets(true);
+    setMessage(null);
+    try {
+      const result = await api.updateGoal(session.token, {
+        calorieTarget,
+        proteinGrams: goalDetail?.proteinGrams ?? null,
+        carbohydrateGrams: goalDetail?.carbohydrateGrams ?? null,
+        fatGrams: goalDetail?.fatGrams ?? null,
+        fiberGrams: goalDetail?.fiberGrams ?? null,
+        waterMl: num(targetWaterInput),
+        stepsTarget: num(targetStepsInput),
+      });
+      setGoalDetail(result.goal);
+      setMessage('Daily targets saved.');
+    } catch (error) {
+      setMessage(apiErrorMessage(error));
+    } finally {
+      setSavingActivityTargets(false);
     }
   }
 
@@ -4797,6 +4842,31 @@ function ProfileOverviewScreen({
       </CategorySection>
 
       <PillButton label={savingProfile ? 'Saving...' : 'Save health profile'} onPress={saveHealthProfile} disabled={savingProfile} />
+
+      <CategorySection icon={<Droplet size={18} color={colors.primary} />} title="Daily targets">
+        <Text style={styles.noticeCopy}>
+          Set your daily water and steps goals — shown on the dashboard rings.
+        </Text>
+        <View style={styles.twoColumn}>
+          <Field
+            label="Water target (ml)"
+            value={targetWaterInput}
+            onChangeText={setTargetWaterInput}
+            keyboardType="numeric"
+          />
+          <Field
+            label="Steps target"
+            value={targetStepsInput}
+            onChangeText={setTargetStepsInput}
+            keyboardType="numeric"
+          />
+        </View>
+        <PillButton
+          label={savingActivityTargets ? 'Saving...' : 'Save daily targets'}
+          onPress={saveActivityTargets}
+          disabled={savingActivityTargets}
+        />
+      </CategorySection>
         </>
       ) : null}
 
@@ -5242,12 +5312,7 @@ function DashboardScreen({
   const [steps, setSteps] = useState(0);
   const [stepsTarget, setStepsTarget] = useState<number | null>(null);
   const [addingWater, setAddingWater] = useState(false);
-  const [goalDetail, setGoalDetail] = useState<Awaited<ReturnType<typeof api.goals>>['goal'] | null>(null);
-  const [showTargets, setShowTargets] = useState(false);
   const [showAddChoice, setShowAddChoice] = useState(false);
-  const [targetWaterInput, setTargetWaterInput] = useState('');
-  const [targetStepsInput, setTargetStepsInput] = useState('');
-  const [savingTargets, setSavingTargets] = useState(false);
   const [addingSteps, setAddingSteps] = useState(false);
   // Απενεργοποιεί το scroll του dashboard όσο ο χρήστης σέρνει ένα gauge, ώστε
   // η κάθετη κίνηση να αλλάζει την τιμή αντί να σκρολάρει τη σελίδα.
@@ -5276,7 +5341,6 @@ function DashboardScreen({
         api.activityEntries(session.token, { limit: 50 }).catch(() => null),
       ]);
       setDashboard(dash);
-      setGoalDetail(goalsRes?.goal ?? null);
       setWaterTarget(goalsRes?.goal?.waterMl ?? null);
       setStepsTarget(goalsRes?.goal?.stepsTarget ?? null);
       setWaterMl(
@@ -5309,50 +5373,6 @@ function DashboardScreen({
       setError(apiErrorMessage(requestError));
     } finally {
       setAddingWater(false);
-    }
-  }
-
-  function openTargets() {
-    setTargetWaterInput(waterTarget ? String(waterTarget) : '');
-    setTargetStepsInput(stepsTarget ? String(stepsTarget) : '');
-    setError(null);
-    setShowTargets(true);
-  }
-
-  // Το setGoal αντικαθιστά ολόκληρη την εγγραφή, οπότε στέλνουμε ΚΑΙ τα υπάρχοντα
-  // calorie/macros (από το goalDetail) ώστε να μη χαθούν όταν αλλάζουμε τους
-  // στόχους νερού/βημάτων.
-  async function saveTargets() {
-    if (savingTargets) return;
-    const calorieTarget = goalDetail?.calorieTarget;
-    if (!calorieTarget) {
-      setError('Set your calorie goal first (Set goals).');
-      return;
-    }
-    const num = (value: string) => {
-      const trimmed = value.trim();
-      if (!trimmed) return null;
-      const parsed = Number(trimmed);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-    setSavingTargets(true);
-    setError(null);
-    try {
-      await api.updateGoal(session.token, {
-        calorieTarget,
-        proteinGrams: goalDetail?.proteinGrams ?? null,
-        carbohydrateGrams: goalDetail?.carbohydrateGrams ?? null,
-        fatGrams: goalDetail?.fatGrams ?? null,
-        fiberGrams: goalDetail?.fiberGrams ?? null,
-        waterMl: num(targetWaterInput),
-        stepsTarget: num(targetStepsInput),
-      });
-      setShowTargets(false);
-      await load(true);
-    } catch (requestError) {
-      setError(apiErrorMessage(requestError));
-    } finally {
-      setSavingTargets(false);
     }
   }
 
@@ -5457,15 +5477,14 @@ function DashboardScreen({
 
       <DateNav date={date} maxDate={today} onChange={setDate} />
 
-      <View style={styles.progressSectionHeader}>
-        <Text style={styles.sectionTitle}>{isToday ? "Today's progress" : "Day's progress"}</Text>
-        {isToday ? (
-          <Pressable onPress={openTargets} hitSlop={8} style={styles.gaugeSettingsButton}>
+      {isToday ? (
+        <View style={styles.progressSectionHeaderEnd}>
+          <Pressable onPress={onOpenSettings} hitSlop={8} style={styles.gaugeSettingsButton}>
             <Settings size={16} color={colors.muted} />
             <Text style={styles.linkText}>Targets</Text>
           </Pressable>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
       {loading ? (
         <View style={styles.orbitLoading}>
@@ -5491,7 +5510,7 @@ function DashboardScreen({
               />
             </Satellite>
             <WaterGauge
-              size={104}
+              size={120}
               consumedMl={waterMl}
               targetMl={waterTarget}
               scaleMax={1.5 * (waterTarget ?? 3000)}
@@ -5539,7 +5558,7 @@ function DashboardScreen({
               />
             </Satellite>
             <StepsGauge
-              size={104}
+              size={120}
               steps={steps}
               targetSteps={stepsTarget ?? STEPS_FALLBACK}
               scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
@@ -5586,33 +5605,6 @@ function DashboardScreen({
           </GlassCard>
         ) : null}
       </MealReel>
-
-      <GlassSheet visible={showTargets} onClose={() => setShowTargets(false)}>
-        <Text style={styles.sectionTitle}>Water &amp; steps</Text>
-        <Text style={styles.noticeCopy}>Set your daily targets and log steps.</Text>
-
-        <Field
-          label="Daily water target (ml)"
-          value={targetWaterInput}
-          onChangeText={setTargetWaterInput}
-          keyboardType="numeric"
-        />
-        <Field
-          label="Daily steps target"
-          value={targetStepsInput}
-          onChangeText={setTargetStepsInput}
-          keyboardType="numeric"
-        />
-        <PillButton
-          label={savingTargets ? 'Saving...' : 'Save targets'}
-          onPress={saveTargets}
-          disabled={savingTargets}
-        />
-
-        <Pressable onPress={() => setShowTargets(false)} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Close</Text>
-        </Pressable>
-      </GlassSheet>
 
       <GlassSheet visible={showAddChoice} onClose={() => setShowAddChoice(false)}>
         <Text style={styles.sectionTitle}>What do you want to add?</Text>
@@ -6613,12 +6605,6 @@ const styles = StyleSheet.create({
     width: '48%',
     minHeight: 116,
     padding: 14,
-  },
-  progressSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
   },
   progressSectionHeaderEnd: {
     flexDirection: 'row',
