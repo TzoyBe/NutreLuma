@@ -206,11 +206,9 @@ const MUTED_TEXT = 'hsl(220, 14%, 66%)';
 // Macro gauge (μικρό)
 // ---------------------------------------------------------------------------
 
-const M_SIZE = 132;
-const M_CENTER = M_SIZE / 2;
-const M_RADIUS = 52;
-const M_STROKE = 11;
-const M_CIRC = 2 * Math.PI * M_RADIUS;
+const M_SIZE_BASE = 132;
+const M_RADIUS_BASE = 52;
+const M_STROKE_BASE = 11;
 
 type MacroGaugeProps = {
   label: string;
@@ -219,11 +217,19 @@ type MacroGaugeProps = {
   over: boolean;
   color: string;
   unit?: string;
+  /** Ομοιόμορφη σμίκρυνση (πραγματικό μέγεθος, όχι CSS transform) — για να
+   * χωράνε 3 gauges σε μια σειρά. 1 = πλήρες μέγεθος. */
+  scale?: number;
 };
 
 let macroFilterId = 0;
 
-export function MacroGauge({ label, consumed, target, over, color, unit = 'g' }: MacroGaugeProps) {
+export function MacroGauge({ label, consumed, target, over, color, unit = 'g', scale = 1 }: MacroGaugeProps) {
+  const M_SIZE = M_SIZE_BASE * scale;
+  const M_CENTER = M_SIZE / 2;
+  const M_RADIUS = M_RADIUS_BASE * scale;
+  const M_STROKE = M_STROKE_BASE * scale;
+  const M_CIRC = 2 * Math.PI * M_RADIUS;
   const rounded = Math.round(consumed);
   const hasTarget = target !== null && target > 0;
   const fraction = hasTarget ? Math.max(0, Math.min(1, consumed / target)) : 0;

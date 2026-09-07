@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Plus, Scale, Utensils } from 'lucide-react';
+import { Flame, Plus, Scale, Utensils } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getDashboard } from '@/server/services/stats';
@@ -12,10 +12,10 @@ import { ActivityGauges } from '@/components/dashboard/activity-gauges';
 import { SubscriptionBanner } from '@/components/billing/subscription-banner';
 import { dayISOSchema } from '@/lib/validation/meal';
 import { formatDateInTz, formatDayISOHuman, formatTimeInTz, todayISO } from '@/lib/dates';
-import { Card, CardContent } from '@/components/ui/card';
 import { Disclaimer, EmptyState } from '@/components/ui/misc';
 import { DateNav } from '@/components/date-nav';
 import { MealCard } from '@/components/meal/meal-card';
+import { MealReelCard } from '@/components/meal/meal-reel-card';
 import { CalorieGauge } from '@/components/dashboard/calorie-gauge';
 import { MacroGauge } from '@/components/dashboard/macro-gauge';
 import { getT } from '@/i18n/locale';
@@ -118,74 +118,77 @@ export default async function DashboardPage({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card className="col-span-2 sm:row-span-2">
-            <CardContent className="flex h-full items-center justify-center py-6">
-              <CalorieGauge
-                consumed={summary.consumed}
-                target={summary.target}
-                remaining={summary.remaining}
-                overTarget={summary.overTarget}
-                progressPercent={summary.progressPercent}
-                labels={{
-                  title: isToday ? t('dashboard.todayProgress') : t('dashboard.dayProgress'),
-                  of: t('dashboard.ofTarget', { target: summary.target ?? 0 }),
-                  remaining: t('dashboard.remainingKcal', { n: Math.abs(summary.remaining ?? 0) }),
-                  over: t('dashboard.overKcal', { n: Math.abs(summary.remaining ?? 0) }),
-                  noTarget: t('dashboard.noTarget'),
-                  kcal: 'kcal',
-                }}
-              />
-            </CardContent>
-          </Card>
+        {summary.target ? (
+          <div className="status-island">
+            <Flame
+              className="h-3.5 w-3.5"
+              aria-hidden="true"
+              style={{ color: summary.overTarget ? 'hsl(var(--destructive))' : 'hsl(var(--accent))' }}
+            />
+            {summary.overTarget
+              ? t('dashboard.overKcal', { n: Math.abs(summary.remaining ?? 0) })
+              : t('dashboard.remainingKcal', { n: Math.abs(summary.remaining ?? 0) })}
+          </div>
+        ) : null}
 
-          <Card>
-            <CardContent className="flex h-full items-center justify-center">
-              <MacroGauge
-                label={t('dashboard.protein')}
-                consumed={macros.protein.consumed}
-                target={macros.protein.target}
-                over={macros.protein.overTarget}
-                color="#38BDF8"
-              />
-            </CardContent>
-          </Card>
+        <div className="orbit-stage">
+          <div className="orbit-center">
+            <CalorieGauge
+              consumed={summary.consumed}
+              target={summary.target}
+              remaining={summary.remaining}
+              overTarget={summary.overTarget}
+              progressPercent={summary.progressPercent}
+              labels={{
+                title: isToday ? t('dashboard.todayProgress') : t('dashboard.dayProgress'),
+                of: t('dashboard.ofTarget', { target: summary.target ?? 0 }),
+                remaining: t('dashboard.remainingKcal', { n: Math.abs(summary.remaining ?? 0) }),
+                over: t('dashboard.overKcal', { n: Math.abs(summary.remaining ?? 0) }),
+                noTarget: t('dashboard.noTarget'),
+                kcal: 'kcal',
+              }}
+            />
+          </div>
 
-          <Card>
-            <CardContent className="flex h-full items-center justify-center">
-              <MacroGauge
-                label={t('dashboard.carbohydrate')}
-                consumed={macros.carbohydrate.consumed}
-                target={macros.carbohydrate.target}
-                over={macros.carbohydrate.overTarget}
-                color="#FFB703"
-              />
-            </CardContent>
-          </Card>
+          <div className="orbit-satellite pos-tl">
+            <MacroGauge
+              label={t('dashboard.protein')}
+              consumed={macros.protein.consumed}
+              target={macros.protein.target}
+              over={macros.protein.overTarget}
+              color="#38BDF8"
+            />
+          </div>
 
-          <Card>
-            <CardContent className="flex h-full items-center justify-center">
-              <MacroGauge
-                label={t('dashboard.fat')}
-                consumed={macros.fat.consumed}
-                target={macros.fat.target}
-                over={macros.fat.overTarget}
-                color="#A855F7"
-              />
-            </CardContent>
-          </Card>
+          <div className="orbit-satellite pos-tr">
+            <MacroGauge
+              label={t('dashboard.carbohydrate')}
+              consumed={macros.carbohydrate.consumed}
+              target={macros.carbohydrate.target}
+              over={macros.carbohydrate.overTarget}
+              color="#FFB703"
+            />
+          </div>
 
-          <Card>
-            <CardContent className="flex h-full items-center justify-center">
-              <MacroGauge
-                label={t('dashboard.fiber')}
-                consumed={macros.fiber.consumed}
-                target={macros.fiber.target}
-                over={macros.fiber.overTarget}
-                color="#10B981"
-              />
-            </CardContent>
-          </Card>
+          <div className="orbit-satellite pos-bl">
+            <MacroGauge
+              label={t('dashboard.fat')}
+              consumed={macros.fat.consumed}
+              target={macros.fat.target}
+              over={macros.fat.overTarget}
+              color="#A855F7"
+            />
+          </div>
+
+          <div className="orbit-satellite pos-br">
+            <MacroGauge
+              label={t('dashboard.fiber')}
+              consumed={macros.fiber.consumed}
+              target={macros.fiber.target}
+              over={macros.fiber.overTarget}
+              color="#10B981"
+            />
+          </div>
         </div>
       </section>
 
@@ -217,7 +220,23 @@ export default async function DashboardPage({
             body={t('dashboard.emptyBody')}
           />
         ) : (
-          <div className="space-y-2">{meals.map((meal) => mealCard(meal))}</div>
+          <div className="meal-reel meal-scroll-row">
+            {meals.map((meal) => (
+              <MealReelCard
+                key={meal.id}
+                meal={{
+                  id: meal.id,
+                  title: meal.title ?? t(`mealType.${meal.mealType}` as never),
+                  mealTypeLabel: t(`mealType.${meal.mealType}` as never),
+                  timeLabel: formatTimeInTz(new Date(meal.mealDateTime), profile.timezone),
+                  calories: meal.finalCalories,
+                  thumbUrl: meal.thumbUrl,
+                  analysisStatus: meal.analysisStatus,
+                  wasManuallyEdited: meal.wasManuallyEdited,
+                }}
+              />
+            ))}
+          </div>
         )}
       </section>
 

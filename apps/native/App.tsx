@@ -53,6 +53,11 @@ import { GoalTargets } from './src/goal-targets';
 import { AiLoadingCard, AiSpinner } from './src/ai-loader';
 import { GlassBackdrop } from './src/backdrop';
 import { GlassCard } from './src/glass-card';
+import { OrbitStage, OrbitRow, OrbitCenter, Satellite } from './src/orbit-cluster';
+import { MealReel, MealReelCard } from './src/meal-reel';
+import { GlassSheet } from './src/glass-sheet';
+import { SwipeableRow } from './src/swipeable-row';
+import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
@@ -68,6 +73,7 @@ import {
   ChefHat,
   ChevronLeft,
   ChevronRight,
+  Droplet,
   LayoutDashboard,
   LineChart,
   Plus,
@@ -408,6 +414,28 @@ function MealPhoto({
       style={style}
       onError={() => setFailed(true)}
     />
+  );
+}
+
+/** Ξεχωριστή glass κάρτα ανά κατηγορία ρυθμίσεων (About you / Body / κ.λπ.) —
+ * αντί να στριμώχνονται όλα τα fields σε ένα ενιαίο block. */
+function CategorySection({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <GlassCard style={styles.categoryCard}>
+      <View style={styles.categoryHeader}>
+        <View style={styles.categoryIcon}>{icon}</View>
+        <Text style={styles.categoryTitle}>{title}</Text>
+      </View>
+      {children}
+    </GlassCard>
   );
 }
 
@@ -2017,15 +2045,17 @@ function WeightScreen({
         <View style={styles.mealList}>
           {entries.length ? (
             entries.map((entry) => (
-              <Pressable key={entry.id} onLongPress={() => confirmDelete(entry)} style={styles.mealCard}>
-                <View style={styles.mealItemCopy}>
-                  <Text style={styles.mealTitle}>{entry.entryDate}</Text>
-                  <Text style={styles.metricLabel}>
-                    {entry.notes ? entry.notes : 'Long press to delete'}
-                  </Text>
-                </View>
-                <Text style={styles.mealCalories}>{entry.weightKg} kg</Text>
-              </Pressable>
+              <SwipeableRow key={entry.id} onDelete={() => confirmDelete(entry)}>
+                <GlassCard style={styles.mealCard}>
+                  <View style={styles.mealItemCopy}>
+                    <Text style={styles.mealTitle}>{entry.entryDate}</Text>
+                    <Text style={styles.metricLabel}>
+                      {entry.notes ? entry.notes : 'Swipe left to delete'}
+                    </Text>
+                  </View>
+                  <Text style={styles.mealCalories}>{entry.weightKg} kg</Text>
+                </GlassCard>
+              </SwipeableRow>
             ))
           ) : (
             <View style={styles.emptyCard}>
@@ -2102,6 +2132,24 @@ function HistoryScreen({
     setMinCalories('');
     setMaxCalories('');
     setPage(1);
+  }
+
+  function confirmDeleteMeal(meal: MealSummary) {
+    Alert.alert('Delete meal?', meal.title || displayMealType(meal.mealType), [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.deleteMeal(session.token, meal.id);
+            await load(page, true);
+          } catch (error) {
+            setMessage(apiErrorMessage(error));
+          }
+        },
+      },
+    ]);
   }
 
   useEffect(() => {
@@ -2186,18 +2234,22 @@ function HistoryScreen({
             </GlassCard>
           ) : meals.length ? (
             meals.map((meal) => (
-              <Pressable key={meal.id} onPress={() => onOpenMeal(meal.id)} style={styles.mealCard}>
-                <View style={styles.mealItemCopy}>
-                  <Text style={styles.mealTitle}>{meal.title || displayMealType(meal.mealType)}</Text>
-                  <Text style={styles.metricLabel}>
-                    {displayMealType(meal.mealType)} · {formatNotificationDate(meal.mealDateTime)} ·{' '}
-                    {meal.status.toLowerCase()}
-                  </Text>
-                </View>
-                <Text style={styles.mealCalories}>
-                  {Math.round(meal.finalCalories ?? meal.aiEstimatedCalories ?? 0)} kcal
-                </Text>
-              </Pressable>
+              <SwipeableRow key={meal.id} onDelete={() => confirmDeleteMeal(meal)}>
+                <Pressable onPress={() => onOpenMeal(meal.id)}>
+                  <GlassCard style={styles.mealCard}>
+                    <View style={styles.mealItemCopy}>
+                      <Text style={styles.mealTitle}>{meal.title || displayMealType(meal.mealType)}</Text>
+                      <Text style={styles.metricLabel}>
+                        {displayMealType(meal.mealType)} · {formatNotificationDate(meal.mealDateTime)} ·{' '}
+                        {meal.status.toLowerCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.mealCalories}>
+                      {Math.round(meal.finalCalories ?? meal.aiEstimatedCalories ?? 0)} kcal
+                    </Text>
+                  </GlassCard>
+                </Pressable>
+              </SwipeableRow>
             ))
           ) : (
             <View style={styles.emptyCard}>
@@ -4305,6 +4357,10 @@ function ProfileOverviewScreen({
   const [profileGoal, setProfileGoal] = useState('MAINTAIN');
   const [profileCalories, setProfileCalories] = useState('');
   const [profileTimezone, setProfileTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Athens');
+  const [goalDetail, setGoalDetail] = useState<Awaited<ReturnType<typeof api.goals>>['goal'] | null>(null);
+  const [targetWaterInput, setTargetWaterInput] = useState('');
+  const [targetStepsInput, setTargetStepsInput] = useState('');
+  const [savingActivityTargets, setSavingActivityTargets] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
@@ -4377,18 +4433,58 @@ function ProfileOverviewScreen({
     setLoading(true);
     setMessage(null);
     try {
-      const [billingResult, profileResult, intelligenceResult] = await Promise.all([
+      const [billingResult, profileResult, intelligenceResult, goalsResult] = await Promise.all([
         api.billing(session.token),
         api.profile(session.token),
         api.intelligence(session.token).catch(() => null),
+        api.goals(session.token).catch(() => null),
       ]);
       setBilling(billingResult);
       hydrateProfileForm(profileResult.profile);
       if (intelligenceResult) setIntelligence(intelligenceResult);
+      setGoalDetail(goalsResult?.goal ?? null);
+      setTargetWaterInput(goalsResult?.goal?.waterMl ? String(goalsResult.goal.waterMl) : '');
+      setTargetStepsInput(goalsResult?.goal?.stepsTarget ? String(goalsResult.goal.stepsTarget) : '');
     } catch (error) {
       setMessage(apiErrorMessage(error));
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Το setGoal αντικαθιστά ολόκληρη την εγγραφή, οπότε στέλνουμε ΚΑΙ τα υπάρχοντα
+  // calorie/macros ώστε να μη χαθούν όταν αλλάζουμε μόνο τους στόχους νερού/βημάτων.
+  async function saveActivityTargets() {
+    if (savingActivityTargets) return;
+    const calorieTarget = goalDetail?.calorieTarget;
+    if (!calorieTarget) {
+      setMessage('Set your calorie goal first, in the Goals tab.');
+      return;
+    }
+    const num = (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const parsed = Number(trimmed);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    setSavingActivityTargets(true);
+    setMessage(null);
+    try {
+      const result = await api.updateGoal(session.token, {
+        calorieTarget,
+        proteinGrams: goalDetail?.proteinGrams ?? null,
+        carbohydrateGrams: goalDetail?.carbohydrateGrams ?? null,
+        fatGrams: goalDetail?.fatGrams ?? null,
+        fiberGrams: goalDetail?.fiberGrams ?? null,
+        waterMl: num(targetWaterInput),
+        stepsTarget: num(targetStepsInput),
+      });
+      setGoalDetail(result.goal);
+      setMessage('Daily targets saved.');
+    } catch (error) {
+      setMessage(apiErrorMessage(error));
+    } finally {
+      setSavingActivityTargets(false);
     }
   }
 
@@ -4717,30 +4813,60 @@ function ProfileOverviewScreen({
             })()}
           </View>
         </View>
+      </GlassCard>
 
-        <Text style={styles.fieldGroupLabel}>About you</Text>
+      <CategorySection icon={<UserCircle2 size={18} color={colors.primary} />} title="About you">
         <Field label="Birth date" value={profileBirthDate} onChangeText={setProfileBirthDate} />
         <ChoiceRow label="Gender" value={profileGender} options={genders} onChange={setProfileGender} />
+      </CategorySection>
 
-        <Text style={styles.fieldGroupLabel}>Body</Text>
+      <CategorySection icon={<Scale size={18} color={colors.primary} />} title="Body">
         <View style={styles.twoColumn}>
           <Field label="Height cm" value={profileHeight} onChangeText={setProfileHeight} keyboardType="numeric" />
           <Field label="Current kg" value={profileCurrentWeight} onChangeText={setProfileCurrentWeight} keyboardType="numeric" />
         </View>
         <Field label="Target kg" value={profileTargetWeight} onChangeText={setProfileTargetWeight} keyboardType="numeric" />
+      </CategorySection>
 
-        <Text style={styles.fieldGroupLabel}>Activity &amp; goal</Text>
+      <CategorySection icon={<Target size={18} color={colors.primary} />} title="Activity & goal">
         <ChoiceRow label="Activity" value={profileActivity} options={activityLevels} onChange={setProfileActivity} />
         <ChoiceRow label="Goal" value={profileGoal} options={goals} onChange={setProfileGoal} />
+      </CategorySection>
 
-        <Text style={styles.fieldGroupLabel}>Preferences</Text>
+      <CategorySection icon={<Settings size={18} color={colors.primary} />} title="Preferences">
         <Field label="Daily calories (optional)" value={profileCalories} onChangeText={setProfileCalories} keyboardType="numeric" />
         <Field label="Timezone" value={profileTimezone} onChangeText={setProfileTimezone} autoCapitalize="none" />
         {healthProfile?.suggestedDailyCalorieTarget ? (
           <Text style={styles.noticeCopy}>Suggested target: {healthProfile.suggestedDailyCalorieTarget} kcal</Text>
         ) : null}
-        <PillButton label={savingProfile ? 'Saving...' : 'Save health profile'} onPress={saveHealthProfile} disabled={savingProfile} />
-      </GlassCard>
+      </CategorySection>
+
+      <PillButton label={savingProfile ? 'Saving...' : 'Save health profile'} onPress={saveHealthProfile} disabled={savingProfile} />
+
+      <CategorySection icon={<Droplet size={18} color={colors.primary} />} title="Daily targets">
+        <Text style={styles.noticeCopy}>
+          Set your daily water and steps goals — shown on the dashboard rings.
+        </Text>
+        <View style={styles.twoColumn}>
+          <Field
+            label="Water target (ml)"
+            value={targetWaterInput}
+            onChangeText={setTargetWaterInput}
+            keyboardType="numeric"
+          />
+          <Field
+            label="Steps target"
+            value={targetStepsInput}
+            onChangeText={setTargetStepsInput}
+            keyboardType="numeric"
+          />
+        </View>
+        <PillButton
+          label={savingActivityTargets ? 'Saving...' : 'Save daily targets'}
+          onPress={saveActivityTargets}
+          disabled={savingActivityTargets}
+        />
+      </CategorySection>
         </>
       ) : null}
 
@@ -5010,18 +5136,18 @@ function DateNav({
   };
 
   return (
-    <View style={styles.dateNavRow}>
+    <View style={styles.dateNavPill}>
       <Pressable
         onPress={() => go(addDaysISO(date, -1))}
-        style={styles.dateNavArrow}
+        style={styles.dateNavArrowFlat}
         hitSlop={8}
         accessibilityLabel="Previous day"
       >
         <ChevronLeft size={18} color={colors.text} />
       </Pressable>
 
-      <Pressable onPress={() => setPickerOpen(true)} style={styles.dateNavCenter} hitSlop={4}>
-        <CalendarDays size={16} color={colors.primary} />
+      <Pressable onPress={() => setPickerOpen(true)} style={styles.dateNavCenterFlat} hitSlop={4}>
+        <CalendarDays size={15} color={colors.primary} />
         <Text style={styles.dateNavLabel}>
           {isToday ? 'Today' : formatDayISOHuman(date)}
         </Text>
@@ -5029,7 +5155,7 @@ function DateNav({
 
       <Pressable
         onPress={() => go(addDaysISO(date, 1))}
-        style={[styles.dateNavArrow, isToday && styles.dateNavArrowDisabled]}
+        style={[styles.dateNavArrowFlat, isToday && styles.dateNavArrowDisabled]}
         disabled={isToday}
         hitSlop={8}
         accessibilityLabel="Next day"
@@ -5090,9 +5216,7 @@ function CalendarModal({
   const nextMonthDisabled = viewMonth >= maxDate.slice(0, 7);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <Pressable style={styles.calendarCard} onPress={() => {}}>
+    <GlassSheet visible={visible} onClose={onClose}>
           <View style={styles.calendarHeader}>
             <Pressable onPress={() => shiftMonth(-1)} style={styles.dateNavArrow} hitSlop={8}>
               <ChevronLeft size={18} color={colors.text} />
@@ -5149,9 +5273,7 @@ function CalendarModal({
           <Pressable onPress={() => onSelect(maxDate)} style={styles.calendarTodayButton}>
             <Text style={styles.calendarTodayText}>Today</Text>
           </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
+    </GlassSheet>
   );
 }
 
@@ -5190,11 +5312,7 @@ function DashboardScreen({
   const [steps, setSteps] = useState(0);
   const [stepsTarget, setStepsTarget] = useState<number | null>(null);
   const [addingWater, setAddingWater] = useState(false);
-  const [goalDetail, setGoalDetail] = useState<Awaited<ReturnType<typeof api.goals>>['goal'] | null>(null);
-  const [showTargets, setShowTargets] = useState(false);
-  const [targetWaterInput, setTargetWaterInput] = useState('');
-  const [targetStepsInput, setTargetStepsInput] = useState('');
-  const [savingTargets, setSavingTargets] = useState(false);
+  const [showAddChoice, setShowAddChoice] = useState(false);
   const [addingSteps, setAddingSteps] = useState(false);
   // Απενεργοποιεί το scroll του dashboard όσο ο χρήστης σέρνει ένα gauge, ώστε
   // η κάθετη κίνηση να αλλάζει την τιμή αντί να σκρολάρει τη σελίδα.
@@ -5223,7 +5341,6 @@ function DashboardScreen({
         api.activityEntries(session.token, { limit: 50 }).catch(() => null),
       ]);
       setDashboard(dash);
-      setGoalDetail(goalsRes?.goal ?? null);
       setWaterTarget(goalsRes?.goal?.waterMl ?? null);
       setStepsTarget(goalsRes?.goal?.stepsTarget ?? null);
       setWaterMl(
@@ -5256,50 +5373,6 @@ function DashboardScreen({
       setError(apiErrorMessage(requestError));
     } finally {
       setAddingWater(false);
-    }
-  }
-
-  function openTargets() {
-    setTargetWaterInput(waterTarget ? String(waterTarget) : '');
-    setTargetStepsInput(stepsTarget ? String(stepsTarget) : '');
-    setError(null);
-    setShowTargets(true);
-  }
-
-  // Το setGoal αντικαθιστά ολόκληρη την εγγραφή, οπότε στέλνουμε ΚΑΙ τα υπάρχοντα
-  // calorie/macros (από το goalDetail) ώστε να μη χαθούν όταν αλλάζουμε τους
-  // στόχους νερού/βημάτων.
-  async function saveTargets() {
-    if (savingTargets) return;
-    const calorieTarget = goalDetail?.calorieTarget;
-    if (!calorieTarget) {
-      setError('Set your calorie goal first (Set goals).');
-      return;
-    }
-    const num = (value: string) => {
-      const trimmed = value.trim();
-      if (!trimmed) return null;
-      const parsed = Number(trimmed);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-    setSavingTargets(true);
-    setError(null);
-    try {
-      await api.updateGoal(session.token, {
-        calorieTarget,
-        proteinGrams: goalDetail?.proteinGrams ?? null,
-        carbohydrateGrams: goalDetail?.carbohydrateGrams ?? null,
-        fatGrams: goalDetail?.fatGrams ?? null,
-        fiberGrams: goalDetail?.fiberGrams ?? null,
-        waterMl: num(targetWaterInput),
-        stepsTarget: num(targetStepsInput),
-      });
-      setShowTargets(false);
-      await load(true);
-    } catch (requestError) {
-      setError(apiErrorMessage(requestError));
-    } finally {
-      setSavingTargets(false);
     }
   }
 
@@ -5359,6 +5432,7 @@ function DashboardScreen({
   ] as const;
 
   return (
+    <View style={styles.dashboardRoot}>
     <ScrollView
       contentContainerStyle={styles.dashboardContent}
       scrollEnabled={scrollEnabled}
@@ -5403,31 +5477,59 @@ function DashboardScreen({
 
       <DateNav date={date} maxDate={today} onChange={setDate} />
 
-      <View style={styles.actionRow}>
-        <Pressable onPress={onAddMeal} style={[styles.actionButton, styles.actionPrimary]}>
-          <Plus size={18} color={colors.white} />
-          <Text style={styles.actionPrimaryText}>Add meal</Text>
-        </Pressable>
-        <Pressable onPress={onOpenWeight} style={styles.actionButton}>
-          <Scale size={18} color={colors.primary} />
-          <Text style={styles.actionText}>Weight</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.progressSectionHeader}>
-        <Text style={styles.sectionTitle}>{isToday ? "Today's progress" : "Day's progress"}</Text>
-        <Pressable onPress={onOpenGoals} hitSlop={8}>
-          <Text style={styles.linkText}>Set goals</Text>
-        </Pressable>
-      </View>
+      {isToday ? (
+        <View style={styles.progressSectionHeaderEnd}>
+          <Pressable onPress={onOpenSettings} hitSlop={8} style={styles.gaugeSettingsButton}>
+            <Settings size={16} color={colors.muted} />
+            <Text style={styles.linkText}>Targets</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {loading ? (
-        <GlassCard style={styles.gaugeCard}>
+        <View style={styles.orbitLoading}>
           <ActivityIndicator color={colors.primary} />
-        </GlassCard>
+        </View>
       ) : (
-        <>
-          <GlassCard style={styles.gaugeCard}>
+        <OrbitStage>
+          {/* Σειρά 1: protein — water — carbs. Σειρά 2: fat — steps — fiber.
+              Το μικρότερο μέγεθος (104 αντί για 132/140) δίνεται με πραγματικά
+              props (scale/size) στα ίδια τα gauges — ΟΧΙ με CSS transform —
+              ώστε η μαθηματική του drag-to-set gesture (που βασίζεται σε
+              πραγματικό locationX/Y σε pixels) να παραμένει σωστή. Water/Steps
+              ΧΩΡΙΣ Satellite float animation για τον ίδιο λόγο. */}
+          <OrbitRow>
+            <Satellite delay={0}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[0].label}
+                consumed={macroMap[macroConfig[0].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[0].key]?.target ?? null}
+                over={macroMap[macroConfig[0].key]?.overTarget ?? false}
+                color={macroConfig[0].color}
+              />
+            </Satellite>
+            <WaterGauge
+              size={120}
+              consumedMl={waterMl}
+              targetMl={waterTarget}
+              scaleMax={1.5 * (waterTarget ?? 3000)}
+              onCommit={isToday ? commitWater : undefined}
+              onDragStateChange={(d) => setScrollEnabled(!d)}
+            />
+            <Satellite delay={260}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[1].label}
+                consumed={macroMap[macroConfig[1].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[1].key]?.target ?? null}
+                over={macroMap[macroConfig[1].key]?.overTarget ?? false}
+                color={macroConfig[1].color}
+              />
+            </Satellite>
+          </OrbitRow>
+
+          <OrbitCenter>
             <CalorieGauge
               consumed={consumed}
               target={target}
@@ -5442,26 +5544,39 @@ function DashboardScreen({
                 kcal: 'kcal',
               }}
             />
-          </GlassCard>
+          </OrbitCenter>
 
-          <View style={styles.macroGaugeGrid}>
-            {macroConfig.map(({ key, label, color }) => {
-              const macro = macroMap[key] ?? {};
-              const macroTarget = macro.target && macro.target > 0 ? macro.target : null;
-              return (
-                <GlassCard key={key} style={styles.macroGaugeCard}>
-                  <MacroGauge
-                    label={label}
-                    consumed={macro.consumed ?? 0}
-                    target={macroTarget}
-                    over={macro.overTarget ?? false}
-                    color={color}
-                  />
-                </GlassCard>
-              );
-            })}
-          </View>
-        </>
+          <OrbitRow>
+            <Satellite delay={520}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[2].label}
+                consumed={macroMap[macroConfig[2].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[2].key]?.target ?? null}
+                over={macroMap[macroConfig[2].key]?.overTarget ?? false}
+                color={macroConfig[2].color}
+              />
+            </Satellite>
+            <StepsGauge
+              size={120}
+              steps={steps}
+              targetSteps={stepsTarget ?? STEPS_FALLBACK}
+              scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
+              onCommit={isToday ? commitSteps : undefined}
+              onDragStateChange={(d) => setScrollEnabled(!d)}
+            />
+            <Satellite delay={780}>
+              <MacroGauge
+                scale={104 / 132}
+                label={macroConfig[3].label}
+                consumed={macroMap[macroConfig[3].key]?.consumed ?? 0}
+                target={macroMap[macroConfig[3].key]?.target ?? null}
+                over={macroMap[macroConfig[3].key]?.overTarget ?? false}
+                color={macroConfig[3].color}
+              />
+            </Satellite>
+          </OrbitRow>
+        </OrbitStage>
       )}
 
       {error ? (
@@ -5471,96 +5586,69 @@ function DashboardScreen({
         </View>
       ) : null}
 
-      <View style={styles.progressSectionHeader}>
-        <Text style={styles.sectionTitle}>{isToday ? 'Today' : 'That day'}</Text>
-        {isToday ? (
-          <Pressable onPress={openTargets} hitSlop={8} style={styles.gaugeSettingsButton}>
-            <Settings size={16} color={colors.muted} />
-            <Text style={styles.linkText}>Targets</Text>
-          </Pressable>
-        ) : null}
-      </View>
-      <View style={styles.macroGaugeGrid}>
-        <GlassCard style={styles.macroGaugeCard}>
-          <WaterGauge
-            consumedMl={waterMl}
-            targetMl={waterTarget}
-            scaleMax={1.5 * (waterTarget ?? 3000)}
-            onCommit={isToday ? commitWater : undefined}
-            onDragStateChange={(d) => setScrollEnabled(!d)}
-          />
-        </GlassCard>
-        <GlassCard style={styles.macroGaugeCard}>
-          <StepsGauge
-            steps={steps}
-            targetSteps={stepsTarget ?? STEPS_FALLBACK}
-            scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
-            onCommit={isToday ? commitSteps : undefined}
-            onDragStateChange={(d) => setScrollEnabled(!d)}
-          />
-        </GlassCard>
-      </View>
-
       <Text style={styles.sectionTitle}>Meals</Text>
-      <View style={styles.mealList}>
-        {meals.length ? (
-          meals.map((meal) => (
-            <Pressable key={meal.id} onPress={() => onOpenMeal(meal.id)}>
-              <GlassCard style={styles.mealCard}>
-                <View style={styles.mealCardLeft}>
-                  <MealPhoto token={session.token} mealId={meal.id} style={styles.mealThumb} />
-                  <View style={styles.mealCardCopy}>
-                    <Text style={styles.mealTitle}>{meal.title || meal.mealType || 'Meal'}</Text>
-                    <Text style={styles.metricLabel}>
-                      {[formatMealTime(meal.mealDateTime), meal.analysisStatus ?? 'saved']
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.mealCalories}>{Math.round(meal.finalCalories ?? 0)} kcal</Text>
-              </GlassCard>
-            </Pressable>
-          ))
-        ) : (
+      <MealReel>
+        {meals.map((meal) => (
+          <MealReelCard
+            key={meal.id}
+            onPress={() => onOpenMeal(meal.id)}
+            photo={<MealPhoto token={session.token} mealId={meal.id} style={StyleSheet.absoluteFill} />}
+            title={meal.title || meal.mealType || 'Meal'}
+            meta={formatMealTime(meal.mealDateTime) ?? ''}
+            kcal={meal.finalCalories ?? 0}
+          />
+        ))}
+        {!meals.length ? (
           <GlassCard style={styles.emptyCard}>
             <Text style={styles.noticeTitle}>No meals yet</Text>
             <Text style={styles.noticeCopy}>Add your first meal from camera or gallery.</Text>
           </GlassCard>
-        )}
-      </View>
+        ) : null}
+      </MealReel>
 
-      <Modal visible={showTargets} transparent animationType="fade" onRequestClose={() => setShowTargets(false)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setShowTargets(false)}>
-          <Pressable style={styles.calendarCard} onPress={() => {}}>
-            <Text style={styles.sectionTitle}>Water &amp; steps</Text>
-            <Text style={styles.noticeCopy}>Set your daily targets and log steps.</Text>
-
-            <Field
-              label="Daily water target (ml)"
-              value={targetWaterInput}
-              onChangeText={setTargetWaterInput}
-              keyboardType="numeric"
-            />
-            <Field
-              label="Daily steps target"
-              value={targetStepsInput}
-              onChangeText={setTargetStepsInput}
-              keyboardType="numeric"
-            />
-            <PillButton
-              label={savingTargets ? 'Saving...' : 'Save targets'}
-              onPress={saveTargets}
-              disabled={savingTargets}
-            />
-
-            <Pressable onPress={() => setShowTargets(false)} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Close</Text>
-            </Pressable>
+      <GlassSheet visible={showAddChoice} onClose={() => setShowAddChoice(false)}>
+        <Text style={styles.sectionTitle}>What do you want to add?</Text>
+        <View style={styles.addChoiceCards}>
+          <Pressable
+            style={({ pressed }) => [styles.addChoiceCard, pressed && styles.addChoiceCardPressed]}
+            onPress={() => {
+              setShowAddChoice(false);
+              onAddMeal();
+            }}
+          >
+            <View style={[styles.addChoiceCardIcon, { backgroundColor: colors.primarySoft }]}>
+              <Plus size={26} color={colors.primary} />
+            </View>
+            <Text style={styles.addChoiceCardTitle}>Add meal</Text>
+            <Text style={styles.addChoiceCardSubtitle}>Photo, gallery or manual entry</Text>
           </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.addChoiceCard, pressed && styles.addChoiceCardPressed]}
+            onPress={() => {
+              setShowAddChoice(false);
+              onOpenWeight();
+            }}
+          >
+            <View style={[styles.addChoiceCardIcon, { backgroundColor: colors.accentSoft }]}>
+              <Scale size={26} color={colors.accent} />
+            </View>
+            <Text style={styles.addChoiceCardTitle}>Add weight</Text>
+            <Text style={styles.addChoiceCardSubtitle}>Log today's weigh-in</Text>
+          </Pressable>
+        </View>
+
+        <Pressable onPress={() => setShowAddChoice(false)} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Cancel</Text>
         </Pressable>
-      </Modal>
+      </GlassSheet>
     </ScrollView>
+    {isToday ? (
+      <GradientFab onPress={() => setShowAddChoice(true)} style={styles.dashboardFab}>
+        <Plus size={26} color={colors.white} />
+      </GradientFab>
+    ) : null}
+    </View>
   );
 }
 
@@ -5605,25 +5693,30 @@ export default function App() {
   // iOS gestures: one-finger swipe από την αριστερή άκρη → back,
   // από τη δεξιά άκρη → forward. Διεκδικεί τον responder μόνο σε καθαρά
   // οριζόντια κίνηση που ξεκινά στην άκρη, ώστε να μη μπλοκάρει το scroll.
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_evt, gesture) => {
-          if (Platform.OS !== 'ios') return false;
-          const horizontal =
-            Math.abs(gesture.dx) > 16 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.7;
-          if (!horizontal) return false;
-          if (gesture.x0 <= 28 && gesture.dx > 0) return true;
-          if (gesture.x0 >= windowWidth - 28 && gesture.dx < 0) return true;
-          return false;
-        },
-        onPanResponderRelease: (_evt, gesture) => {
-          if (gesture.x0 <= 40 && gesture.dx > 60) goBack();
-          else if (gesture.x0 >= windowWidth - 40 && gesture.dx < -60) goForward();
-        },
-      }),
-    [windowWidth, goBack, goForward],
-  );
+  const panResponder = useMemo(() => {
+    // Κοινή λογική για capture ΚΑΙ bubble phase: το claim πρέπει να γίνεται
+    // στο capture (πριν προλάβει να το πάρει ένα εσωτερικό ScrollView/carousel
+    // πάνω σε οθόνες όπως το Meal Detail), αλλιώς το edge-swipe δούλευε άτακτα
+    // ανάλογα με το τι είχε από κάτω η κάθε οθόνη.
+    const shouldClaim = (gesture: { dx: number; dy: number; x0: number }) => {
+      if (Platform.OS !== 'ios') return false;
+      const horizontal = Math.abs(gesture.dx) > 16 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.7;
+      if (!horizontal) return false;
+      if (gesture.x0 <= 28 && gesture.dx > 0) return true;
+      if (gesture.x0 >= windowWidth - 28 && gesture.dx < 0) return true;
+      return false;
+    };
+    return PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_evt, gesture) => shouldClaim(gesture),
+      onMoveShouldSetPanResponder: (_evt, gesture) => shouldClaim(gesture),
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (_evt, gesture) => {
+        if (gesture.x0 <= 40 && gesture.dx > 60) goBack();
+        else if (gesture.x0 >= windowWidth - 40 && gesture.dx < -60) goForward();
+      },
+    });
+  }, [windowWidth, goBack, goForward]);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -6073,6 +6166,28 @@ const styles = StyleSheet.create({
     padding: 18,
     gap: 12,
   },
+  categoryCard: {
+    padding: 18,
+    gap: 12,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  categoryIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+  },
+  categoryTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
   kicker: {
     color: colors.accent,
     fontSize: 12,
@@ -6182,6 +6297,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '900',
+  },
+  dashboardRoot: {
+    flex: 1,
+  },
+  dashboardFab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 118,
+  },
+  orbitLoading: {
+    height: 344,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dashboardContent: {
     padding: 16,
@@ -6478,16 +6606,11 @@ const styles = StyleSheet.create({
     minHeight: 116,
     padding: 14,
   },
-  progressSectionHeader: {
+  progressSectionHeaderEnd: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginTop: 4,
-  },
-  dateNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   dateNavArrow: {
     width: 44,
@@ -6499,20 +6622,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  dateNavPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    backgroundColor: colors.glassBg,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  dateNavArrowFlat: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dateNavArrowDisabled: {
     opacity: 0.45,
   },
-  dateNavCenter: {
+  dateNavCenterFlat: {
     flex: 1,
-    height: 44,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 16,
-    backgroundColor: colors.glassBg,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   dateNavLabel: {
     color: colors.text,
@@ -6615,17 +6751,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 220,
   },
-  macroGaugeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  macroGaugeCard: {
-    width: '48%',
-    paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   waterAddRow: {
     flexDirection: 'row',
     gap: 8,
@@ -6683,6 +6808,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingRight: 12,
+  },
+  addChoiceCards: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addChoiceCard: {
+    flex: 1,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 16,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    backgroundColor: colors.glassBgSoft,
+  },
+  addChoiceCardPressed: {
+    backgroundColor: colors.glassBg,
+    borderColor: colors.borderStrong,
+  },
+  addChoiceCardIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addChoiceCardTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  addChoiceCardSubtitle: {
+    color: colors.muted,
+    fontSize: 11.5,
+    textAlign: 'center',
   },
   mealCardCopy: {
     flex: 1,
