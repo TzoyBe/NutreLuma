@@ -2,15 +2,41 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { User, Scale, Target, Settings } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { healthProfileSchema } from '@/lib/validation/profile';
 import { suggestDailyCalorieTarget } from '@/lib/calories';
 import { ACTIVITY_LEVELS, GENDERS, GOALS, UNITS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Field, fieldAria, Input, Select } from '@/components/ui/field';
 import { Disclaimer } from '@/components/ui/misc';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
+
+/** Ίδιο ύφος με τις category cards του native app: εικόνα + τίτλος ανά ομάδα
+ * πεδίων, αντί όλα τα fields σε ένα ενιαίο grid. */
+function CategoryCard({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center gap-2 space-y-0">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          {icon}
+        </span>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-2">{children}</CardContent>
+    </Card>
+  );
+}
 
 export interface ProfileFormValues {
   birthDate: string;
@@ -152,8 +178,8 @@ export function ProfileForm({
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} noValidate className="space-y-4">
+      <CategoryCard icon={<User className="h-4 w-4" aria-hidden="true" />} title={t('profile.categoryAboutYou')}>
         <Field label={t('onboarding.birthDate')} htmlFor="birthDate" error={errors.birthDate} required>
           <Input
             {...fieldAria('birthDate', errors.birthDate)}
@@ -178,7 +204,9 @@ export function ProfileForm({
             ))}
           </Select>
         </Field>
+      </CategoryCard>
 
+      <CategoryCard icon={<Scale className="h-4 w-4" aria-hidden="true" />} title={t('profile.categoryBody')}>
         <Field label={t('onboarding.heightCm')} htmlFor="heightCm" error={errors.heightCm} required>
           <Input
             {...fieldAria('heightCm', errors.heightCm)}
@@ -228,7 +256,9 @@ export function ProfileForm({
             onChange={(e) => set('targetWeightKg', e.target.value)}
           />
         </Field>
+      </CategoryCard>
 
+      <CategoryCard icon={<Target className="h-4 w-4" aria-hidden="true" />} title={t('profile.categoryActivityGoal')}>
         <Field
           label={t('onboarding.activityLevel')}
           htmlFor="activityLevel"
@@ -260,7 +290,9 @@ export function ProfileForm({
             ))}
           </Select>
         </Field>
+      </CategoryCard>
 
+      <CategoryCard icon={<Settings className="h-4 w-4" aria-hidden="true" />} title={t('profile.categoryPreferences')}>
         <Field
           label={t('onboarding.dailyCalorieTarget')}
           htmlFor="dailyCalorieTarget"
@@ -311,7 +343,7 @@ export function ProfileForm({
             ))}
           </Select>
         </Field>
-      </div>
+      </CategoryCard>
 
       {suggestion ? (
         <div className="rounded-xl border border-border bg-secondary/60 p-4">

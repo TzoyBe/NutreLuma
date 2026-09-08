@@ -2,11 +2,8 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Droplet, Footprints, SlidersHorizontal } from 'lucide-react';
+import { Droplet, Footprints } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Field, Input } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 import { angleFraction, applyAntiWrap, snapValue } from './radial-gauge-math';
@@ -18,7 +15,7 @@ import { angleFraction, applyAntiWrap, snapValue } from './radial-gauge-math';
  * /api/water, /api/activity, /api/goals και μετά κάνουμε router.refresh().
  */
 
-const SIZE = 148;
+const SIZE = 160;
 const STROKE = 12;
 const R = (SIZE - STROKE) / 2;
 const C = 2 * Math.PI * R;
@@ -171,187 +168,130 @@ function Ring({
   );
 }
 
-export function ActivityGauges({
+/**
+ * Water/Steps rings — standalone, χωρίς κάρτα ή section wrapper, ώστε να
+ * μπαίνουν μέσα στο ίδιο orbit-stage με τα macro rings (parity με το
+ * native app). Ο στόχος (ml/βήματα) ρυθμίζεται πλέον από τη σελίδα Goals,
+ * όχι εδώ — ίδια λογική με το native (μετακινήθηκε εκτός dashboard).
+ */
+export function WaterRing({
   date,
   isToday,
   waterMl,
-  steps,
   goal,
+  className,
 }: {
   date: string;
   isToday: boolean;
   waterMl: number;
-  steps: number;
-  goal: GoalValues;
+  goal: Pick<GoalValues, 'waterMl'>;
+  className?: string;
 }) {
   const t = useT();
   const router = useRouter();
   const toast = useToast();
+  const [busy, setBusy] = React.useState(false);
 
   const waterTarget = goal.waterMl && goal.waterMl > 0 ? goal.waterMl : null;
-  const stepsTarget = goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_FALLBACK;
+  const WATER_DEFAULT = 3000;
+  const waterScaleMax = 1.5 * (waterTarget ?? WATER_DEFAULT);
 
-  const [busy, setBusy] = React.useState<string | null>(null);
-  const [showTargets, setShowTargets] = React.useState(false);
-  const [waterInput, setWaterInput] = React.useState(waterTarget ? String(waterTarget) : '');
-  const [stepsInput, setStepsInput] = React.useState(goal.stepsTarget ? String(goal.stepsTarget) : '');
-
-  async function run(key: string, action: () => Promise<unknown>) {
-    if (busy) return;
-    setBusy(key);
+  const commitWater = async (newTotal: number) => {
+    const delta = Math.round(newTotal - waterMl);
+    if (delta === 0 || busy) return;
+    setBusy(true);
     try {
-      await action();
+      await api.post('/api/water', { entryDate: date, volumeMl: delta });
       router.refresh();
     } catch (error) {
       toast.push(error instanceof ApiClientError ? error.message : t('errors.generic'), 'error');
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
-  }
-
-  const WATER_DEFAULT = 3000;
-  const STEPS_DEFAULT = 10000;
-  const waterScaleMax = 1.5 * (waterTarget ?? WATER_DEFAULT);
-  const stepsScaleMax = 1.5 * (goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_DEFAULT);
-
-  const commitWater = (newTotal: number) => {
-    const delta = Math.round(newTotal - waterMl);
-    if (delta === 0) return;
-    run('water-commit', () => api.post('/api/water', { entryDate: date, volumeMl: delta }));
   };
-  const commitSteps = (newTotal: number) => {
-    const delta = Math.round(newTotal - steps);
-    if (delta === 0) return;
-    run('steps-commit', () => api.post('/api/activity', { entryDate: date, kind: 'WALK', steps: delta }));
-  };
-
-  const num = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : null;
-  };
-
-  const saveTargets = () =>
-    run('targets', async () => {
-      await api.put('/api/goals', {
-        source: 'MANUAL',
-        calorieTarget: goal.calorieTarget,
-        proteinGrams: goal.proteinGrams,
-        carbohydrateGrams: goal.carbohydrateGrams,
-        fatGrams: goal.fatGrams,
-        fiberGrams: goal.fiberGrams,
-        waterMl: num(waterInput),
-        stepsTarget: num(stepsInput),
-      });
-      setShowTargets(false);
-    });
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {isToday ? t('dashboard.today') : t('dashboard.day')}
-        </h2>
-        {isToday ? (
-          <button
-            type="button"
-            onClick={() => setShowTargets((v) => !v)}
-            className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-            {t('dashboard.targets')}
-          </button>
-        ) : null}
-      </div>
+    <div className={className}>
+      <Ring
+        value={waterMl}
+        scaleMax={waterScaleMax}
+        target={waterTarget ?? WATER_DEFAULT}
+        from="#38BDF8"
+        to="#2563EB"
+        interactive={isToday}
+        onCommit={commitWater}
+      >
+        {(display) => (
+          <>
+            <Droplet className="h-4 w-4 text-sky-400" aria-hidden="true" />
+            <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {waterTarget ? `of ${waterTarget.toLocaleString()} ml` : 'ml'}
+            </span>
+          </>
+        )}
+      </Ring>
+      <p className="mt-1 text-center text-sm font-semibold">{t('dashboard.water')}</p>
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardContent className="flex h-full flex-col items-center justify-center gap-3">
-            <Ring
-              value={waterMl}
-              scaleMax={waterScaleMax}
-              target={waterTarget ?? WATER_DEFAULT}
-              from="#38BDF8"
-              to="#2563EB"
-              interactive={isToday}
-              onCommit={commitWater}
-            >
-              {(display) => (
-                <>
-                  <Droplet className="h-4 w-4 text-sky-400" aria-hidden="true" />
-                  <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">
-                    {waterTarget ? `of ${waterTarget.toLocaleString()} ml` : 'ml'}
-                  </span>
-                </>
-              )}
-            </Ring>
-            <p className="text-sm font-semibold">{t('dashboard.water')}</p>
-            {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
-          </CardContent>
-        </Card>
+export function StepsRing({
+  date,
+  isToday,
+  steps,
+  goal,
+  className,
+}: {
+  date: string;
+  isToday: boolean;
+  steps: number;
+  goal: Pick<GoalValues, 'stepsTarget'>;
+  className?: string;
+}) {
+  const t = useT();
+  const router = useRouter();
+  const toast = useToast();
+  const [busy, setBusy] = React.useState(false);
 
-        <Card>
-          <CardContent className="flex h-full flex-col items-center justify-center gap-3">
-            <Ring
-              value={steps}
-              scaleMax={stepsScaleMax}
-              target={goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_FALLBACK}
-              from="#2DD4BF"
-              to="#10B981"
-              interactive={isToday}
-              onCommit={commitSteps}
-            >
-              {(display) => (
-                <>
-                  <Footprints className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-                  <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">of {stepsTarget.toLocaleString()}</span>
-                </>
-              )}
-            </Ring>
-            <p className="text-sm font-semibold">{t('dashboard.steps')}</p>
-            {isToday ? <p className="text-[11px] text-muted-foreground">{t('dashboard.dragToAdjust')}</p> : null}
-          </CardContent>
-        </Card>
-      </div>
+  const stepsTarget = goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_FALLBACK;
+  const STEPS_DEFAULT = 10000;
+  const stepsScaleMax = 1.5 * (goal.stepsTarget && goal.stepsTarget > 0 ? goal.stepsTarget : STEPS_DEFAULT);
 
-      {showTargets ? (
-        <Card>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <Field label={`${t('dashboard.water')} (ml)`} htmlFor="waterTargetInput">
-              <Input
-                id="waterTargetInput"
-                type="number"
-                inputMode="numeric"
-                min={200}
-                max={8000}
-                step={50}
-                value={waterInput}
-                onChange={(e) => setWaterInput(e.target.value)}
-              />
-            </Field>
-            <Field label={t('goals.stepsTarget')} htmlFor="stepsTargetInput">
-              <Input
-                id="stepsTargetInput"
-                type="number"
-                inputMode="numeric"
-                min={1000}
-                max={100000}
-                step={500}
-                value={stepsInput}
-                onChange={(e) => setStepsInput(e.target.value)}
-              />
-            </Field>
-            <div className="sm:col-span-2">
-              <Button onClick={saveTargets} loading={busy === 'targets'}>
-                {t('common.save')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-    </section>
+  const commitSteps = async (newTotal: number) => {
+    const delta = Math.round(newTotal - steps);
+    if (delta === 0 || busy) return;
+    setBusy(true);
+    try {
+      await api.post('/api/activity', { entryDate: date, kind: 'WALK', steps: delta });
+      router.refresh();
+    } catch (error) {
+      toast.push(error instanceof ApiClientError ? error.message : t('errors.generic'), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={className}>
+      <Ring
+        value={steps}
+        scaleMax={stepsScaleMax}
+        target={stepsTarget}
+        from="#2DD4BF"
+        to="#10B981"
+        interactive={isToday}
+        onCommit={commitSteps}
+      >
+        {(display) => (
+          <>
+            <Footprints className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+            <span className="text-2xl font-bold tabular-nums">{display.toLocaleString()}</span>
+            <span className="text-[11px] text-muted-foreground tabular-nums">of {stepsTarget.toLocaleString()}</span>
+          </>
+        )}
+      </Ring>
+      <p className="mt-1 text-center text-sm font-semibold">{t('dashboard.steps')}</p>
+    </div>
   );
 }

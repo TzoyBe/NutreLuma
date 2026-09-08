@@ -13,6 +13,9 @@ type MacroGaugeProps = {
   over: boolean;
   color: string; // CSS color, π.χ. "hsl(168 76% 55%)"
   unit?: string;
+  /** Τελικό μέγεθος rendering σε px. Η εσωτερική γεωμετρία (viewBox) μένει
+   * πάντα 132 — το SVG scale-άρει CSS-ικά, οπότε είναι ασφαλές να μικρύνει. */
+  size?: number;
 };
 
 const SIZE = 132;
@@ -21,7 +24,7 @@ const RADIUS = 52;
 const STROKE = 11;
 const CIRC = 2 * Math.PI * RADIUS;
 
-export function MacroGauge({ label, consumed, target, over, color, unit = 'g' }: MacroGaugeProps) {
+export function MacroGauge({ label, consumed, target, over, color, unit = 'g', size = SIZE }: MacroGaugeProps) {
   const rounded = Math.round(consumed);
   const hasTarget = target !== null && target > 0;
   const fraction = hasTarget ? Math.max(0, Math.min(1, consumed / target)) : 0;
@@ -30,7 +33,7 @@ export function MacroGauge({ label, consumed, target, over, color, unit = 'g' }:
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+      <div className="relative" style={{ width: size, height: size }}>
         {/* Χρωματιστή λάμψη πίσω από το gauge */}
         <div
           aria-hidden="true"

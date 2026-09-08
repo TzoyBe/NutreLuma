@@ -405,6 +405,10 @@ export const en: Translations = {
     tabPlan: 'Plan',
     tabWeight: 'Weight',
     tabBilling: 'Subscription',
+    categoryAboutYou: 'About you',
+    categoryBody: 'Body',
+    categoryActivityGoal: 'Activity & goal',
+    categoryPreferences: 'Preferences',
   },
   settings: {
     language: 'Language',

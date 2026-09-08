@@ -722,48 +722,44 @@
 
   /* ---- Glass Reel: floating orbit cluster + status island + meal reel ---- */
 
+  /* Σειρές αντί για absolute γωνιακή τοποθέτηση: τα πραγματικά μεγέθη (208px
+     κέντρο / 132px macro / ~160px water-steps) δεν χωράνε "ορμπιτάλ" γύρω-γύρω
+     σε πλάτος οθόνης χωρίς να επικαλύπτονται (το ίδιο πρόβλημα διορθώθηκε και
+     στο native app). */
   .orbit-stage {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem 0;
+  }
+
+  .orbit-row {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 22rem;
-    padding: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .orbit-center {
     position: relative;
-    z-index: 2;
   }
 
   .orbit-satellite {
-    position: absolute;
-    z-index: 1;
     animation: orbit-float 5.5s ease-in-out infinite;
   }
 
-  .orbit-satellite.pos-tl {
-    top: 0.25rem;
-    left: 2%;
-    animation-delay: 0s;
+  .orbit-satellite.delay-1 {
+    animation-delay: 0.3s;
   }
 
-  .orbit-satellite.pos-tr {
-    top: 1.25rem;
-    right: 2%;
+  .orbit-satellite.delay-2 {
     animation-delay: 0.6s;
   }
 
-  .orbit-satellite.pos-bl {
-    bottom: 0.5rem;
-    left: 8%;
-    animation-delay: 1.2s;
-  }
-
-  .orbit-satellite.pos-br {
-    bottom: 0;
-    right: 8%;
-    animation-delay: 1.8s;
+  .orbit-satellite.delay-3 {
+    animation-delay: 0.9s;
   }
 
   @keyframes orbit-float {
@@ -773,22 +769,6 @@
     50% {
       transform: translateY(-10px);
     }
-  }
-
-  .status-island {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    align-self: center;
-    border-radius: 999px;
-    padding: 0.5rem 1.1rem;
-    background: rgba(5, 6, 13, 0.55);
-    border: 1px solid hsl(var(--glass-border) / 0.3);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 
   .meal-reel {

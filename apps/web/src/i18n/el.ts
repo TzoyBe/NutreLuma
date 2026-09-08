@@ -414,6 +414,10 @@ export const el = {
     tabPlan: 'Συνδρομή',
     tabWeight: 'Βάρος',
     tabBilling: 'Συνδρομή',
+    categoryAboutYou: 'Για εσένα',
+    categoryBody: 'Σώμα',
+    categoryActivityGoal: 'Δραστηριότητα & στόχος',
+    categoryPreferences: 'Προτιμήσεις',
   },
   settings: {
     language: 'Γλώσσα',

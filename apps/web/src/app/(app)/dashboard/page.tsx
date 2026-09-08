@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Flame, Plus, Scale, Utensils } from 'lucide-react';
+import { Plus, Scale, Utensils } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getDashboard } from '@/server/services/stats';
 import { waterMlByDay } from '@/server/services/water';
 import { stepsByDay } from '@/server/services/activity';
 import { getAccessState } from '@/server/services/subscription';
-import { ActivityGauges } from '@/components/dashboard/activity-gauges';
+import { WaterRing, StepsRing } from '@/components/dashboard/activity-gauges';
 import { SubscriptionBanner } from '@/components/billing/subscription-banner';
 import { dayISOSchema } from '@/lib/validation/meal';
 import { formatDateInTz, formatDayISOHuman, formatTimeInTz, todayISO } from '@/lib/dates';
@@ -109,29 +109,37 @@ export default async function DashboardPage({
       )}
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            {isToday ? t('dashboard.todayProgress') : t('dashboard.dayProgress')}
-          </h2>
-          <Link href="/goals" className="shrink-0 text-sm font-medium text-primary hover:underline">
-            {t('dashboard.setGoals')}
-          </Link>
-        </div>
-
-        {summary.target ? (
-          <div className="status-island">
-            <Flame
-              className="h-3.5 w-3.5"
-              aria-hidden="true"
-              style={{ color: summary.overTarget ? 'hsl(var(--destructive))' : 'hsl(var(--accent))' }}
-            />
-            {summary.overTarget
-              ? t('dashboard.overKcal', { n: Math.abs(summary.remaining ?? 0) })
-              : t('dashboard.remainingKcal', { n: Math.abs(summary.remaining ?? 0) })}
-          </div>
-        ) : null}
-
         <div className="orbit-stage">
+          <div className="orbit-row">
+            <div className="orbit-satellite">
+              <MacroGauge
+                size={104}
+                label={t('dashboard.protein')}
+                consumed={macros.protein.consumed}
+                target={macros.protein.target}
+                over={macros.protein.overTarget}
+                color="#38BDF8"
+              />
+            </div>
+            <WaterRing
+              className="orbit-satellite delay-1"
+              date={date}
+              isToday={isToday}
+              waterMl={waterMl}
+              goal={{ waterMl: goal.waterMl }}
+            />
+            <div className="orbit-satellite delay-2">
+              <MacroGauge
+                size={104}
+                label={t('dashboard.carbohydrate')}
+                consumed={macros.carbohydrate.consumed}
+                target={macros.carbohydrate.target}
+                over={macros.carbohydrate.overTarget}
+                color="#FFB703"
+              />
+            </div>
+          </div>
+
           <div className="orbit-center">
             <CalorieGauge
               consumed={summary.consumed}
@@ -150,63 +158,37 @@ export default async function DashboardPage({
             />
           </div>
 
-          <div className="orbit-satellite pos-tl">
-            <MacroGauge
-              label={t('dashboard.protein')}
-              consumed={macros.protein.consumed}
-              target={macros.protein.target}
-              over={macros.protein.overTarget}
-              color="#38BDF8"
+          <div className="orbit-row">
+            <div className="orbit-satellite">
+              <MacroGauge
+                size={104}
+                label={t('dashboard.fat')}
+                consumed={macros.fat.consumed}
+                target={macros.fat.target}
+                over={macros.fat.overTarget}
+                color="#A855F7"
+              />
+            </div>
+            <StepsRing
+              className="orbit-satellite delay-1"
+              date={date}
+              isToday={isToday}
+              steps={steps}
+              goal={{ stepsTarget: goal.stepsTarget }}
             />
-          </div>
-
-          <div className="orbit-satellite pos-tr">
-            <MacroGauge
-              label={t('dashboard.carbohydrate')}
-              consumed={macros.carbohydrate.consumed}
-              target={macros.carbohydrate.target}
-              over={macros.carbohydrate.overTarget}
-              color="#FFB703"
-            />
-          </div>
-
-          <div className="orbit-satellite pos-bl">
-            <MacroGauge
-              label={t('dashboard.fat')}
-              consumed={macros.fat.consumed}
-              target={macros.fat.target}
-              over={macros.fat.overTarget}
-              color="#A855F7"
-            />
-          </div>
-
-          <div className="orbit-satellite pos-br">
-            <MacroGauge
-              label={t('dashboard.fiber')}
-              consumed={macros.fiber.consumed}
-              target={macros.fiber.target}
-              over={macros.fiber.overTarget}
-              color="#10B981"
-            />
+            <div className="orbit-satellite delay-2">
+              <MacroGauge
+                size={104}
+                label={t('dashboard.fiber')}
+                consumed={macros.fiber.consumed}
+                target={macros.fiber.target}
+                over={macros.fiber.overTarget}
+                color="#10B981"
+              />
+            </div>
           </div>
         </div>
       </section>
-
-      <ActivityGauges
-        date={date}
-        isToday={isToday}
-        waterMl={waterMl}
-        steps={steps}
-        goal={{
-          calorieTarget: goal.calorieTarget,
-          proteinGrams: goal.proteinGrams,
-          carbohydrateGrams: goal.carbohydrateGrams,
-          fatGrams: goal.fatGrams,
-          fiberGrams: goal.fiberGrams,
-          waterMl: goal.waterMl,
-          stepsTarget: goal.stepsTarget,
-        }}
-      />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
