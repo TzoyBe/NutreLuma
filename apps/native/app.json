@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "nutreluma",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B1020"
-    },
     "ios": {
       "bundleIdentifier": "com.joybeedigital.nutreluma",
       "supportsTablet": true,
@@ -41,6 +36,15 @@
         "expo-notifications",
         {
           "color": "#2563EB"
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0B1020"
         }
       ]
     ],
