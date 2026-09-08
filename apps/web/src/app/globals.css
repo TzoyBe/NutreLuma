@@ -730,20 +730,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
+    gap: clamp(0.25rem, 1.5vw, 1.5rem);
     padding: 1rem 0;
+    width: 100%;
   }
 
   .orbit-row {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: clamp(0.5rem, 3vw, 3rem);
     flex-wrap: wrap;
-  }
-
-  .orbit-center {
-    position: relative;
+    width: 100%;
   }
 
   .orbit-satellite {

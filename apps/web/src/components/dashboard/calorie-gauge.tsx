@@ -22,6 +22,9 @@ type CalorieGaugeProps = {
     noTarget: string;
     kcal: string;
   };
+  /** Μέγεθος rendering — αριθμός (px) ή CSS τιμή (π.χ. clamp() για να
+   * μεγαλώνει σε πλατιές οθόνες). */
+  size?: number | string;
 };
 
 const SIZE = 208;
@@ -37,6 +40,7 @@ export function CalorieGauge({
   overTarget,
   progressPercent,
   labels,
+  size = 'clamp(200px, 20vw, 440px)',
 }: CalorieGaugeProps) {
   const hasTarget = target !== null && target > 0;
   const fraction = hasTarget ? Math.max(0, Math.min(1, progressPercent / 100)) : 0;
@@ -52,7 +56,7 @@ export function CalorieGauge({
 
   return (
     <div className="flex w-full flex-col items-center">
-      <div className="relative aspect-square w-full max-w-[300px]">
+      <div className="relative" style={{ width: size, height: size }}>
         {/* Ambient χρωματιστή λάμψη πίσω από το gauge */}
         <div
           aria-hidden="true"

@@ -13,9 +13,10 @@ type MacroGaugeProps = {
   over: boolean;
   color: string; // CSS color, π.χ. "hsl(168 76% 55%)"
   unit?: string;
-  /** Τελικό μέγεθος rendering σε px. Η εσωτερική γεωμετρία (viewBox) μένει
-   * πάντα 132 — το SVG scale-άρει CSS-ικά, οπότε είναι ασφαλές να μικρύνει. */
-  size?: number;
+  /** Τελικό μέγεθος rendering — αριθμός (px) ή CSS τιμή (π.χ. clamp() για να
+   * μεγαλώνει σε πλατιές οθόνες). Η εσωτερική γεωμετρία (viewBox) μένει πάντα
+   * 132 — το SVG scale-άρει CSS-ικά, οπότε είναι ασφαλές να αλλάζει μέγεθος. */
+  size?: number | string;
 };
 
 const SIZE = 132;

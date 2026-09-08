@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Droplet, Footprints } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 import { angleFraction, applyAntiWrap, snapValue } from './radial-gauge-math';
@@ -40,6 +41,7 @@ function Ring({
   to,
   interactive,
   onCommit,
+  size = SIZE,
   children,
 }: {
   value: number;            // committed value (consumed)
@@ -49,6 +51,9 @@ function Ring({
   to: string;
   interactive: boolean;
   onCommit?: (newValue: number) => void;
+  /** Μέγεθος rendering — αριθμός (px) ή CSS τιμή (π.χ. clamp()). Η εσωτερική
+   * γεωμετρία (viewBox) μένει πάντα στο module SIZE — ασφαλές να αλλάζει. */
+  size?: number | string;
   children: (displayValue: number) => React.ReactNode;
 }) {
   const gid = React.useId();
@@ -103,12 +108,11 @@ function Ring({
   const rotate = `rotate(-90 ${SIZE / 2} ${SIZE / 2})`;
 
   return (
-    <div className="relative" style={{ width: SIZE, height: SIZE }}>
+    <div className="relative" style={{ width: size, height: size }}>
       <svg
         ref={svgRef}
-        width={SIZE}
-        height={SIZE}
-        className={interactive ? 'cursor-pointer' : ''}
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        className={interactive ? 'h-full w-full cursor-pointer' : 'h-full w-full'}
         style={interactive ? { touchAction: 'none' } : undefined}
         onPointerDown={
           interactive
@@ -180,12 +184,14 @@ export function WaterRing({
   waterMl,
   goal,
   className,
+  size = 'clamp(116px, 12.5vw, 280px)',
 }: {
   date: string;
   isToday: boolean;
   waterMl: number;
   goal: Pick<GoalValues, 'waterMl'>;
   className?: string;
+  size?: number | string;
 }) {
   const t = useT();
   const router = useRouter();
@@ -211,7 +217,7 @@ export function WaterRing({
   };
 
   return (
-    <div className={className}>
+    <div className={cn('flex flex-col items-center', className)}>
       <Ring
         value={waterMl}
         scaleMax={waterScaleMax}
@@ -220,6 +226,7 @@ export function WaterRing({
         to="#2563EB"
         interactive={isToday}
         onCommit={commitWater}
+        size={size}
       >
         {(display) => (
           <>
@@ -242,12 +249,14 @@ export function StepsRing({
   steps,
   goal,
   className,
+  size = 'clamp(116px, 12.5vw, 280px)',
 }: {
   date: string;
   isToday: boolean;
   steps: number;
   goal: Pick<GoalValues, 'stepsTarget'>;
   className?: string;
+  size?: number | string;
 }) {
   const t = useT();
   const router = useRouter();
@@ -273,7 +282,7 @@ export function StepsRing({
   };
 
   return (
-    <div className={className}>
+    <div className={cn('flex flex-col items-center', className)}>
       <Ring
         value={steps}
         scaleMax={stepsScaleMax}
@@ -282,6 +291,7 @@ export function StepsRing({
         to="#10B981"
         interactive={isToday}
         onCommit={commitSteps}
+        size={size}
       >
         {(display) => (
           <>

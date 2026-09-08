@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-dvh flex-col">
       <UnlockCelebrationProvider>
         <AppNav displayName={user.displayName} />
-        <main id="main" className="container max-w-6xl flex-1 space-y-5 py-5">
+        <main id="main" className="container max-w-6xl flex-1 space-y-5 py-5 2xl:max-w-[88rem]">
           {children}
         </main>
         <div className="pb-28 md:pb-6">

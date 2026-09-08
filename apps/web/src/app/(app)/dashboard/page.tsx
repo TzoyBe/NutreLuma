@@ -113,7 +113,7 @@ export default async function DashboardPage({
           <div className="orbit-row">
             <div className="orbit-satellite">
               <MacroGauge
-                size={104}
+                size="clamp(96px, 9vw, 220px)"
                 label={t('dashboard.protein')}
                 consumed={macros.protein.consumed}
                 target={macros.protein.target}
@@ -130,7 +130,7 @@ export default async function DashboardPage({
             />
             <div className="orbit-satellite delay-2">
               <MacroGauge
-                size={104}
+                size="clamp(96px, 9vw, 220px)"
                 label={t('dashboard.carbohydrate')}
                 consumed={macros.carbohydrate.consumed}
                 target={macros.carbohydrate.target}
@@ -140,28 +140,26 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          <div className="orbit-center">
-            <CalorieGauge
-              consumed={summary.consumed}
-              target={summary.target}
-              remaining={summary.remaining}
-              overTarget={summary.overTarget}
-              progressPercent={summary.progressPercent}
-              labels={{
-                title: isToday ? t('dashboard.todayProgress') : t('dashboard.dayProgress'),
-                of: t('dashboard.ofTarget', { target: summary.target ?? 0 }),
-                remaining: t('dashboard.remainingKcal', { n: Math.abs(summary.remaining ?? 0) }),
-                over: t('dashboard.overKcal', { n: Math.abs(summary.remaining ?? 0) }),
-                noTarget: t('dashboard.noTarget'),
-                kcal: 'kcal',
-              }}
-            />
-          </div>
+          <CalorieGauge
+            consumed={summary.consumed}
+            target={summary.target}
+            remaining={summary.remaining}
+            overTarget={summary.overTarget}
+            progressPercent={summary.progressPercent}
+            labels={{
+              title: isToday ? t('dashboard.todayProgress') : t('dashboard.dayProgress'),
+              of: t('dashboard.ofTarget', { target: summary.target ?? 0 }),
+              remaining: t('dashboard.remainingKcal', { n: Math.abs(summary.remaining ?? 0) }),
+              over: t('dashboard.overKcal', { n: Math.abs(summary.remaining ?? 0) }),
+              noTarget: t('dashboard.noTarget'),
+              kcal: 'kcal',
+            }}
+          />
 
           <div className="orbit-row">
             <div className="orbit-satellite">
               <MacroGauge
-                size={104}
+                size="clamp(96px, 9vw, 220px)"
                 label={t('dashboard.fat')}
                 consumed={macros.fat.consumed}
                 target={macros.fat.target}
@@ -178,7 +176,7 @@ export default async function DashboardPage({
             />
             <div className="orbit-satellite delay-2">
               <MacroGauge
-                size={104}
+                size="clamp(96px, 9vw, 220px)"
                 label={t('dashboard.fiber')}
                 consumed={macros.fiber.consumed}
                 target={macros.fiber.target}
