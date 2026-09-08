@@ -276,3 +276,82 @@ docker image prune -a -f        # ΠΡΟΣΟΧΗ: σβήνει images που δ�
 | Κώδικα | `docker compose --env-file .env up --build -d` (retry αν σκάσει) | 2–5 λεπτά |
 | `docker-compose.yml` | `docker compose --env-file .env up -d` | ~1 λεπτό |
 | Τίποτα, θέλω restart | `docker compose restart web` | ~20 δευτ. |
+
+---
+
+## RevenueCat native-subscription operations
+
+### Configuration boundaries
+
+Set these values only in the web/backend deployment environment (the container's `.env` or
+equivalent secret store):
+
+```dotenv
+REVENUECAT_SECRET_API_KEY=
+REVENUECAT_ENTITLEMENT_ID=pro
+REVENUECAT_PRODUCT_IDS=nutreluma_pro_monthly,nutreluma_pro_yearly
+REVENUECAT_ALLOW_SANDBOX=false
+```
+
+`REVENUECAT_SECRET_API_KEY` is a server-only RevenueCat REST API key. Never add it to an
+Expo configuration, EAS variable, native binary, browser bundle, or git commit. Only these
+native-build variables are public and enter EAS/iOS/Android builds:
+
+```dotenv
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=
+EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=pro
+```
+
+The public platform SDK keys must remain separate from the backend secret. A native app
+without valid public keys remains in the free state; a backend without all four server
+settings cannot verify a store purchase.
+
+### Deployment order and matching rules
+
+1. Create the iOS and Android auto-renewable store products, with IDs
+   `nutreluma_pro_monthly` and `nutreluma_pro_yearly`, in App Store Connect and Google Play
+   Console. Complete their store credentials, agreements, and tester configuration.
+2. Add both apps to RevenueCat for `com.joybeedigital.nutreluma`, connect the Apple and
+   Google store integrations, import the same products, and attach both to the `pro`
+   entitlement. Make an offering/paywall containing the packages; enable Customer Center
+   when native subscription management is required.
+3. Before releasing any native binary, deploy the backend with a real server secret,
+   `REVENUECAT_ENTITLEMENT_ID=pro`, and an allow-list containing exactly those product IDs.
+   Run the normal application deployment/migration process for the integration; do not
+   expose the secret in build tooling.
+4. Set the three `EXPO_PUBLIC_*` values in EAS and distribute a newly built binary. Public
+   environment values are compiled into the native bundle, so an EAS rebuild is required
+   after changing one.
+
+All entitlement and product identifiers must match exactly. The backend accepts only an
+active `pro` entitlement whose product is allow-listed, belongs to App Store or Google Play,
+and is in an allowed environment. Monthly/yearly subscriptions are supported; lifetime
+entitlements are rejected.
+
+### Reconciliation, polling, and support
+
+The native app logs into RevenueCat with the NutreLuma user ID as its App User ID. Following
+a purchase or restore, it immediately calls authenticated
+`POST /api/billing/revenuecat/sync`; the backend fetches that customer through RevenueCat's
+REST API and persists the verified access state. Client-side entitlement data by itself does
+not grant NutreLuma access. Support can find the customer in RevenueCat by searching the
+NutreLuma user ID.
+
+The RevenueCat Free plan has no webhooks in this deployment. Access is therefore reconciled
+on the immediate sync above and when an expired local access record is read. Expiration-time
+polling keeps the existing five-minute per-user cooldown and graceful failure behavior; it
+does not shorten a future `accessUntil` after a failed or inactive response. RevenueCat
+cancellation is managed through Customer Center/store UI, not the web cancellation endpoint.
+
+### Sandbox and production checks
+
+Keep `REVENUECAT_ALLOW_SANDBOX=false` in production. For a dedicated sandbox, TestFlight,
+or Play internal-testing backend environment, set it to `true` only for the test period;
+otherwise sandbox responses are rejected. Use Apple sandbox testers or Google Play license
+testers to purchase each product, verify the immediate backend sync and renewed/expired
+state, test Restore Purchases, and test cancellation management.
+
+Real store purchases cannot be verified locally: they require the external store products,
+RevenueCat/store credentials, a store tester, deployed backend configuration, and an
+EAS-built native binary. Expo Go cannot load the RevenueCat native module.
