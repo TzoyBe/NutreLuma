@@ -19,10 +19,11 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PayPalButton } from '@/components/billing/paypal-button';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
-import type { AccessStateKind } from '@/lib/billing/access';
+import { billingActions, type AccessStateKind } from '@/lib/billing/access';
 
 export interface BillingOverviewView {
   kind: AccessStateKind;
+  provider: string | null;
   statusLabel: string;
   accessUntilLabel: string | null;
   autoRenew: boolean;
@@ -51,6 +52,7 @@ type BillingInterval = 'monthly' | 'yearly';
 
 export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
   const t = useT();
+  const actions = billingActions(overview);
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
@@ -77,7 +79,7 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
   }, [params, t, toast]);
 
   async function subscribe() {
-    if (loading) return;
+    if (loading || !actions.canCheckout) return;
     setLoading(true);
     try {
       const { url } = await api.post<{ url: string }>('/api/billing/stripe/checkout', {
@@ -109,6 +111,7 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
   }
 
   async function cancel() {
+    if (!actions.canCancel) return;
     setLoading(true);
     try {
       await api.post('/api/billing/cancel');
@@ -177,7 +180,7 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
               </div>
             </div>
 
-            {!isUnlimited ? (
+            {!isUnlimited && !actions.managedInStore ? (
               <div className="min-w-[11rem] space-y-2 sm:text-right">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">
                   {t('billing.monthlyCost')}
@@ -228,7 +231,11 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
             </div>
           ) : null}
 
-          {overview.autoRenew && !isUnlimited ? (
+          {actions.managedInStore ? (
+            <p className="text-sm text-muted-foreground">{t('billing.managedInStore')}</p>
+          ) : null}
+
+          {actions.canCancel ? (
             <div>
               <Button
                 variant="outline"
@@ -243,7 +250,7 @@ export function BillingPanel({ overview }: { overview: BillingOverviewView }) {
         </CardContent>
       </Card>
 
-      {!isUnlimited ? (
+      {actions.canCheckout ? (
         <Card
           solid
           className="overflow-hidden !border-black/5 !bg-white text-neutral-900 !shadow-[0_12px_34px_-20px_rgba(0,0,0,0.5)]"

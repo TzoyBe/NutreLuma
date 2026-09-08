@@ -1,5 +1,5 @@
 import 'server-only';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Subscription } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import {
   env,
@@ -172,36 +172,46 @@ async function recordPaymentIfNew(userId: string, remote: RemoteSubscription): P
   }
 }
 
-async function applyRemote(userId: string, remote: RemoteSubscription): Promise<void> {
+async function applyRemote(
+  userId: string,
+  remote: RemoteSubscription,
+  expected?: Subscription,
+): Promise<void> {
+  async function update(data: Prisma.SubscriptionUpdateManyMutationInput): Promise<boolean> {
+    if (expected) {
+      const result = await prisma.subscription.updateMany({
+        where: unchangedSubscription(expected),
+        data,
+      });
+      return result.count > 0;
+    }
+    await prisma.subscription.update({ where: { userId }, data });
+    return true;
+  }
+
   if (remote.active) {
-    await prisma.subscription.update({
-      where: { userId },
-      data: {
-        status: remote.cancelled ? 'CANCELLED' : 'ACTIVE',
-        provider: remote.provider,
-        accessUntil: remote.currentPeriodEnd ?? addMonths(new Date(), 1),
-        autoRenew: !remote.cancelled,
-        cancelledAt: remote.cancelled ? new Date() : null,
-        lastSyncedAt: new Date(),
-        lastSyncError: null,
-      },
+    const applied = await update({
+      status: remote.cancelled ? 'CANCELLED' : 'ACTIVE',
+      provider: remote.provider,
+      accessUntil: remote.currentPeriodEnd ?? addMonths(new Date(), 1),
+      autoRenew: !remote.cancelled,
+      cancelledAt: remote.cancelled ? new Date() : null,
+      lastSyncedAt: new Date(),
+      lastSyncError: null,
     });
-    await recordPaymentIfNew(userId, remote);
+    if (applied) await recordPaymentIfNew(userId, remote);
     return;
   }
 
   // Ανενεργή συνδρομή: το `accessUntil` ΔΕΝ μειώνεται ποτέ εδώ — ο χρήστης
   // έχει πληρώσει για την τρέχουσα περίοδο και τη δικαιούται ολόκληρη.
-  await prisma.subscription.update({
-    where: { userId },
-    data: {
-      status: remote.cancelled ? 'CANCELLED' : 'EXPIRED',
-      autoRenew: false,
-      lastSyncedAt: new Date(),
-      lastSyncError: null,
-    },
+  const applied = await update({
+    status: remote.cancelled ? 'CANCELLED' : 'EXPIRED',
+    autoRenew: false,
+    lastSyncedAt: new Date(),
+    lastSyncError: null,
   });
-  await recordPaymentIfNew(userId, remote);
+  if (applied) await recordPaymentIfNew(userId, remote);
 }
 
 export async function syncRevenueCatSubscription(userId: string): Promise<AccessState> {
@@ -214,14 +224,55 @@ export async function syncRevenueCatSubscription(userId: string): Promise<Access
   }
 
   const remote = fromRevenueCat(await getRevenueCatSubscription(userId));
-  await prisma.subscription.update({
-    where: { userId },
-    data: { externalId: userId },
-  });
-  await applyRemote(userId, remote);
+  await applyRevenueCatRemote(subscription, remote);
 
   const refreshed = await loadInput(userId);
   return resolveAccessState(refreshed.input);
+}
+
+function unchangedSubscription(subscription: Subscription): Prisma.SubscriptionWhereInput {
+  return {
+    userId: subscription.userId,
+    updatedAt: subscription.updatedAt,
+    provider: subscription.provider,
+    externalId: subscription.externalId,
+    status: subscription.status,
+    accessUntil: subscription.accessUntil,
+    autoRenew: subscription.autoRenew,
+    lastSyncedAt: subscription.lastSyncedAt,
+  };
+}
+
+async function applyRevenueCatRemote(
+  subscription: Subscription,
+  remote: RemoteSubscription,
+): Promise<void> {
+  // No entitlement means no ownership claim, including expired web/manual plans.
+  if (!remote.active && subscription.provider !== 'REVENUECAT') return;
+
+  // A monotonic version also distinguishes writes within the same millisecond.
+  const syncedAt = new Date(Math.max(Date.now(), subscription.updatedAt.getTime() + 1));
+  await prisma.subscription.updateMany({
+    // One atomic compare-and-set: any intervening provider/sync change discards
+    // this response. Provider, external ID and access can never be partly applied.
+    where: unchangedSubscription(subscription),
+    data: {
+      ...(remote.active ? {
+        provider: 'REVENUECAT' as const,
+        externalId: subscription.userId,
+        accessUntil: new Date(Math.max(
+          subscription.accessUntil.getTime(),
+          remote.currentPeriodEnd!.getTime(),
+        )),
+      } : {}),
+      status: remote.cancelled ? 'CANCELLED' : remote.active ? 'ACTIVE' : 'EXPIRED',
+      autoRenew: remote.active && !remote.cancelled,
+      cancelledAt: remote.cancelled ? syncedAt : null,
+      lastSyncedAt: syncedAt,
+      lastSyncError: null,
+      updatedAt: syncedAt,
+    },
+  });
 }
 
 /**
@@ -255,7 +306,11 @@ export async function reconcileSubscription(userId: string): Promise<AccessState
         : subscription.provider === 'REVENUECAT'
           ? fromRevenueCat(await getRevenueCatSubscription(subscription.externalId ?? userId))
           : fromStripe(await getSubscription(subscription.externalId!));
-    await applyRemote(userId, remote);
+    if (remote.provider === 'REVENUECAT') {
+      await applyRevenueCatRemote(subscription, remote);
+    } else {
+      await applyRemote(userId, remote, subscription);
+    }
   } catch (error) {
     // ΔΕΝ αλλάζουμε το accessUntil: ο χρήστης δεν φταίει για σφάλμα δικτύου.
     // Η περίοδος χάριτος στο resolveAccessState τον καλύπτει.
@@ -263,8 +318,8 @@ export async function reconcileSubscription(userId: string): Promise<AccessState
       userId,
       message: error instanceof Error ? error.message : 'unknown',
     });
-    await prisma.subscription.update({
-      where: { userId },
+    await prisma.subscription.updateMany({
+      where: unchangedSubscription(subscription),
       data: { lastSyncError: 'SYNC_FAILED', lastSyncedAt: new Date() },
     });
   }

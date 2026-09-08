@@ -19,6 +19,7 @@ interface FakeSub {
   lastSyncedAt: Date | null;
   lastSyncError: string | null;
   cancelledAt: Date | null;
+  updatedAt: Date;
 }
 
 const store: {
@@ -36,12 +37,14 @@ const fakePrisma = {
   },
   subscription: {
     findUnique: vi.fn(
-      async ({ where }: { where: { userId?: string; externalId?: string } }) =>
-        store.subs.find(
+      async ({ where }: { where: { userId?: string; externalId?: string } }) => {
+        const sub = store.subs.find(
           (s) =>
             (where.userId !== undefined && s.userId === where.userId) ||
             (where.externalId !== undefined && s.externalId === where.externalId),
-        ) ?? null,
+        );
+        return sub ? { ...sub } : null;
+      },
     ),
     update: vi.fn(
       async ({ where, data }: { where: { userId: string }; data: Record<string, unknown> }) => {
@@ -50,6 +53,20 @@ const fakePrisma = {
         return sub;
       },
     ),
+    updateMany: vi.fn(async ({ where, data }: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }) => {
+      const sub = store.subs.find((candidate) => Object.entries(where).every(([key, expected]) => {
+        const actual = candidate[key as keyof FakeSub];
+        return actual instanceof Date && expected instanceof Date
+          ? actual.getTime() === expected.getTime()
+          : actual === expected;
+      }));
+      if (!sub) return { count: 0 };
+      Object.assign(sub, data);
+      return { count: 1 };
+    }),
   },
   payment: {
     create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
@@ -132,6 +149,7 @@ function seedSub(overrides: Partial<FakeSub> = {}) {
     lastSyncedAt: null,
     lastSyncError: null,
     cancelledAt: null,
+    updatedAt: new Date(Date.now() - DAY),
     ...overrides,
   });
 }
@@ -267,6 +285,90 @@ describe('reconcileSubscription', () => {
 });
 
 describe('syncRevenueCatSubscription', () => {
+  it.each(['STRIPE', 'PAYPAL', 'MANUAL'])(
+    'leaves expired %s ownership untouched for an inactive RevenueCat response',
+    async (provider) => {
+      seedSub({ provider, externalId: 'original-id', status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
+      const original = { ...store.subs[0] };
+      getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub({ active: false }));
+
+      await syncRevenueCatSubscription('user-1');
+
+      expect(store.subs[0]).toEqual(original);
+    },
+  );
+
+  it.each(['STRIPE', 'PAYPAL', 'MANUAL'])(
+    'preserves %s activated while the RevenueCat request is in flight',
+    async (provider) => {
+      seedSub({ status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
+      getRevenueCatSubscriptionMock.mockImplementation(async () => {
+        Object.assign(store.subs[0], { provider, externalId: 'new-provider-id', status: 'ACTIVE', accessUntil: new Date(Date.now() + 10 * DAY) });
+        return revenueCatSub();
+      });
+
+      await syncRevenueCatSubscription('user-1');
+
+      expect(store.subs[0]).toMatchObject({ provider, externalId: 'new-provider-id', status: 'ACTIVE' });
+    },
+  );
+
+  it('discards an older in-flight snapshot after a newer sync changes renewal metadata', async () => {
+    const until = new Date(Date.now() + 30 * DAY);
+    seedSub({ provider: 'REVENUECAT', externalId: 'user-1', status: 'ACTIVE', accessUntil: until, autoRenew: true });
+    let resolveOlder!: (value: ReturnType<typeof revenueCatSub>) => void;
+    let started!: () => void;
+    const requestStarted = new Promise<void>((resolve) => { started = resolve; });
+    getRevenueCatSubscriptionMock.mockImplementationOnce(() => {
+      started();
+      return new Promise((resolve) => { resolveOlder = resolve; });
+    }).mockResolvedValueOnce(revenueCatSub({ cancelled: true, accessUntil: until }));
+
+    const olderSync = syncRevenueCatSubscription('user-1');
+    await requestStarted;
+    await syncRevenueCatSubscription('user-1');
+    resolveOlder(revenueCatSub({ accessUntil: new Date(Date.now() + 5 * DAY) }));
+    await olderSync;
+
+    expect(store.subs[0]).toMatchObject({ provider: 'REVENUECAT', externalId: 'user-1', status: 'CANCELLED', autoRenew: false, accessUntil: until });
+  });
+
+  it('never shortens cached access for a shorter active RevenueCat snapshot', async () => {
+    const until = new Date(Date.now() + 30 * DAY);
+    seedSub({ provider: 'REVENUECAT', externalId: 'user-1', status: 'ACTIVE', accessUntil: until });
+    getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub({ accessUntil: new Date(Date.now() + DAY) }));
+
+    await syncRevenueCatSubscription('user-1');
+
+    expect(store.subs[0].accessUntil).toEqual(until);
+  });
+
+  it('does not overwrite a provider changed during RevenueCat reconciliation', async () => {
+    seedSub({ provider: 'REVENUECAT', externalId: 'user-1', status: 'ACTIVE', accessUntil: new Date(Date.now() - DAY) });
+    getRevenueCatSubscriptionMock.mockImplementation(async () => {
+      Object.assign(store.subs[0], { provider: 'MANUAL', externalId: null, status: 'ACTIVE', accessUntil: new Date(Date.now() + 30 * DAY) });
+      return revenueCatSub({ active: false });
+    });
+
+    await reconcileSubscription('user-1');
+
+    expect(store.subs[0]).toMatchObject({ provider: 'MANUAL', externalId: null, status: 'ACTIVE' });
+  });
+
+  it('does not let an older Stripe reconciliation overwrite a RevenueCat claim', async () => {
+    seedSub({ provider: 'STRIPE', externalId: 'sub_1', status: 'EXPIRED', accessUntil: new Date(Date.now() - 10 * DAY) });
+    getSubscriptionMock.mockImplementation(async () => {
+      getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub());
+      await syncRevenueCatSubscription('user-1');
+      return activeStripeSub();
+    });
+
+    await reconcileSubscription('user-1');
+
+    expect(store.subs[0]).toMatchObject({ provider: 'REVENUECAT', externalId: 'user-1', status: 'ACTIVE' });
+    expect(store.payments).toHaveLength(0);
+  });
+
   it('records active RevenueCat access without creating a payment', async () => {
     const accessUntil = new Date(Date.now() + 30 * DAY);
     seedSub({ status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
@@ -539,6 +641,7 @@ describe('PayPal: επαλήθευση πριν την ενεργοποίηση'
       lastSyncedAt: null,
       lastSyncError: null,
       cancelledAt: null,
+      updatedAt: new Date(Date.now() - DAY),
     });
     getPayPalSubscriptionMock.mockResolvedValue(paypalSub());
 

@@ -467,6 +467,7 @@ export const en: Translations = {
     locked:
       'Your subscription has expired. You can view, correct and export your data, but not add new entries.',
     currentSubscription: 'Current subscription',
+    managedInStore: 'Manage your store subscription in the NutreLuma mobile app or in your App Store / Google Play subscriptions.',
     monthlyCost: 'Plan cost',
     couponCode: 'Coupon code',
     couponPlaceholder: 'Enter code',

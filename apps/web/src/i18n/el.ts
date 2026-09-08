@@ -477,6 +477,7 @@ export const el = {
     locked:
       'Η συνδρομή έληξε. Μπορείς να βλέπεις, να διορθώνεις και να εξάγεις τα δεδομένα σου, αλλά όχι να προσθέτεις νέα.',
     currentSubscription: 'Τρέχουσα συνδρομή',
+    managedInStore: 'Διαχειρίσου τη συνδρομή σου από την εφαρμογή NutreLuma ή από τις συνδρομές σου στο App Store / Google Play.',
     monthlyCost: 'Κόστος πλάνου',
     couponCode: 'Κωδικός coupon',
     couponPlaceholder: 'Βάλε κωδικό',

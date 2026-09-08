@@ -42,6 +42,7 @@ export default async function ProfileBillingPage() {
         <BillingPanel
           overview={{
             kind: overview.state.kind,
+            provider: overview.provider,
             statusLabel: t(STATUS_KEY[overview.state.kind]),
             accessUntilLabel: overview.state.accessUntil
               ? t('billing.activeUntil', {

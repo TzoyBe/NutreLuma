@@ -32,6 +32,20 @@ export interface AccessState {
   autoRenew: boolean;
 }
 
+export function billingActions({ kind, provider, autoRenew }: {
+  kind: AccessStateKind;
+  provider: string | null;
+  autoRenew: boolean;
+}) {
+  const managedInStore = provider === 'REVENUECAT';
+  const unlimited = kind === 'UNLIMITED';
+  return {
+    canCheckout: !unlimited && !(managedInStore && kind !== 'LOCKED'),
+    canCancel: !unlimited && autoRenew && (provider === 'STRIPE' || provider === 'PAYPAL'),
+    managedInStore,
+  };
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function daysBetween(from: Date, to: Date): number {

@@ -15,6 +15,7 @@ import type {
   PurchasesPackage,
 } from 'react-native-purchases';
 import { refreshRevenueCatData } from './revenuecat-refresh';
+import { createRevenueCatIdentity } from './revenuecat-identity';
 
 /**
  * RevenueCat integration για τις native συνδρομές (In-App Purchases).
@@ -96,26 +97,37 @@ export function RevenueCatProvider({
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [pendingBackendVerification, setPendingBackendVerification] = useState(false);
   const configured = useRef(false);
+  const identity = useRef(createRevenueCatIdentity()).current;
+  const currentUserId = useRef(appUserID);
+  currentUserId.current = appUserID;
+
+  const isCurrentUser = useCallback(
+    () => currentUserId.current === appUserID && identity.isReady(appUserID),
+    [appUserID, identity],
+  );
 
   const refresh = useCallback(async () => {
     if (!nativeReady || !Purchases) return;
     try {
-      await refreshRevenueCatData({
-        getCustomerInfo: () => Purchases!.getCustomerInfo(),
-        getOffering: async () => (await Purchases!.getOfferings()).current ?? null,
-        setCustomerInfo: (info) => setCustomerInfo(info),
-        setOffering: (nextOffering) => setOffering(nextOffering),
+      await identity.run(appUserID, async (isCurrent) => {
+        if (!isCurrentUser()) return;
+        await refreshRevenueCatData({
+          getCustomerInfo: () => Purchases!.getCustomerInfo(),
+          getOffering: async () => (await Purchases!.getOfferings()).current ?? null,
+          setCustomerInfo: (info) => { if (isCurrent() && isCurrentUser()) setCustomerInfo(info); },
+          setOffering: (nextOffering) => { if (isCurrent() && isCurrentUser()) setOffering(nextOffering); },
+        });
       });
     } catch {
       // Χωρίς σύνδεση/ρυθμισμένα offerings δεν μπλοκάρουμε την app.
     }
-  }, []);
+  }, [appUserID, identity, isCurrentUser]);
 
   const clearPendingBackendVerification = useCallback(() => {
-    setPendingBackendVerification(false);
-  }, []);
+    if (isCurrentUser()) setPendingBackendVerification(false);
+  }, [isCurrentUser]);
 
-  // Configure μία φορά + listener για ενημερώσεις συνδρομής.
+  // Configure once; store operations stay disabled until account identification.
   useEffect(() => {
     if (!nativeReady || !Purchases || configured.current) {
       setReady(true);
@@ -129,53 +141,54 @@ export function RevenueCatProvider({
       return;
     }
 
-    const listener = (info: CustomerInfo) => setCustomerInfo(info);
-    try {
-      Purchases.addCustomerInfoUpdateListener(listener);
-    } catch {
-      /* no-op */
-    }
-    void refresh().finally(() => setReady(true));
-    return () => {
-      try {
-        Purchases?.removeCustomerInfoUpdateListener(listener);
-      } catch {
-        /* no-op */
-      }
-    };
-  }, [refresh]);
+  }, []);
 
   // Ταυτοποίηση του χρήστη στο RevenueCat με το backend user id.
   useEffect(() => {
+    setReady(false);
+    setCustomerInfo(null);
+    setOffering(null);
     setPendingBackendVerification(false);
-    if (!nativeReady || !Purchases || !configured.current) return;
+    if (!nativeReady || !Purchases || !configured.current) {
+      setReady(true);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
-        if (appUserID) {
-          const { customerInfo: info } = await Purchases!.logIn(appUserID);
-          if (!cancelled) setCustomerInfo(info);
-        } else {
+        const info = await identity.identify(appUserID, async () => {
+          if (appUserID) return (await Purchases!.logIn(appUserID)).customerInfo;
           const anonymous = await Purchases!.isAnonymous();
-          if (!anonymous) {
-            const info = await Purchases!.logOut();
-            if (!cancelled) setCustomerInfo(info);
-          }
+          if (!anonymous) await Purchases!.logOut();
+          return null;
+        });
+        if (!cancelled && isCurrentUser()) {
+          setCustomerInfo(info ?? null);
+          await refresh();
         }
-        await refresh();
       } catch {
-        // αγνόησε — δεν πρέπει να ρίχνει την app
+        // Failed identification leaves all store actions disabled.
+      } finally {
+        if (!cancelled) setReady(true);
       }
     })();
+    // Ignore unsolicited payloads; fetch for the identified account instead.
+    const listener = () => { void refresh(); };
+    try { Purchases.addCustomerInfoUpdateListener(listener); } catch { /* no-op */ }
     return () => {
       cancelled = true;
+      void identity.identify(null, async () => undefined);
+      try { Purchases?.removeCustomerInfoUpdateListener(listener); } catch { /* no-op */ }
     };
-  }, [appUserID, refresh]);
+  }, [appUserID, identity, isCurrentUser, refresh]);
 
   const purchasePackage = useCallback(async (pkg: PurchasesPackage) => {
-    if (!nativeReady || !Purchases) return false;
+    if (!nativeReady || !Purchases || !isCurrentUser()) return false;
     try {
-      const { customerInfo: info } = await Purchases.purchasePackage(pkg);
+      const result = await identity.run(appUserID, async () =>
+        isCurrentUser() ? Purchases!.purchasePackage(pkg) : undefined);
+      if (!result || !isCurrentUser()) return false;
+      const { customerInfo: info } = result;
       setPendingBackendVerification(true);
       setCustomerInfo(info);
       return hasPro(info);
@@ -183,42 +196,50 @@ export function RevenueCatProvider({
       if ((error as { userCancelled?: boolean })?.userCancelled) return false;
       throw error;
     }
-  }, []);
+  }, [appUserID, identity, isCurrentUser]);
 
   const restore = useCallback(async () => {
-    if (!nativeReady || !Purchases) return false;
-    const info = await Purchases.restorePurchases();
+    if (!nativeReady || !Purchases || !isCurrentUser()) return false;
+    const info = await identity.run(appUserID, async () =>
+      isCurrentUser() ? Purchases!.restorePurchases() : undefined);
+    if (!info || !isCurrentUser()) return false;
     setCustomerInfo(info);
     const restored = hasPro(info);
     if (restored) setPendingBackendVerification(true);
     return restored;
-  }, []);
+  }, [appUserID, identity, isCurrentUser]);
 
   const presentPaywall = useCallback(async () => {
-    if (!nativeReady || !RevenueCatUI || !PaywallResult) return false;
-    const result = await RevenueCatUI.presentPaywall();
+    if (!nativeReady || !RevenueCatUI || !PaywallResult || !isCurrentUser()) return false;
+    const result = await identity.run(appUserID, async () =>
+      isCurrentUser() ? RevenueCatUI!.presentPaywall() : undefined);
+    if (!isCurrentUser()) return false;
     if (result === PaywallResult.PURCHASED || result === PaywallResult.RESTORED) {
       setPendingBackendVerification(true);
       await refresh();
-      return true;
+      return isCurrentUser();
     }
     return false;
-  }, [refresh]);
+  }, [appUserID, identity, isCurrentUser, refresh]);
 
   const presentCustomerCenter = useCallback(async () => {
-    if (!nativeReady || !RevenueCatUI) return;
-    await RevenueCatUI.presentCustomerCenter();
+    if (!nativeReady || !RevenueCatUI || !isCurrentUser()) return;
+    await identity.run(appUserID, async () => {
+      if (isCurrentUser()) await RevenueCatUI!.presentCustomerCenter();
+    });
     await refresh();
-  }, [refresh]);
+  }, [appUserID, identity, isCurrentUser, refresh]);
+
+  const identified = isCurrentUser();
 
   const value = useMemo<RevenueCatContextValue>(
     () => ({
       ready,
-      available: nativeReady,
-      isPro: hasPro(customerInfo),
-      pendingBackendVerification,
-      customerInfo,
-      offering,
+      available: nativeReady && identified,
+      isPro: identified && hasPro(customerInfo),
+      pendingBackendVerification: identified && pendingBackendVerification,
+      customerInfo: identified ? customerInfo : null,
+      offering: identified ? offering : null,
       refresh,
       clearPendingBackendVerification,
       purchasePackage,
@@ -226,7 +247,7 @@ export function RevenueCatProvider({
       presentPaywall,
       presentCustomerCenter,
     }),
-    [ready, customerInfo, offering, pendingBackendVerification, refresh, clearPendingBackendVerification, purchasePackage, restore, presentPaywall, presentCustomerCenter],
+    [ready, identified, customerInfo, offering, pendingBackendVerification, refresh, clearPendingBackendVerification, purchasePackage, restore, presentPaywall, presentCustomerCenter],
   );
 
   return <RevenueCatContext.Provider value={value}>{children}</RevenueCatContext.Provider>;
