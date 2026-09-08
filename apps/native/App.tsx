@@ -4378,7 +4378,16 @@ function ProfileOverviewScreen({
   const [exporting, setExporting] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const { ready: rcReady, available: rcAvailable, isPro, presentPaywall, restore, presentCustomerCenter } =
+  const {
+    ready: rcReady,
+    available: rcAvailable,
+    isPro,
+    pendingBackendVerification,
+    clearPendingBackendVerification,
+    presentPaywall,
+    restore,
+    presentCustomerCenter,
+  } =
     useRevenueCat();
   const [subscribing, setSubscribing] = useState(false);
 
@@ -4386,7 +4395,9 @@ function ProfileOverviewScreen({
     try {
       const nextBilling = await api.syncRevenueCat(session.token);
       setBilling(nextBilling);
-      return nextBilling.state?.canWrite === true;
+      const verified = nextBilling.state?.canWrite === true;
+      if (verified) clearPendingBackendVerification();
+      return verified;
     } catch {
       setBilling(previousBilling);
       return false;
@@ -4775,7 +4786,7 @@ function ProfileOverviewScreen({
   const stripeAvailableForInterval = yearlySelected
     ? billing?.stripeYearlyAvailable
     : billing?.stripeAvailable;
-  const billingAccess = billingAccessView(billing, isPro);
+  const billingAccess = billingAccessView(billing, isPro, pendingBackendVerification);
   const canCancelBilling = Boolean(billingAccess.managedOnWeb && billing?.status === 'ACTIVE');
   const canOfferNativePurchase = billingAccess.canPurchase;
   const canOfferRestore = billingAccess.canPurchase || billingAccess.managedByRevenueCat || billingAccess.needsVerification;

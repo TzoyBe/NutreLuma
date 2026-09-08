@@ -11,16 +11,17 @@ export interface BillingAccessView {
 export function billingAccessView(
   billing: Pick<BillingOverviewResult, 'state' | 'provider'> | null,
   revenueCatIsPro: boolean,
+  pendingRevenueCatVerification = false,
 ): BillingAccessView {
   const backendActive = billing?.state?.canWrite === true;
   const provider = billing?.provider?.toUpperCase();
-  const needsVerification = revenueCatIsPro && !backendActive;
+  const needsVerification = (revenueCatIsPro || pendingRevenueCatVerification) && !backendActive;
 
   return {
     active: backendActive,
     managedByRevenueCat: provider === 'REVENUECAT',
     managedOnWeb: backendActive && (provider === 'STRIPE' || provider === 'PAYPAL'),
-    canPurchase: billing !== null && !backendActive && !revenueCatIsPro,
+    canPurchase: billing !== null && !backendActive && !revenueCatIsPro && !pendingRevenueCatVerification,
     needsVerification,
   };
 }

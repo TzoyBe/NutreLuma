@@ -52,13 +52,27 @@ describe('billingAccessView', () => {
       expected: { active: false, managedByRevenueCat: false, managedOnWeb: false, canPurchase: false, needsVerification: true },
     },
     {
+      name: 'a pending store transaction with unavailable local CustomerInfo',
+      billing: null,
+      revenueCatIsPro: false,
+      pendingRevenueCatVerification: true,
+      expected: { active: false, managedByRevenueCat: false, managedOnWeb: false, canPurchase: false, needsVerification: true },
+    },
+    {
+      name: 'a pending store transaction with a locked backend record',
+      billing: { state: { kind: 'LOCKED', canWrite: false }, provider: 'REVENUECAT' },
+      revenueCatIsPro: false,
+      pendingRevenueCatVerification: true,
+      expected: { active: false, managedByRevenueCat: true, managedOnWeb: false, canPurchase: false, needsVerification: true },
+    },
+    {
       name: 'an expired RevenueCat backend record with a local entitlement',
       billing: { state: { kind: 'LOCKED', canWrite: false }, provider: 'REVENUECAT' },
       revenueCatIsPro: true,
       expected: { active: false, managedByRevenueCat: true, managedOnWeb: false, canPurchase: false, needsVerification: true },
     },
-  ])('$name', ({ billing, revenueCatIsPro, expected }) => {
-    expect(billingAccessView(billing, revenueCatIsPro)).toEqual(expected);
+  ])('$name', ({ billing, revenueCatIsPro, pendingRevenueCatVerification = false, expected }) => {
+    expect(billingAccessView(billing, revenueCatIsPro, pendingRevenueCatVerification)).toEqual(expected);
   });
 
   test('keeps verification required when the same local entitlement is evaluated after remount', () => {

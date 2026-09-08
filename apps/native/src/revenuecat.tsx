@@ -14,6 +14,7 @@ import type {
   PurchasesOffering,
   PurchasesPackage,
 } from 'react-native-purchases';
+import { refreshRevenueCatData } from './revenuecat-refresh';
 
 /**
  * RevenueCat integration για τις native συνδρομές (In-App Purchases).
@@ -66,9 +67,11 @@ type RevenueCatContextValue = {
   ready: boolean;
   available: boolean;
   isPro: boolean;
+  pendingBackendVerification: boolean;
   customerInfo: CustomerInfo | null;
   offering: PurchasesOffering | null;
   refresh: () => Promise<void>;
+  clearPendingBackendVerification: () => void;
   purchasePackage: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
   presentPaywall: () => Promise<boolean>;
@@ -91,20 +94,25 @@ export function RevenueCatProvider({
   const [ready, setReady] = useState(false);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
+  const [pendingBackendVerification, setPendingBackendVerification] = useState(false);
   const configured = useRef(false);
 
   const refresh = useCallback(async () => {
     if (!nativeReady || !Purchases) return;
     try {
-      const [info, offerings] = await Promise.all([
-        Purchases.getCustomerInfo(),
-        Purchases.getOfferings(),
-      ]);
-      setCustomerInfo(info);
-      setOffering(offerings.current ?? null);
+      await refreshRevenueCatData({
+        getCustomerInfo: () => Purchases!.getCustomerInfo(),
+        getOffering: async () => (await Purchases!.getOfferings()).current ?? null,
+        setCustomerInfo: (info) => setCustomerInfo(info),
+        setOffering: (nextOffering) => setOffering(nextOffering),
+      });
     } catch {
       // Χωρίς σύνδεση/ρυθμισμένα offerings δεν μπλοκάρουμε την app.
     }
+  }, []);
+
+  const clearPendingBackendVerification = useCallback(() => {
+    setPendingBackendVerification(false);
   }, []);
 
   // Configure μία φορά + listener για ενημερώσεις συνδρομής.
@@ -139,6 +147,7 @@ export function RevenueCatProvider({
 
   // Ταυτοποίηση του χρήστη στο RevenueCat με το backend user id.
   useEffect(() => {
+    setPendingBackendVerification(false);
     if (!nativeReady || !Purchases || !configured.current) return;
     let cancelled = false;
     (async () => {
@@ -167,6 +176,7 @@ export function RevenueCatProvider({
     if (!nativeReady || !Purchases) return false;
     try {
       const { customerInfo: info } = await Purchases.purchasePackage(pkg);
+      setPendingBackendVerification(true);
       setCustomerInfo(info);
       return hasPro(info);
     } catch (error) {
@@ -179,13 +189,16 @@ export function RevenueCatProvider({
     if (!nativeReady || !Purchases) return false;
     const info = await Purchases.restorePurchases();
     setCustomerInfo(info);
-    return hasPro(info);
+    const restored = hasPro(info);
+    if (restored) setPendingBackendVerification(true);
+    return restored;
   }, []);
 
   const presentPaywall = useCallback(async () => {
     if (!nativeReady || !RevenueCatUI || !PaywallResult) return false;
     const result = await RevenueCatUI.presentPaywall();
     if (result === PaywallResult.PURCHASED || result === PaywallResult.RESTORED) {
+      setPendingBackendVerification(true);
       await refresh();
       return true;
     }
@@ -203,15 +216,17 @@ export function RevenueCatProvider({
       ready,
       available: nativeReady,
       isPro: hasPro(customerInfo),
+      pendingBackendVerification,
       customerInfo,
       offering,
       refresh,
+      clearPendingBackendVerification,
       purchasePackage,
       restore,
       presentPaywall,
       presentCustomerCenter,
     }),
-    [ready, customerInfo, offering, refresh, purchasePackage, restore, presentPaywall, presentCustomerCenter],
+    [ready, customerInfo, offering, pendingBackendVerification, refresh, clearPendingBackendVerification, purchasePackage, restore, presentPaywall, presentCustomerCenter],
   );
 
   return <RevenueCatContext.Provider value={value}>{children}</RevenueCatContext.Provider>;
