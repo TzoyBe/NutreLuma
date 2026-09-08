@@ -5477,7 +5477,7 @@ function DashboardScreen({
 
       <DateNav date={date} maxDate={today} onChange={setDate} />
 
-      {isToday ? (
+      {false && isToday ? (
         <View style={styles.progressSectionHeaderEnd}>
           <Pressable onPress={onOpenSettings} hitSlop={8} style={styles.gaugeSettingsButton}>
             <Settings size={16} color={colors.muted} />
