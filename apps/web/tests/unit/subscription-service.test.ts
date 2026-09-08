@@ -92,9 +92,17 @@ vi.mock('@/server/billing/paypal', () => ({
   },
 }));
 
+const getRevenueCatSubscriptionMock = vi.fn();
+
+vi.mock('@/server/billing/revenuecat', () => ({
+  getRevenueCatSubscription: (...args: unknown[]) =>
+    getRevenueCatSubscriptionMock(...(args as [string])),
+}));
+
 const {
   getAccessState,
   reconcileSubscription,
+  syncRevenueCatSubscription,
   extendManually,
   attachStripeCheckout,
   attachPayPalSubscription,
@@ -110,6 +118,7 @@ beforeEach(() => {
   cancelAtPeriodEndMock.mockClear();
   getPayPalSubscriptionMock.mockReset();
   cancelPayPalMock.mockClear();
+  getRevenueCatSubscriptionMock.mockReset();
 });
 
 function seedSub(overrides: Partial<FakeSub> = {}) {
@@ -135,6 +144,20 @@ function activeStripeSub(overrides: Record<string, unknown> = {}) {
     currentPeriodEnd: new Date(Date.now() + 30 * DAY),
     cancelAtPeriodEnd: false,
     latestInvoice: { id: 'in_1', amountPaidCents: 300, paidAt: new Date() },
+    ...overrides,
+  };
+}
+
+function revenueCatSub(overrides: Record<string, unknown> = {}) {
+  return {
+    appUserId: 'user-1',
+    active: true,
+    cancelled: false,
+    accessUntil: new Date(Date.now() + 30 * DAY),
+    productId: 'nutreluma_pro_monthly',
+    store: 'app_store' as const,
+    transactionId: 'transaction-1',
+    purchasedAt: new Date(Date.now() - DAY),
     ...overrides,
   };
 }
@@ -240,6 +263,127 @@ describe('reconcileSubscription', () => {
     expect(store.subs[0].status).toBe('CANCELLED');
     expect(store.subs[0].autoRenew).toBe(false);
     expect(store.subs[0].accessUntil.getTime()).toBe(until.getTime());
+  });
+});
+
+describe('syncRevenueCatSubscription', () => {
+  it('records active RevenueCat access without creating a payment', async () => {
+    const accessUntil = new Date(Date.now() + 30 * DAY);
+    seedSub({ status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
+    getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub({ accessUntil }));
+
+    const state = await syncRevenueCatSubscription('user-1');
+
+    expect(getRevenueCatSubscriptionMock).toHaveBeenCalledWith('user-1');
+    expect(store.subs[0]).toMatchObject({
+      provider: 'REVENUECAT',
+      externalId: 'user-1',
+      status: 'ACTIVE',
+      autoRenew: true,
+    });
+    expect(store.subs[0].accessUntil.getTime()).toBe(accessUntil.getTime());
+    expect(state.kind).toBe('ACTIVE');
+    expect(store.payments).toHaveLength(0);
+  });
+
+  it('keeps remaining access when RevenueCat reports cancellation', async () => {
+    const accessUntil = new Date(Date.now() + 10 * DAY);
+    seedSub({ status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
+    getRevenueCatSubscriptionMock.mockResolvedValue(
+      revenueCatSub({ cancelled: true, accessUntil }),
+    );
+
+    await syncRevenueCatSubscription('user-1');
+
+    expect(store.subs[0]).toMatchObject({ status: 'CANCELLED', autoRenew: false });
+    expect(store.subs[0].accessUntil.getTime()).toBe(accessUntil.getTime());
+  });
+
+  it('does not shorten a future paid period when RevenueCat is inactive', async () => {
+    const paidUntil = new Date(Date.now() + 10 * DAY);
+    seedSub({
+      status: 'ACTIVE',
+      provider: 'REVENUECAT',
+      externalId: 'user-1',
+      autoRenew: true,
+      accessUntil: paidUntil,
+    });
+    getRevenueCatSubscriptionMock.mockResolvedValue(
+      revenueCatSub({ active: false, cancelled: false, accessUntil: new Date(Date.now() - DAY) }),
+    );
+
+    await syncRevenueCatSubscription('user-1');
+
+    expect(store.subs[0]).toMatchObject({ status: 'EXPIRED', autoRenew: false });
+    expect(store.subs[0].accessUntil.getTime()).toBe(paidUntil.getTime());
+  });
+
+  it('reconciles an expired cached RevenueCat subscription', async () => {
+    const renewedUntil = new Date(Date.now() + 30 * DAY);
+    seedSub({
+      status: 'ACTIVE',
+      provider: 'REVENUECAT',
+      externalId: 'user-1',
+      autoRenew: true,
+      accessUntil: new Date(Date.now() - DAY),
+    });
+    getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub({ accessUntil: renewedUntil }));
+
+    const state = await reconcileSubscription('user-1');
+
+    expect(getRevenueCatSubscriptionMock).toHaveBeenCalledWith('user-1');
+    expect(store.subs[0].accessUntil.getTime()).toBe(renewedUntil.getTime());
+    expect(state.kind).toBe('ACTIVE');
+    expect(store.payments).toHaveLength(0);
+  });
+
+  it('remains payment-free across repeated RevenueCat synchronizations', async () => {
+    seedSub({ status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
+    getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub());
+
+    await syncRevenueCatSubscription('user-1');
+    await syncRevenueCatSubscription('user-1');
+
+    expect(store.payments).toHaveLength(0);
+  });
+
+  it.each(['STRIPE', 'PAYPAL', 'MANUAL'])(
+    'does not replace an active %s subscription',
+    async (provider) => {
+      const paidUntil = new Date(Date.now() + 10 * DAY);
+      seedSub({
+        status: 'ACTIVE',
+        provider,
+        externalId: provider === 'STRIPE' ? 'sub_1' : 'I-ABC',
+        autoRenew: provider !== 'MANUAL',
+        accessUntil: paidUntil,
+      });
+
+      const state = await syncRevenueCatSubscription('user-1');
+
+      expect(getRevenueCatSubscriptionMock).not.toHaveBeenCalled();
+      expect(store.subs[0].provider).toBe(provider);
+      expect(store.subs[0].accessUntil.getTime()).toBe(paidUntil.getTime());
+      expect(state.kind).toBe('ACTIVE');
+    },
+  );
+
+  it('preserves access when RevenueCat reconciliation fails', async () => {
+    const expired = new Date(Date.now() - DAY);
+    seedSub({
+      status: 'ACTIVE',
+      provider: 'REVENUECAT',
+      externalId: 'user-1',
+      autoRenew: true,
+      accessUntil: expired,
+    });
+    getRevenueCatSubscriptionMock.mockRejectedValue(new Error('network down'));
+
+    const state = await reconcileSubscription('user-1');
+
+    expect(store.subs[0].accessUntil.getTime()).toBe(expired.getTime());
+    expect(store.subs[0].lastSyncError).toBe('SYNC_FAILED');
+    expect(state.kind).toBe('GRACE');
   });
 });
 

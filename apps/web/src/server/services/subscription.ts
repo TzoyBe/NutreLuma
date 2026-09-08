@@ -22,6 +22,10 @@ import {
   type PayPalSubscription,
 } from '../billing/paypal';
 import {
+  getRevenueCatSubscription,
+  type RevenueCatSubscription,
+} from '../billing/revenuecat';
+import {
   resolveAccessState,
   type AccessState,
   type SubscriptionSnapshot,
@@ -93,7 +97,7 @@ export async function getAccessState(userId: string): Promise<AccessState> {
  * άλλο.
  */
 interface RemoteSubscription {
-  provider: 'STRIPE' | 'PAYPAL';
+  provider: 'STRIPE' | 'PAYPAL' | 'REVENUECAT';
   /** Δίνει πρόσβαση αυτή τη στιγμή. */
   active: boolean;
   /** Δεν θα ανανεωθεί ξανά — αλλά η πληρωμένη περίοδος ισχύει. */
@@ -132,6 +136,16 @@ function fromPayPal(remote: PayPalSubscription): RemoteSubscription {
     cancelled: remote.status === 'CANCELLED' || remote.status === 'SUSPENDED',
     currentPeriodEnd: remote.nextBillingTime,
     payment: remote.lastPayment,
+  };
+}
+
+function fromRevenueCat(remote: RevenueCatSubscription): RemoteSubscription {
+  return {
+    provider: 'REVENUECAT',
+    active: remote.active,
+    cancelled: remote.cancelled,
+    currentPeriodEnd: remote.accessUntil,
+    payment: null,
   };
 }
 
@@ -186,6 +200,26 @@ async function applyRemote(userId: string, remote: RemoteSubscription): Promise<
   await recordPaymentIfNew(userId, remote);
 }
 
+export async function syncRevenueCatSubscription(userId: string): Promise<AccessState> {
+  const { subscription, input } = await loadInput(userId);
+  const current = resolveAccessState(input);
+
+  if (!subscription) return current;
+  if (subscription.provider && subscription.provider !== 'REVENUECAT' && current.canWrite) {
+    return current;
+  }
+
+  const remote = fromRevenueCat(await getRevenueCatSubscription(userId));
+  await prisma.subscription.update({
+    where: { userId },
+    data: { externalId: userId },
+  });
+  await applyRemote(userId, remote);
+
+  const refreshed = await loadInput(userId);
+  return resolveAccessState(refreshed.input);
+}
+
 /**
  * Η μοναδική συνάρτηση που συγχρονίζει με τον πάροχο.
  * Όταν υπάρξει δημόσιο URL, το webhook route θα καλεί ΑΥΤΗΝ — τίποτα άλλο δεν αλλάζει.
@@ -196,9 +230,15 @@ export async function reconcileSubscription(userId: string): Promise<AccessState
 
   if (current.kind === 'UNLIMITED') return current;
   if (!subscription) return current;
-  if (!subscription.externalId) return current;
+  if (!subscription.externalId && subscription.provider !== 'REVENUECAT') return current;
   // MANUAL (IRIS/IBAN) δεν έχει πάροχο να ρωτήσουμε.
-  if (subscription.provider !== 'STRIPE' && subscription.provider !== 'PAYPAL') return current;
+  if (
+    subscription.provider !== 'STRIPE' &&
+    subscription.provider !== 'PAYPAL' &&
+    subscription.provider !== 'REVENUECAT'
+  ) {
+    return current;
+  }
   if (subscription.accessUntil.getTime() > Date.now()) return current;
 
   const lastSynced = subscription.lastSyncedAt?.getTime() ?? 0;
@@ -207,8 +247,10 @@ export async function reconcileSubscription(userId: string): Promise<AccessState
   try {
     const remote =
       subscription.provider === 'PAYPAL'
-        ? fromPayPal(await getPayPalSubscription(subscription.externalId))
-        : fromStripe(await getSubscription(subscription.externalId));
+        ? fromPayPal(await getPayPalSubscription(subscription.externalId!))
+        : subscription.provider === 'REVENUECAT'
+          ? fromRevenueCat(await getRevenueCatSubscription(subscription.externalId ?? userId))
+          : fromStripe(await getSubscription(subscription.externalId!));
     await applyRemote(userId, remote);
   } catch (error) {
     // ΔΕΝ αλλάζουμε το accessUntil: ο χρήστης δεν φταίει για σφάλμα δικτύου.
