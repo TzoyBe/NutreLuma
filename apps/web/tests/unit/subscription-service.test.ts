@@ -286,6 +286,18 @@ describe('syncRevenueCatSubscription', () => {
     expect(store.payments).toHaveLength(0);
   });
 
+  it('rejects an active RevenueCat lifetime entitlement without an expiry', async () => {
+    seedSub({ status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
+    getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub({ accessUntil: null }));
+
+    await expect(syncRevenueCatSubscription('user-1')).rejects.toThrow(
+      'Unsupported RevenueCat lifetime entitlement',
+    );
+
+    expect(store.subs[0]).toMatchObject({ provider: null, externalId: null, status: 'EXPIRED' });
+    expect(store.payments).toHaveLength(0);
+  });
+
   it('keeps remaining access when RevenueCat reports cancellation', async () => {
     const accessUntil = new Date(Date.now() + 10 * DAY);
     seedSub({ status: 'EXPIRED', accessUntil: new Date(Date.now() - DAY) });
@@ -335,6 +347,24 @@ describe('syncRevenueCatSubscription', () => {
     expect(store.subs[0].accessUntil.getTime()).toBe(renewedUntil.getTime());
     expect(state.kind).toBe('ACTIVE');
     expect(store.payments).toHaveLength(0);
+  });
+
+  it('fails closed when reconciliation receives an active lifetime entitlement', async () => {
+    const expired = new Date(Date.now() - DAY);
+    seedSub({
+      status: 'ACTIVE',
+      provider: 'REVENUECAT',
+      externalId: 'user-1',
+      autoRenew: true,
+      accessUntil: expired,
+    });
+    getRevenueCatSubscriptionMock.mockResolvedValue(revenueCatSub({ accessUntil: null }));
+
+    const state = await reconcileSubscription('user-1');
+
+    expect(store.subs[0].accessUntil.getTime()).toBe(expired.getTime());
+    expect(store.subs[0].lastSyncError).toBe('SYNC_FAILED');
+    expect(state.kind).toBe('GRACE');
   });
 
   it('remains payment-free across repeated RevenueCat synchronizations', async () => {

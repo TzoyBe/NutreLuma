@@ -140,6 +140,10 @@ function fromPayPal(remote: PayPalSubscription): RemoteSubscription {
 }
 
 function fromRevenueCat(remote: RevenueCatSubscription): RemoteSubscription {
+  if (remote.active && remote.accessUntil === null) {
+    throw new Error('Unsupported RevenueCat lifetime entitlement');
+  }
+
   return {
     provider: 'REVENUECAT',
     active: remote.active,
