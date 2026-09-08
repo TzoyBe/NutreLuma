@@ -22,6 +22,9 @@
 | Billing | **RevenueCat** (`react-native-purchases`, `react-native-purchases-ui`) → χρησιμοποιεί Google Play Billing / Apple IAP από κάτω, άρα **καλύπτεται σωστά** η απαίτηση Play Store για in-app αγορές (το Stripe/PayPal του README του web app αφορά μόνο το browser flow, όχι το native app) |
 
 ---
+Όνομα πακέτου
+com.joybeedigital.nutreluma
+
 
 ## 1. Main store listing (Grow → Store presence → Main store listing)
 
