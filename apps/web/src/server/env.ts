@@ -60,6 +60,10 @@ const envSchema = z.object({
   STRIPE_PRICE_ID: z.string().optional().default(''),
   STRIPE_YEARLY_PRICE_ID: z.string().optional().default(''),
   STRIPE_COUPON_PROMOTION_CODE_ID: z.string().optional().default(''),
+  REVENUECAT_SECRET_API_KEY: z.string().optional().default(''),
+  REVENUECAT_ENTITLEMENT_ID: z.string().optional().default('pro'),
+  REVENUECAT_PRODUCT_IDS: z.string().optional().default(''),
+  REVENUECAT_ALLOW_SANDBOX: z.string().optional().transform((value) => value === 'true'),
 
   // Το client id είναι εκ σχεδιασμού δημόσιο (μπαίνει στο JS του browser).
   // Το secret ΔΕΝ φεύγει ποτέ από τον server.
@@ -138,6 +142,10 @@ function load() {
     STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
     STRIPE_YEARLY_PRICE_ID: process.env.STRIPE_YEARLY_PRICE_ID,
     STRIPE_COUPON_PROMOTION_CODE_ID: process.env.STRIPE_COUPON_PROMOTION_CODE_ID,
+    REVENUECAT_SECRET_API_KEY: process.env.REVENUECAT_SECRET_API_KEY,
+    REVENUECAT_ENTITLEMENT_ID: process.env.REVENUECAT_ENTITLEMENT_ID,
+    REVENUECAT_PRODUCT_IDS: process.env.REVENUECAT_PRODUCT_IDS,
+    REVENUECAT_ALLOW_SANDBOX: process.env.REVENUECAT_ALLOW_SANDBOX,
     PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID,
     PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET,
     PAYPAL_PLAN_ID: process.env.PAYPAL_PLAN_ID,
@@ -189,6 +197,18 @@ export const stripeConfigured =
 
 export const stripeYearlyConfigured =
   env.STRIPE_SECRET_KEY.length > 0 && env.STRIPE_YEARLY_PRICE_ID.length > 0;
+
+export const revenueCatProductIds = env.REVENUECAT_PRODUCT_IDS
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean);
+
+export const revenueCatConfigured =
+  env.REVENUECAT_SECRET_API_KEY.length > 0 &&
+  env.REVENUECAT_ENTITLEMENT_ID.length > 0 &&
+  revenueCatProductIds.length > 0;
+
+export const REVENUECAT_API_BASE = 'https://api.revenuecat.com/v1';
 
 /**
  * Το πρόθεμα του κλειδιού ΕΙΝΑΙ ο διακόπτης περιβάλλοντος — δεν υπάρχει άλλη
