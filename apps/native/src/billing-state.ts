@@ -5,6 +5,7 @@ export interface BillingAccessView {
   managedByRevenueCat: boolean;
   managedOnWeb: boolean;
   canPurchase: boolean;
+  needsVerification: boolean;
 }
 
 export function billingAccessView(
@@ -12,14 +13,14 @@ export function billingAccessView(
   revenueCatIsPro: boolean,
 ): BillingAccessView {
   const backendActive = billing?.state?.canWrite === true;
-  const awaitingBackendSync = billing === null && revenueCatIsPro;
   const provider = billing?.provider?.toUpperCase();
-  const active = backendActive || awaitingBackendSync;
+  const needsVerification = revenueCatIsPro && !backendActive;
 
   return {
-    active,
-    managedByRevenueCat: provider === 'REVENUECAT' || awaitingBackendSync,
+    active: backendActive,
+    managedByRevenueCat: provider === 'REVENUECAT',
     managedOnWeb: backendActive && (provider === 'STRIPE' || provider === 'PAYPAL'),
-    canPurchase: billing !== null && !active,
+    canPurchase: billing !== null && !backendActive && !revenueCatIsPro,
+    needsVerification,
   };
 }

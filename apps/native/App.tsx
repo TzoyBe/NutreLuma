@@ -4381,18 +4381,14 @@ function ProfileOverviewScreen({
   const { ready: rcReady, available: rcAvailable, isPro, presentPaywall, restore, presentCustomerCenter } =
     useRevenueCat();
   const [subscribing, setSubscribing] = useState(false);
-  const [revenueCatVerificationFailed, setRevenueCatVerificationFailed] = useState(false);
 
   async function syncRevenueCatAccess(previousBilling: BillingOverviewResult | null) {
     try {
       const nextBilling = await api.syncRevenueCat(session.token);
       setBilling(nextBilling);
-      const verified = nextBilling.state?.canWrite === true;
-      setRevenueCatVerificationFailed(!verified);
-      return verified;
+      return nextBilling.state?.canWrite === true;
     } catch {
       setBilling(previousBilling);
-      setRevenueCatVerificationFailed(true);
       return false;
     }
   }
@@ -4781,8 +4777,8 @@ function ProfileOverviewScreen({
     : billing?.stripeAvailable;
   const billingAccess = billingAccessView(billing, isPro);
   const canCancelBilling = Boolean(billingAccess.managedOnWeb && billing?.status === 'ACTIVE');
-  const canOfferNativePurchase = billingAccess.canPurchase && !revenueCatVerificationFailed;
-  const canOfferRestore = billingAccess.canPurchase || billingAccess.managedByRevenueCat || revenueCatVerificationFailed;
+  const canOfferNativePurchase = billingAccess.canPurchase;
+  const canOfferRestore = billingAccess.canPurchase || billingAccess.managedByRevenueCat || billingAccess.needsVerification;
 
   return (
     <ScrollView contentContainerStyle={styles.dashboardContent}>
@@ -5004,11 +5000,13 @@ function ProfileOverviewScreen({
               <MetricCard value={billingAccess.active ? 'active' : 'free'} label="status" />
             </View>
             <Text style={styles.noticeCopy}>
-              {billingAccess.managedOnWeb
-                ? 'Your subscription is active and managed on the web.'
-                : billingAccess.managedByRevenueCat
-                  ? 'You have NutreLuma Pro. Manage or restore your subscription below.'
-                  : billingAccess.active
+              {billingAccess.needsVerification
+                ? 'Your store purchase needs server verification. Retry or restore your purchase below.'
+                : billingAccess.managedOnWeb
+                  ? 'Your subscription is active and managed on the web.'
+                  : billingAccess.active && billingAccess.managedByRevenueCat
+                    ? 'You have NutreLuma Pro. Manage or restore your subscription below.'
+                    : billingAccess.active
                     ? 'Your account has active NutreLuma Pro access.'
                     : rcAvailable
                       ? 'Unlock NutreLuma Pro — full tracking, insights and AI meal plans.'
@@ -5027,7 +5025,7 @@ function ProfileOverviewScreen({
                 ) : null}
                 {canOfferRestore ? (
                   <Pressable onPress={handleRestore} disabled={subscribing} style={styles.actionButton}>
-                    <Text style={styles.actionText}>{revenueCatVerificationFailed ? 'Retry / Restore' : 'Restore'}</Text>
+                    <Text style={styles.actionText}>{billingAccess.needsVerification ? 'Retry / Restore' : 'Restore'}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -5040,7 +5038,13 @@ function ProfileOverviewScreen({
               >
                 <Text style={styles.actionText}>Manage subscription</Text>
               </Pressable>
-            ) : canCancelBilling ? (
+            ) : null}
+            {billingAccess.managedOnWeb ? (
+              <Pressable onPress={() => void openWebPath('/billing')} style={styles.actionButton}>
+                <Text style={styles.actionText}>Manage on web</Text>
+              </Pressable>
+            ) : null}
+            {canCancelBilling ? (
               <Pressable onPress={confirmCancelBilling} disabled={cancellingBilling} style={styles.actionButton}>
                 <Text style={styles.actionText}>{cancellingBilling ? 'Please wait...' : 'Cancel web subscription'}</Text>
               </Pressable>
