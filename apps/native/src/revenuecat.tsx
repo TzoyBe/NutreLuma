@@ -25,14 +25,14 @@ import type {
  */
 
 // Το entitlement identifier όπως ορίστηκε στο RevenueCat dashboard.
-export const ENTITLEMENT_ID = 'NutreLume Pro';
+export const ENTITLEMENT_ID = process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID || 'pro';
 
 // Public SDK keys ανά πλατφόρμα (RevenueCat → Project → API keys):
 // iOS ξεκινά με `appl_`, Android με `goog_`. Το RevenueCat ενεργοποιείται ΜΟΝΟ
 // όταν υπάρχει έγκυρο platform key εδώ — αλλιώς μένει ανενεργό (καμία κλήση,
-// κανένα crash). Βάλε τα πραγματικά keys για να δουλέψει.
-const IOS_KEY = '';
-const ANDROID_KEY = '';
+// κανένα crash). Ορίζονται ως EXPO_PUBLIC_* build environment variables.
+const IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY || '';
+const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || '';
 const API_KEY = Platform.select({ ios: IOS_KEY, android: ANDROID_KEY, default: '' }) ?? '';
 
 function keyLooksValid(key: string): boolean {

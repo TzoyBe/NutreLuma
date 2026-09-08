@@ -61,6 +61,7 @@ import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
+import { billingAccessView } from './src/billing-state';
 import {
   filterMilestoneHistory,
   partitionMilestones,
@@ -4380,13 +4381,37 @@ function ProfileOverviewScreen({
   const { ready: rcReady, available: rcAvailable, isPro, presentPaywall, restore, presentCustomerCenter } =
     useRevenueCat();
   const [subscribing, setSubscribing] = useState(false);
+  const [revenueCatVerificationFailed, setRevenueCatVerificationFailed] = useState(false);
+
+  async function syncRevenueCatAccess(previousBilling: BillingOverviewResult | null) {
+    try {
+      const nextBilling = await api.syncRevenueCat(session.token);
+      setBilling(nextBilling);
+      const verified = nextBilling.state?.canWrite === true;
+      setRevenueCatVerificationFailed(!verified);
+      return verified;
+    } catch {
+      setBilling(previousBilling);
+      setRevenueCatVerificationFailed(true);
+      return false;
+    }
+  }
 
   async function handleUpgrade() {
     setSubscribing(true);
     setMessage(null);
     try {
       const purchased = await presentPaywall();
-      if (purchased) setMessage('Subscription active — thank you!');
+      if (!purchased) return;
+
+      const previousBilling = billing;
+      setBilling(null);
+      const verified = await syncRevenueCatAccess(previousBilling);
+      setMessage(
+        verified
+          ? 'Subscription active — thank you!'
+          : 'Your store purchase was received, but server verification could not complete. Please Retry or Restore your purchase.',
+      );
     } catch (error) {
       setMessage(apiErrorMessage(error));
     } finally {
@@ -4399,7 +4424,19 @@ function ProfileOverviewScreen({
     setMessage(null);
     try {
       const restored = await restore();
-      setMessage(restored ? 'Purchases restored.' : 'No active subscription found.');
+      if (!restored) {
+        setMessage('No active subscription found.');
+        return;
+      }
+
+      const previousBilling = billing;
+      setBilling(null);
+      const verified = await syncRevenueCatAccess(previousBilling);
+      setMessage(
+        verified
+          ? 'Purchases restored.'
+          : 'Your store purchase was received, but server verification could not complete. Please Retry or Restore your purchase.',
+      );
     } catch (error) {
       setMessage(apiErrorMessage(error));
     } finally {
@@ -4742,7 +4779,10 @@ function ProfileOverviewScreen({
   const stripeAvailableForInterval = yearlySelected
     ? billing?.stripeYearlyAvailable
     : billing?.stripeAvailable;
-  const canCancelBilling = Boolean(billing?.state?.kind !== 'UNLIMITED' && billing?.status === 'ACTIVE');
+  const billingAccess = billingAccessView(billing, isPro);
+  const canCancelBilling = Boolean(billingAccess.managedOnWeb && billing?.status === 'ACTIVE');
+  const canOfferNativePurchase = billingAccess.canPurchase && !revenueCatVerificationFailed;
+  const canOfferRestore = billingAccess.canPurchase || billingAccess.managedByRevenueCat || revenueCatVerificationFailed;
 
   return (
     <ScrollView contentContainerStyle={styles.dashboardContent}>
@@ -4955,46 +4995,54 @@ function ProfileOverviewScreen({
       {profileTab === 'plan' ? (
       <GlassCard style={styles.authPanel}>
         <Text style={styles.sectionTitle}>Subscription</Text>
-        {!rcReady ? (
+        {!rcReady || loading ? (
           <ActivityIndicator color={colors.primary} />
-        ) : !rcAvailable ? (
-          <>
-            <View style={styles.macroGrid}>
-              <MetricCard value={billing?.state?.kind ?? 'Free'} label="plan" />
-            </View>
-            <Text style={styles.noticeCopy}>
-              In-app subscriptions are set up on a production build. Add your store keys and
-              install the latest build to subscribe from the app.
-            </Text>
-          </>
         ) : (
           <>
             <View style={styles.macroGrid}>
-              <MetricCard value={isPro ? 'Pro' : billing?.state?.kind ?? 'Free'} label="plan" />
-              <MetricCard value={isPro ? 'active' : 'free'} label="status" />
+              <MetricCard value={billingAccess.active ? 'Pro' : billing?.state?.kind ?? 'Free'} label="plan" />
+              <MetricCard value={billingAccess.active ? 'active' : 'free'} label="status" />
             </View>
             <Text style={styles.noticeCopy}>
-              {isPro
-                ? 'You have NutreLuma Pro. Manage or restore your subscription below.'
-                : 'Unlock NutreLuma Pro — full tracking, insights and AI meal plans.'}
+              {billingAccess.managedOnWeb
+                ? 'Your subscription is active and managed on the web.'
+                : billingAccess.managedByRevenueCat
+                  ? 'You have NutreLuma Pro. Manage or restore your subscription below.'
+                  : billingAccess.active
+                    ? 'Your account has active NutreLuma Pro access.'
+                    : rcAvailable
+                      ? 'Unlock NutreLuma Pro — full tracking, insights and AI meal plans.'
+                      : 'In-app subscriptions are available in a production build with RevenueCat configured.'}
             </Text>
-            <View style={styles.actionRow}>
+            {rcAvailable && (canOfferNativePurchase || canOfferRestore) ? (
+              <View style={styles.actionRow}>
+                {canOfferNativePurchase ? (
+                  <Pressable
+                    onPress={handleUpgrade}
+                    disabled={subscribing}
+                    style={[styles.actionButton, styles.actionPrimary]}
+                  >
+                    <Text style={styles.actionPrimaryText}>{subscribing ? 'Please wait...' : 'Go Pro'}</Text>
+                  </Pressable>
+                ) : null}
+                {canOfferRestore ? (
+                  <Pressable onPress={handleRestore} disabled={subscribing} style={styles.actionButton}>
+                    <Text style={styles.actionText}>{revenueCatVerificationFailed ? 'Retry / Restore' : 'Restore'}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+            {billingAccess.managedByRevenueCat ? (
               <Pressable
-                onPress={handleUpgrade}
+                onPress={handleManageSubscription}
                 disabled={subscribing}
-                style={[styles.actionButton, styles.actionPrimary]}
+                style={styles.actionButton}
               >
-                <Text style={styles.actionPrimaryText}>
-                  {subscribing ? 'Please wait...' : isPro ? 'Change plan' : 'Go Pro'}
-                </Text>
-              </Pressable>
-              <Pressable onPress={handleRestore} disabled={subscribing} style={styles.actionButton}>
-                <Text style={styles.actionText}>Restore</Text>
-              </Pressable>
-            </View>
-            {isPro ? (
-              <Pressable onPress={handleManageSubscription} style={styles.actionButton}>
                 <Text style={styles.actionText}>Manage subscription</Text>
+              </Pressable>
+            ) : canCancelBilling ? (
+              <Pressable onPress={confirmCancelBilling} disabled={cancellingBilling} style={styles.actionButton}>
+                <Text style={styles.actionText}>{cancellingBilling ? 'Please wait...' : 'Cancel web subscription'}</Text>
               </Pressable>
             ) : null}
           </>

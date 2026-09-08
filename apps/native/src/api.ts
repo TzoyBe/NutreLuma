@@ -998,6 +998,14 @@ export const api = {
     return request<BillingOverviewResult>('/api/billing', { token });
   },
 
+  syncRevenueCat(token: string) {
+    return request<BillingOverviewResult>('/api/billing/revenuecat/sync', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({}),
+    });
+  },
+
   updateAccount(token: string, displayName: string) {
     return request<{ account: MobileUser }>('/api/account', {
       method: 'PATCH',
