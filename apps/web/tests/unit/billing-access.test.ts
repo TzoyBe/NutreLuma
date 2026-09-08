@@ -86,6 +86,23 @@ describe('resolveAccessState', () => {
     expect(state.canWrite).toBe(true);
   });
 
+  it('gives an expired auto-renewing RevenueCat subscription local grace', () => {
+    const state = resolveAccessState(
+      {
+        ...base,
+        subscription: {
+          status: 'ACTIVE',
+          provider: 'REVENUECAT',
+          accessUntil: days(-1),
+          autoRenew: true,
+        },
+      },
+      NOW,
+    );
+    expect(state.kind).toBe('GRACE');
+    expect(state.canWrite).toBe(true);
+  });
+
   it('μετά το τέλος της χάριτος κλειδώνει', () => {
     const state = resolveAccessState(
       {

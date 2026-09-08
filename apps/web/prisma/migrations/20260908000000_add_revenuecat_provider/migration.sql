@@ -1,0 +1,1 @@
+ALTER TYPE "SubscriptionProvider" ADD VALUE IF NOT EXISTS 'REVENUECAT';

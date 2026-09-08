@@ -658,6 +658,7 @@ enum SubscriptionProvider {
   STRIPE
   PAYPAL
   MANUAL
+  REVENUECAT
 }
 
 enum SubscriptionStatus {

@@ -12,7 +12,7 @@ export type AccessStateKind = 'UNLIMITED' | 'TRIAL' | 'ACTIVE' | 'GRACE' | 'LOCK
 
 export interface SubscriptionSnapshot {
   status: 'TRIALING' | 'ACTIVE' | 'CANCELLED' | 'EXPIRED';
-  provider: 'STRIPE' | 'PAYPAL' | 'MANUAL' | null;
+  provider: 'STRIPE' | 'PAYPAL' | 'MANUAL' | 'REVENUECAT' | null;
   accessUntil: Date;
   autoRenew: boolean;
 }
@@ -75,7 +75,8 @@ export function resolveAccessState(input: AccessInput, now: Date = new Date()): 
   //   TRIALING  — η δοκιμή λήγει οριστικά, δεν υπάρχει πάροχος να ρωτήσουμε
   //   CANCELLED — ο χρήστης ακύρωσε συνειδητά, δεν αναμένεται ανανέωση
   //   MANUAL    — δεν υπάρχει αυτόματη χρέωση που θα μπορούσε να καθυστερήσει
-  const automaticProvider = sub.provider === 'STRIPE' || sub.provider === 'PAYPAL';
+  const automaticProvider =
+    sub.provider === 'STRIPE' || sub.provider === 'PAYPAL' || sub.provider === 'REVENUECAT';
   const eligibleForGrace = sub.status === 'ACTIVE' && sub.autoRenew && automaticProvider;
   const graceEnds = new Date(sub.accessUntil.getTime() + input.graceDays * DAY_MS);
 
