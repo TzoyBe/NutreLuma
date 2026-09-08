@@ -100,8 +100,10 @@ That key belongs only to the web/backend deployment environment.
    client/preview/production binary. Changing an `EXPO_PUBLIC_*` value requires a new
    native build; it cannot be fixed by changing only the backend environment.
 
-The entitlement and product IDs must match exactly across the stores, RevenueCat, EAS, and
-backend allow-list. Lifetime products are not supported by this integration.
+Product IDs must match exactly across the stores, RevenueCat, and the backend allow-list.
+EAS contains only the public platform SDK keys and the entitlement ID; the entitlement ID must
+match RevenueCat and the backend, but product IDs do not belong in EAS. Lifetime products are
+not supported by this integration.
 
 ### Sandbox test flow
 

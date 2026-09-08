@@ -304,8 +304,9 @@ EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=pro
 ```
 
 The public platform SDK keys must remain separate from the backend secret. A native app
-without valid public keys remains in the free state; a backend without all four server
-settings cannot verify a store purchase.
+without valid public keys remains in the free state. Server verification requires a non-empty
+secret, entitlement ID, and product allow-list; `REVENUECAT_ALLOW_SANDBOX` is optional and
+defaults to `false` unless a dedicated sandbox backend explicitly sets it to `true`.
 
 ### Deployment order and matching rules
 
