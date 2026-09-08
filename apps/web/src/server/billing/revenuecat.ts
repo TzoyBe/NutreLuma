@@ -14,7 +14,8 @@ const revenueCatResponseSchema = z.object({
     entitlements: z.record(
       z.object({
         product_identifier: z.string().min(1),
-        expires_date: nullableDateString,
+        // RevenueCat uses null for lifetime entitlements; an omitted field is malformed.
+        expires_date: z.string().nullable(),
       }),
     ),
     subscriptions: z.record(

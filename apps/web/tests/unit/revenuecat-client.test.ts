@@ -184,6 +184,14 @@ describe('getRevenueCatSubscription', () => {
     await expect(getRevenueCatSubscription('user-1')).rejects.toBeInstanceOf(RevenueCatError);
   });
 
+  it('rejects an entitlement with no expiry field', async () => {
+    const body = subscriberFixture();
+    delete (body.subscriber.entitlements.pro as Record<string, unknown>).expires_date;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok(body)));
+
+    await expect(getRevenueCatSubscription('user-1')).rejects.toBeInstanceOf(RevenueCatError);
+  });
+
   it('wraps non-success RevenueCat responses in a provider error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok({ error: 'not found' }, 404)));
 
