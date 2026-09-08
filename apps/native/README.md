@@ -90,8 +90,8 @@ That key belongs only to the web/backend deployment environment.
 2. In RevenueCat, add the iOS and Android apps using bundle/package ID
    `com.joybeedigital.nutreluma`, connect their respective store credentials, import the
    same two product IDs, and attach both products to the `pro` entitlement. Configure a
-   current offering/paywall that exposes those packages, and enable Customer Center if the
-   in-app management screen is to be available.
+   current offering/paywall that exposes those packages. Customer Center is optional: when
+   it is unavailable, NutreLuma falls back to Apple/Google subscription management.
 3. Deploy the backend configuration and code first, including the secret REST API key,
    entitlement `pro`, and the comma-separated allow-list of the same product IDs. The
    backend must be live before distributing a binary, because it is authoritative for
@@ -111,7 +111,7 @@ For store sandbox/TestFlight/internal-track testing, the backend deployment used
 test binary must set `REVENUECAT_ALLOW_SANDBOX=true`; production should keep it `false`.
 Use an Apple sandbox tester or Google Play license tester, make a monthly/yearly purchase,
 and confirm that the backend returns active billing after the app's immediate sync. Then
-test Restore Purchases and Customer Center/store cancellation. Expo Go cannot exercise this
+test Restore Purchases and store cancellation. Expo Go cannot exercise this
 native RevenueCat module; use a development client or an EAS-built binary.
 
 After a purchase or restore, the native app calls authenticated

@@ -8,13 +8,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import type {
   CustomerInfo,
   PurchasesOffering,
   PurchasesPackage,
 } from 'react-native-purchases';
 import { refreshRevenueCatData } from './revenuecat-refresh';
+import { presentSubscriptionManagement } from './revenuecat-management';
 import { createRevenueCatIdentity } from './revenuecat-identity';
 
 /**
@@ -224,11 +225,21 @@ export function RevenueCatProvider({
 
   const presentCustomerCenter = useCallback(async () => {
     if (!nativeReady || !RevenueCatUI || !isCurrentUser()) return;
+    const managementURL =
+      customerInfo?.managementURL ??
+      (Platform.OS === 'ios'
+        ? 'https://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions?package=com.joybeedigital.nutreluma');
     await identity.run(appUserID, async () => {
-      if (isCurrentUser()) await RevenueCatUI!.presentCustomerCenter();
+      if (!isCurrentUser()) return;
+      await presentSubscriptionManagement({
+        presentCustomerCenter: () => RevenueCatUI!.presentCustomerCenter(),
+        openURL: (url) => Linking.openURL(url),
+        managementURL,
+      });
     });
     await refresh();
-  }, [appUserID, identity, isCurrentUser, refresh]);
+  }, [appUserID, customerInfo?.managementURL, identity, isCurrentUser, refresh]);
 
   const identified = isCurrentUser();
 

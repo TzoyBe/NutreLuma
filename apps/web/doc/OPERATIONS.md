@@ -315,8 +315,8 @@ defaults to `false` unless a dedicated sandbox backend explicitly sets it to `tr
    Console. Complete their store credentials, agreements, and tester configuration.
 2. Add both apps to RevenueCat for `com.joybeedigital.nutreluma`, connect the Apple and
    Google store integrations, import the same products, and attach both to the `pro`
-   entitlement. Make an offering/paywall containing the packages; enable Customer Center
-   when native subscription management is required.
+   entitlement. Make an offering/paywall containing the packages. Customer Center is optional;
+   the app falls back to Apple/Google subscription management when it is unavailable.
 3. Before releasing any native binary, deploy the backend with a real server secret,
    `REVENUECAT_ENTITLEMENT_ID=pro`, and an allow-list containing exactly those product IDs.
    Run the normal application deployment/migration process for the integration; do not
@@ -343,7 +343,7 @@ The RevenueCat Free plan has no webhooks in this deployment. Access is therefore
 on the immediate sync above and when an expired local access record is read. Expiration-time
 polling keeps the existing five-minute per-user cooldown and graceful failure behavior; it
 does not shorten a future `accessUntil` after a failed or inactive response. RevenueCat
-cancellation is managed through Customer Center/store UI, not the web cancellation endpoint.
+cancellation is managed through Customer Center or the store UI, not the web cancellation endpoint.
 
 ### Sandbox and production checks
 
