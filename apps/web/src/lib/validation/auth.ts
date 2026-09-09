@@ -16,26 +16,44 @@ export const passwordSchema = z
   .regex(/[A-Z]/, 'Ο κωδικός πρέπει να περιέχει κεφαλαίο γράμμα.')
   .regex(/[0-9]/, 'Ο κωδικός πρέπει να περιέχει αριθμό.');
 
-export const registerSchema = z
-  .object({
-    email: emailSchema,
-    displayName: z
-      .string({ required_error: 'Το όνομα εμφάνισης είναι υποχρεωτικό.' })
-      .trim()
-      .min(2, 'Το όνομα εμφάνισης πρέπει να έχει τουλάχιστον 2 χαρακτήρες.')
-      .max(60, 'Το όνομα εμφάνισης είναι πολύ μεγάλο.'),
-    password: passwordSchema,
-    passwordConfirm: z.string(),
-    consent: z.literal(true, {
-      errorMap: () => ({ message: 'Πρέπει να αποδεχτείς την πολιτική απορρήτου για να συνεχίσεις.' }),
-    }),
-  })
-  .refine((data) => data.password === data.passwordConfirm, {
+export const registerFieldsSchema = z.object({
+  email: emailSchema,
+  displayName: z
+    .string({ required_error: 'Το όνομα εμφάνισης είναι υποχρεωτικό.' })
+    .trim()
+    .min(2, 'Το όνομα εμφάνισης πρέπει να έχει τουλάχιστον 2 χαρακτήρες.')
+    .max(60, 'Το όνομα εμφάνισης είναι πολύ μεγάλο.'),
+  password: passwordSchema,
+  passwordConfirm: z.string(),
+  consent: z.literal(true, {
+    errorMap: () => ({ message: 'Πρέπει να αποδεχτείς την πολιτική απορρήτου για να συνεχίσεις.' }),
+  }),
+});
+
+export const registerSchema = registerFieldsSchema.refine(
+  (data) => data.password === data.passwordConfirm,
+  {
     path: ['passwordConfirm'],
     message: 'Οι κωδικοί δεν ταιριάζουν.',
-  });
+  },
+);
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+export type PasswordStrength = { score: 0 | 1 | 2 | 3; label: string };
+
+/**
+ * Βαθμολογεί τον κωδικό πάνω στους ίδιους κανόνες με το passwordSchema, ώστε
+ * η ένδειξη ισχύος να μη διαφωνεί ποτέ με το πραγματικό validation.
+ */
+export function passwordStrength(value: string): PasswordStrength {
+  if (!value) return { score: 0, label: '' };
+  const rules = [value.length >= 10, /[a-z]/.test(value), /[A-Z]/.test(value), /[0-9]/.test(value)];
+  const passed = rules.filter(Boolean).length;
+  const score = (passed === 4 ? 3 : passed >= 2 ? 2 : 1) as 0 | 1 | 2 | 3;
+  const labels = ['', 'Αδύναμος', 'Μέτριος', 'Ισχυρός'];
+  return { score, label: labels[score] };
+}
 
 export const loginSchema = z.object({
   email: emailSchema,

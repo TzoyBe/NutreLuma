@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const controlClasses =
@@ -121,6 +121,34 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   },
 );
 Input.displayName = 'Input';
+
+export const PasswordInput = React.forwardRef<
+  HTMLInputElement,
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>
+>(({ className, ...props }, ref) => {
+  const [revealed, setRevealed] = React.useState(false);
+
+  return (
+    <div className="relative">
+      <input
+        ref={ref}
+        type={revealed ? 'text' : 'password'}
+        className={cn(controlClasses, 'h-11 w-full min-w-0 max-w-full overflow-hidden pr-11', className)}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setRevealed((current) => !current)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        aria-label={revealed ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού'}
+        tabIndex={-1}
+      >
+        {revealed ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+      </button>
+    </div>
+  );
+});
+PasswordInput.displayName = 'PasswordInput';
 
 export const Textarea = React.forwardRef<
   HTMLTextAreaElement,

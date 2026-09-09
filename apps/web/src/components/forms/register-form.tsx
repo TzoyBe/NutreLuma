@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Chrome } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
-import { registerSchema } from '@/lib/validation/auth';
+import { registerFieldsSchema, registerSchema, passwordStrength } from '@/lib/validation/auth';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Field, fieldAria, Input } from '@/components/ui/field';
+import { Field, fieldAria, Input, PasswordInput } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 import { cn } from '@/lib/utils';
 
 type Errors = Record<string, string>;
+type FieldName = keyof typeof registerFieldsSchema.shape;
 
 export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
   const t = useT();
@@ -21,6 +22,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
   const [errors, setErrors] = React.useState<Errors>({});
   const [loading, setLoading] = React.useState(false);
   const [isCapacitorApp, setIsCapacitorApp] = React.useState(false);
+  const [password, setPassword] = React.useState('');
 
   React.useEffect(() => {
     const maybeCapacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
@@ -28,6 +30,32 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
   }, []);
 
   const googleHref = isCapacitorApp ? '/api/auth/google?app=capacitor' : '/api/auth/google';
+  const strength = passwordStrength(password);
+
+  function onFieldBlur(field: FieldName) {
+    return (event: React.FocusEvent<HTMLInputElement>) => {
+      const value = event.currentTarget.value;
+      if (!value) return;
+      const result = registerFieldsSchema.shape[field].safeParse(value);
+      setErrors((prev) => {
+        const next = { ...prev };
+        if (!result.success) next[field] = result.error.issues[0]?.message ?? '';
+        else delete next[field];
+        return next;
+      });
+    };
+  }
+
+  function onPasswordConfirmBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const value = event.currentTarget.value;
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (!value) delete next.passwordConfirm;
+      else if (value !== password) next.passwordConfirm = 'Οι κωδικοί δεν ταιριάζουν.';
+      else delete next.passwordConfirm;
+      return next;
+    });
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,7 +118,12 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
 
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <Field label={t('auth.displayName')} htmlFor="displayName" error={errors.displayName} required>
-          <Input {...fieldAria('displayName', errors.displayName)} autoComplete="nickname" required />
+          <Input
+            {...fieldAria('displayName', errors.displayName)}
+            autoComplete="nickname"
+            onBlur={onFieldBlur('displayName')}
+            required
+          />
         </Field>
 
         <Field label={t('auth.email')} htmlFor="email" error={errors.email} required>
@@ -99,6 +132,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
             type="email"
             inputMode="email"
             autoComplete="email"
+            onBlur={onFieldBlur('email')}
             required
           />
         </Field>
@@ -110,13 +144,27 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
           hint={t('auth.passwordHint')}
           required
         >
-          <Input
+          <PasswordInput
             {...fieldAria('password', errors.password)}
-            type="password"
             autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            onBlur={onFieldBlur('password')}
             required
           />
         </Field>
+        {password ? (
+          <p
+            className={cn(
+              '-mt-2 text-xs font-medium',
+              strength.score <= 1 && 'text-destructive',
+              strength.score === 2 && 'text-amber-500',
+              strength.score === 3 && 'text-emerald-500',
+            )}
+          >
+            {strength.label}
+          </p>
+        ) : null}
 
         <Field
           label={t('auth.passwordConfirm')}
@@ -124,10 +172,10 @@ export function RegisterForm({ googleEnabled }: { googleEnabled?: boolean }) {
           error={errors.passwordConfirm}
           required
         >
-          <Input
+          <PasswordInput
             {...fieldAria('passwordConfirm', errors.passwordConfirm)}
-            type="password"
             autoComplete="new-password"
+            onBlur={onPasswordConfirmBlur}
             required
           />
         </Field>

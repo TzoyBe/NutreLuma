@@ -75,6 +75,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Droplet,
+  Eye,
+  EyeOff,
   LayoutDashboard,
   LineChart,
   Plus,
@@ -527,6 +529,7 @@ function Field({
   secureTextEntry,
   keyboardType,
   autoCapitalize = 'none',
+  hint,
 }: {
   label: string;
   value: string;
@@ -534,20 +537,40 @@ function Field({
   secureTextEntry?: boolean;
   keyboardType?: ComponentProps<typeof TextInput>['keyboardType'];
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  hint?: string;
 }) {
+  const [revealed, setRevealed] = useState(false);
+  const isSecure = secureTextEntry && !revealed;
+
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        placeholderTextColor={colors.mutedSoft}
-        selectionColor={colors.primary}
-        style={styles.input}
-      />
+      <View style={styles.inputWrap}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={isSecure}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          placeholderTextColor={colors.mutedSoft}
+          selectionColor={colors.primary}
+          style={[styles.input, secureTextEntry ? styles.inputWithToggle : null]}
+        />
+        {secureTextEntry ? (
+          <Pressable
+            onPress={() => setRevealed((current) => !current)}
+            style={styles.inputToggle}
+            hitSlop={10}
+          >
+            {revealed ? (
+              <EyeOff size={18} color={colors.mutedSoft} />
+            ) : (
+              <Eye size={18} color={colors.mutedSoft} />
+            )}
+          </Pressable>
+        ) : null}
+      </View>
+      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -689,7 +712,7 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.select({ ios: 'padding', android: undefined })}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled">
         <View style={styles.brandRow}>
@@ -752,13 +775,23 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
               autoCapitalize="words"
             />
           ) : null}
-          <Field label="Email" value={email} onChangeText={setEmail} />
+          <Field
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+          />
           {mode === 'login' || mode === 'register' ? (
             <Field
               label="Password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              hint={
+                mode === 'register'
+                  ? 'Τουλάχιστον 10 χαρακτήρες, με κεφαλαίο, πεζό και αριθμό.'
+                  : undefined
+              }
             />
           ) : null}
 
@@ -6307,9 +6340,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  fieldHint: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    lineHeight: 15,
+  },
   twoColumn: {
     flexDirection: 'row',
     gap: 10,
+  },
+  inputWrap: {
+    justifyContent: 'center',
+  },
+  inputToggle: {
+    position: 'absolute',
+    right: 14,
+    height: '100%',
+    justifyContent: 'center',
   },
   input: {
     minHeight: 50,
@@ -6319,6 +6366,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  inputWithToggle: {
+    paddingRight: 44,
   },
   notesInput: {
     minHeight: 96,

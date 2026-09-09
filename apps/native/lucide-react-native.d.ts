@@ -22,6 +22,8 @@ declare module 'lucide-react-native' {
   export const ChevronLeft: LucideIcon;
   export const ChevronRight: LucideIcon;
   export const Droplet: LucideIcon;
+  export const Eye: LucideIcon;
+  export const EyeOff: LucideIcon;
   export const Flame: LucideIcon;
   export const Footprints: LucideIcon;
   export const LayoutDashboard: LucideIcon;

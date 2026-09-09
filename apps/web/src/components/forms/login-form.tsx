@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Chrome } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
-import { loginSchema } from '@/lib/validation/auth';
+import { emailSchema, loginSchema } from '@/lib/validation/auth';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Field, fieldAria, Input } from '@/components/ui/field';
+import { Field, fieldAria, Input, PasswordInput } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,18 @@ export function LoginForm({
     const maybeCapacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
     setIsCapacitorApp(Boolean(maybeCapacitor?.isNativePlatform?.()));
   }, []);
+
+  function onEmailBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const value = event.currentTarget.value;
+    if (!value) return;
+    const result = emailSchema.safeParse(value);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (!result.success) next.email = result.error.issues[0]?.message ?? '';
+      else delete next.email;
+      return next;
+    });
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -107,14 +119,14 @@ export function LoginForm({
             type="email"
             inputMode="email"
             autoComplete="email"
+            onBlur={onEmailBlur}
             required
           />
         </Field>
 
         <Field label={t('auth.password')} htmlFor="password" error={errors.password} required>
-          <Input
+          <PasswordInput
             {...fieldAria('password', errors.password)}
-            type="password"
             autoComplete="current-password"
             required
           />
