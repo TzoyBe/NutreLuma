@@ -28,10 +28,10 @@ describe('billingAccessView', () => {
       expected: { active: true, managedByRevenueCat: true, managedOnWeb: false, canPurchase: false, needsVerification: false },
     },
     {
-      name: 'a server-authorized trial',
+      name: 'a server-authorized trial offers the upsell like the web app does',
       billing: { state: { kind: 'TRIAL', canWrite: true }, provider: null },
       revenueCatIsPro: false,
-      expected: { active: true, managedByRevenueCat: false, managedOnWeb: false, canPurchase: false, needsVerification: false },
+      expected: { active: true, managedByRevenueCat: false, managedOnWeb: false, canPurchase: true, needsVerification: false },
     },
     {
       name: 'a locked account even when RevenueCat has stale local access',
