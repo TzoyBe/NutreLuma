@@ -1,5 +1,6 @@
 import { ApiError, jsonOk, withErrorHandling } from '@/server/http';
 import { createSessionToken, verifyMobileAuthHandoffToken } from '@/server/auth/session';
+import { assertAccountActive } from '@/server/services/audit';
 import { prisma } from '@/server/db/prisma';
 import { env } from '@/server/env';
 
@@ -17,12 +18,21 @@ export const POST = withErrorHandling(async (request: Request) => {
 
   const user = await prisma.user.findUnique({
     where: { id: verified.sub },
-    select: { id: true, email: true, displayName: true, role: true, healthProfile: { select: { id: true } } },
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      role: true,
+      lockedAt: true,
+      deletedAt: true,
+      healthProfile: { select: { id: true } },
+    },
   });
 
   if (!user) {
     throw new ApiError('UNAUTHENTICATED', 'Google sign-in could not be completed.');
   }
+  assertAccountActive(user);
 
   const token = await createSessionToken({ sub: user.id, email: user.email, role: user.role });
 

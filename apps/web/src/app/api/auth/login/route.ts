@@ -3,6 +3,7 @@ import { assertLoginRateLimit } from '@/server/auth/rate-limit';
 import { fakeVerify, verifyPassword } from '@/server/auth/password';
 import { setSessionCookie } from '@/server/auth/session';
 import { findUserByEmail } from '@/server/services/user';
+import { assertAccountActive, recordAuditEvent } from '@/server/services/audit';
 import { prisma } from '@/server/db/prisma';
 import { loginSchema } from '@/lib/validation/auth';
 import { logger } from '@/server/logger';
@@ -39,7 +40,10 @@ export const POST = withErrorHandling(async (request: Request) => {
     );
   }
 
+  assertAccountActive(user);
+
   await setSessionCookie({ sub: user.id, email: user.email, role: user.role });
+  await recordAuditEvent(prisma, { userId: user.id, email: user.email, type: 'LOGIN', metadata: { via: 'password', ip: clientIp(request) } });
   logger.info('login_success', { userId: user.id });
 
   const profile = await prisma.healthProfile.findUnique({

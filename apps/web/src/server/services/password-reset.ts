@@ -7,6 +7,7 @@ import { ApiError } from '../errors';
 import { hashPassword } from '../auth/password';
 import { sendEmail } from '../email';
 import { buildPasswordResetEmail } from '../email/templates';
+import { recordAuditEvent } from './audit';
 import type { Locale } from '@/i18n';
 
 /**
@@ -91,7 +92,7 @@ export async function requestPasswordReset(
 export async function resetPassword(token: string, newPassword: string): Promise<void> {
   const record = await prisma.passwordResetToken.findUnique({
     where: { tokenHash: hashToken(token) },
-    select: { id: true, userId: true, expiresAt: true, usedAt: true },
+    select: { id: true, userId: true, expiresAt: true, usedAt: true, user: { select: { email: true } } },
   });
 
   const invalid = new ApiError(
@@ -120,6 +121,12 @@ export async function resetPassword(token: string, newPassword: string): Promise
     // Τα υπόλοιπα εκκρεμή tokens του ίδιου χρήστη δεν έχουν πια νόημα.
     await tx.passwordResetToken.deleteMany({
       where: { userId: record.userId, usedAt: null },
+    });
+    await recordAuditEvent(tx, {
+      userId: record.userId,
+      email: record.user.email,
+      type: 'PASSWORD_CHANGE',
+      metadata: { via: 'reset_link' },
     });
   });
 

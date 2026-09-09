@@ -19,15 +19,19 @@ const USER_SELECT = {
   role: true,
   consentAcceptedAt: true,
   passwordChangedAt: true,
+  lockedAt: true,
+  deletedAt: true,
 } as const;
 
 /**
  * Φορτώνει τον χρήστη της συνεδρίας και επικυρώνει ότι η συνεδρία ισχύει ακόμη.
  *
- * Δύο λόγοι ακύρωσης:
+ * Λόγοι ακύρωσης:
  *  - ο χρήστης δεν υπάρχει πια (διαγραμμένος λογαριασμός)
  *  - ο κωδικός άλλαξε μετά την έκδοση του token (επαναφορά κωδικού), οπότε
  *    κάθε παλιό cookie — ακόμη και κλεμμένο — παύει να ισχύει
+ *  - ο λογαριασμός είναι locked/soft-deleted από admin: ισχύει ΑΜΕΣΩΣ στο
+ *    επόμενο request, όχι μόνο σε νέο login
  */
 async function loadSessionUser(): Promise<AuthenticatedUser | null> {
   const session = await readSession();
@@ -38,10 +42,11 @@ async function loadSessionUser(): Promise<AuthenticatedUser | null> {
     select: USER_SELECT,
   });
   if (!user) return null;
+  if (user.lockedAt || user.deletedAt) return null;
 
   if (isSessionExpiredByPasswordChange(session, user.passwordChangedAt)) return null;
 
-  const { passwordChangedAt: _ignored, ...rest } = user;
+  const { passwordChangedAt: _ignored, lockedAt: _l, deletedAt: _d, ...rest } = user;
   return rest;
 }
 

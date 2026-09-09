@@ -545,6 +545,12 @@ export const el = {
     dbSelectModel: 'Επίλεξε πίνακα για προβολή.',
     dbLink: 'Βάση δεδομένων',
     section: 'Διαχείριση',
+    userDetailTitle: 'Στοιχεία χρήστη',
+    backToUsers: 'Πίσω στους χρήστες',
+    accountStatus: 'Κατάσταση λογαριασμού',
+    subscription: 'Συνδρομή',
+    payments: 'Πληρωμές',
+    auditLog: 'Ιστορικό ενεργειών',
   },
   addMeal: {
     title: 'Προσθήκη γεύματος',

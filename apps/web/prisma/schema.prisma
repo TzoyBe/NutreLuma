@@ -237,6 +237,13 @@ model User {
   /** Χρονική στιγμή που ο χρήστης είδε (ή παρέκαμψε) την ξενάγηση καλωσορίσματος. */
   tourSeenAt DateTime?
 
+  /** Admin suspension — μπλοκάρει login χωρίς να πειράζει συνδρομή/δεδομένα. */
+  lockedAt   DateTime?
+  lockReason String?
+
+  /** Soft delete — μπλοκάρει login, κρύβει τον χρήστη, κρατά τα δεδομένα. */
+  deletedAt  DateTime?
+
   healthProfile  HealthProfile?
   meals          Meal[]
   weightEntries  WeightEntry[]
@@ -640,6 +647,34 @@ model AiUsageLog {
 
   @@index([userId, createdAt])
   @@map("ai_usage_logs")
+}
+
+enum AuditEventType {
+  LOGIN
+  PASSWORD_CHANGE
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+  ACCESS_EXPIRED
+  ACCOUNT_SOFT_DELETED
+  ACCOUNT_HARD_DELETED
+}
+
+/**
+ * Ιστορικό ενεργειών λογαριασμού για το admin profile. Σκόπιμα ΧΩΡΙΣ
+ * @relation στο User — έτσι μια εγγραφή ACCOUNT_HARD_DELETED επιζεί μετά το
+ * cascade delete του χρήστη (το `userId` μένει ως απλό string reference).
+ */
+model AuditLog {
+  id            String         @id @default(cuid())
+  userId        String
+  emailSnapshot String
+  type          AuditEventType
+  metadata      Json?
+  actorId       String?
+  createdAt     DateTime       @default(now())
+
+  @@index([userId, createdAt])
+  @@map("audit_logs")
 }
 
 model RateLimitBucket {

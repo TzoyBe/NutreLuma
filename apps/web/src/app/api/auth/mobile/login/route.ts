@@ -3,6 +3,7 @@ import { assertLoginRateLimit } from '@/server/auth/rate-limit';
 import { fakeVerify, verifyPassword } from '@/server/auth/password';
 import { createSessionToken } from '@/server/auth/session';
 import { findUserByEmail } from '@/server/services/user';
+import { assertAccountActive, recordAuditEvent } from '@/server/services/audit';
 import { prisma } from '@/server/db/prisma';
 import { loginSchema } from '@/lib/validation/auth';
 import { logger } from '@/server/logger';
@@ -37,12 +38,15 @@ export const POST = withErrorHandling(async (request: Request) => {
     );
   }
 
+  assertAccountActive(user);
+
   const profile = await prisma.healthProfile.findUnique({
     where: { userId: user.id },
     select: { id: true },
   });
   const token = await createSessionToken({ sub: user.id, email: user.email, role: user.role });
 
+  await recordAuditEvent(prisma, { userId: user.id, email: user.email, type: 'LOGIN', metadata: { via: 'password_mobile', ip: clientIp(request) } });
   logger.info('mobile_login_success', { userId: user.id });
 
   return jsonOk({

@@ -5,6 +5,7 @@ import { createMobileAuthHandoffToken, setSessionCookie } from '@/server/auth/se
 import { env, isProduction } from '@/server/env';
 import { logger } from '@/server/logger';
 import { findOrCreateUserFromGoogle } from '@/server/services/user';
+import { assertAccountActive, recordAuditEvent } from '@/server/services/audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,10 +35,12 @@ export const GET = async (request: Request) => {
 
     const { profile, nextPath, appMode } = await resolveGoogleUserFromCallback(callbackUrl.searchParams);
     const user = await findOrCreateUserFromGoogle(profile);
+    assertAccountActive(user);
     const hasProfile = await prisma.healthProfile.findUnique({
       where: { userId: user.id },
       select: { id: true },
     });
+    await recordAuditEvent(prisma, { userId: user.id, email: user.email, type: 'LOGIN', metadata: { via: 'google', appMode } });
 
     const destination = hasProfile ? sanitizeNextPath(nextPath) : '/onboarding';
     if (appMode === 'capacitor') {

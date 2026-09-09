@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiClientError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,9 @@ export function AdminUserList({ users }: { users: AdminUserRow[] }) {
         <li key={user.id} className="rounded-xl border border-border bg-card p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate font-medium">{user.displayName}</p>
+              <Link href={`/admin/users/${user.id}`} className="truncate font-medium text-primary hover:underline">
+                {user.displayName}
+              </Link>
               <p className="truncate text-sm text-muted-foreground">{user.email}</p>
             </div>
             <p className="text-sm">

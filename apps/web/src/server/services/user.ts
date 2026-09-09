@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword } from '../auth/password';
 import { ApiError } from '../errors';
 import { logger } from '../logger';
 import { createTrialForUser } from './subscription';
+import { recordAuditEvent } from './audit';
 import type { RegisterInput } from '@/lib/validation/auth';
 
 export async function createUser(input: Omit<RegisterInput, 'passwordConfirm' | 'consent'>) {
@@ -45,6 +46,8 @@ export async function findUserByEmail(email: string) {
       role: true,
       passwordHash: true,
       emailVerifiedAt: true,
+      lockedAt: true,
+      deletedAt: true,
     },
   });
 }
@@ -56,7 +59,7 @@ export async function findUserByAuthIdentity(provider: AuthProvider, providerAcc
     },
     select: {
       user: {
-        select: { id: true, email: true, displayName: true, role: true },
+        select: { id: true, email: true, displayName: true, role: true, lockedAt: true, deletedAt: true },
       },
     },
   });
@@ -90,7 +93,7 @@ export async function findOrCreateUserFromGoogle(profile: GoogleIdentityProfile)
     const user = await prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({
         where: { email },
-        select: { id: true, email: true, displayName: true, role: true },
+        select: { id: true, email: true, displayName: true, role: true, lockedAt: true, deletedAt: true },
       });
 
       if (existingUser) {
@@ -120,7 +123,7 @@ export async function findOrCreateUserFromGoogle(profile: GoogleIdentityProfile)
             },
           },
         },
-        select: { id: true, email: true, displayName: true, role: true },
+        select: { id: true, email: true, displayName: true, role: true, lockedAt: true, deletedAt: true },
       });
       await createTrialForUser(tx, created.id);
       return created;
@@ -142,7 +145,7 @@ export async function changePassword(
 ): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { passwordHash: true },
+    select: { email: true, passwordHash: true },
   });
   if (!user) throw new ApiError('UNAUTHENTICATED', 'Η συνεδρία δεν είναι έγκυρη.');
 
@@ -161,6 +164,7 @@ export async function changePassword(
     });
     // Τυχόν εκκρεμείς σύνδεσμοι επαναφοράς δεν έχουν πια νόημα.
     await tx.passwordResetToken.deleteMany({ where: { userId, usedAt: null } });
+    await recordAuditEvent(tx, { userId, email: user.email, type: 'PASSWORD_CHANGE' });
   });
   logger.info('user_password_changed', { userId });
 }

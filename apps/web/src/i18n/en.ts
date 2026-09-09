@@ -535,6 +535,12 @@ export const en: Translations = {
     dbSelectModel: 'Select a table to view.',
     dbLink: 'Database',
     section: 'Admin',
+    userDetailTitle: 'User details',
+    backToUsers: 'Back to users',
+    accountStatus: 'Account status',
+    subscription: 'Subscription',
+    payments: 'Payments',
+    auditLog: 'Audit log',
   },
   addMeal: {
     title: 'Add meal',
