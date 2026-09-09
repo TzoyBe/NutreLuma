@@ -442,6 +442,19 @@ function CategorySection({
   );
 }
 
+const PLAN_KIND_LABELS: Record<string, string> = {
+  UNLIMITED: 'Unlimited',
+  TRIAL: 'Trial',
+  ACTIVE: 'Pro',
+  GRACE: 'Confirming',
+  LOCKED: 'Expired',
+};
+
+function planKindLabel(kind: string | undefined): string {
+  if (!kind) return 'Free';
+  return PLAN_KIND_LABELS[kind] ?? kind;
+}
+
 function MetricCard({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.metricCard}>
@@ -712,7 +725,7 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled">
         <View style={styles.brandRow}>
@@ -5040,7 +5053,7 @@ function ProfileOverviewScreen({
         ) : (
           <>
             <View style={styles.macroGrid}>
-              <MetricCard value={billingAccess.active ? 'Pro' : billing?.state?.kind ?? 'Free'} label="plan" />
+              <MetricCard value={planKindLabel(billing?.state?.kind)} label="plan" />
               <MetricCard value={billingAccess.active ? 'active' : 'free'} label="status" />
             </View>
             <Text style={styles.noticeCopy}>
