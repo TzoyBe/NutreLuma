@@ -145,6 +145,251 @@
   }
 }
 
+/* ---------- Personal Universe: public landing + authentication ---------- */
+.universe-page,
+.universe-auth-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 82% 4%, hsl(var(--brand-purple) / 0.16), transparent 30rem),
+    radial-gradient(circle at 42% 36%, hsl(var(--primary) / 0.09), transparent 34rem),
+    linear-gradient(145deg, #070b16 0%, hsl(var(--background)) 46%, #0d1022 100%);
+}
+
+.universe-page-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.58;
+  background:
+    radial-gradient(circle at 11% 14%, hsl(var(--accent) / 0.09), transparent 18rem),
+    radial-gradient(circle at 92% 78%, hsl(var(--primary) / 0.1), transparent 24rem);
+}
+
+.universe-page-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(hsl(var(--glass-border) / 0.12) 0.6px, transparent 0.6px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+.universe-constellation {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(100%, 52rem);
+  aspect-ratio: 1.18;
+  transform: translate(-50%, -50%);
+  isolation: isolate;
+}
+
+.universe-ambient {
+  position: absolute;
+  inset: 15%;
+  z-index: -3;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, hsl(var(--primary) / 0.2), transparent 56%),
+    radial-gradient(circle at 60% 55%, hsl(var(--brand-purple) / 0.18), transparent 44%);
+  filter: blur(32px);
+}
+
+.universe-orbit {
+  position: absolute;
+  z-index: -2;
+  border: 1px solid hsl(var(--glass-border) / 0.15);
+  border-radius: 50%;
+  box-shadow: 0 0 42px hsl(var(--primary) / 0.06) inset;
+}
+
+.universe-orbit::before,
+.universe-orbit::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  box-shadow: 0 0 16px hsl(var(--primary) / 0.9);
+}
+
+.universe-orbit-outer {
+  inset: 9% 4%;
+  transform: rotate(-8deg);
+}
+
+.universe-orbit-outer::before {
+  left: 18%;
+  top: 5%;
+  width: 8px;
+  height: 8px;
+}
+
+.universe-orbit-outer::after {
+  right: 7%;
+  bottom: 22%;
+  width: 11px;
+  height: 11px;
+  background: hsl(var(--accent));
+  box-shadow: 0 0 18px hsl(var(--accent) / 0.88);
+}
+
+.universe-orbit-inner {
+  inset: 21% 17%;
+  transform: rotate(17deg);
+}
+
+.universe-orbit-inner::before {
+  right: 20%;
+  top: 2%;
+  width: 7px;
+  height: 7px;
+  background: hsl(var(--brand-purple));
+  box-shadow: 0 0 16px hsl(var(--brand-purple) / 0.9);
+}
+
+.universe-orbit-inner::after {
+  left: 3%;
+  bottom: 27%;
+  width: 9px;
+  height: 9px;
+  background: hsl(var(--liquid-depth));
+  box-shadow: 0 0 18px hsl(var(--liquid-depth) / 0.9);
+}
+
+.universe-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: flex;
+  width: clamp(10.5rem, 24vw, 14rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 32% 22%, hsl(var(--glass-border) / 0.18), transparent 27%),
+    linear-gradient(145deg, hsl(var(--primary) / 0.16), hsl(var(--glass-bg) / 0.82) 52%, hsl(var(--brand-purple) / 0.14));
+  box-shadow:
+    0 1px 0 hsl(var(--glass-border) / 0.58) inset,
+    0 0 0 9px hsl(var(--primary) / 0.045),
+    0 26px 80px -28px hsl(var(--primary) / 0.76);
+  animation: universe-breathe 5.8s ease-in-out infinite;
+}
+
+.universe-meal-node {
+  position: absolute;
+  z-index: 4;
+  width: clamp(5.1rem, 10vw, 8.2rem);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid hsl(var(--glass-border) / 0.4);
+  border-radius: 999px;
+  background: hsl(var(--card));
+  box-shadow:
+    0 0 0 7px hsl(var(--glass-bg) / 0.45),
+    0 22px 46px -22px hsl(var(--primary) / 0.7);
+  animation: universe-float 6s ease-in-out infinite;
+}
+
+.universe-meal-node-salmon { left: 22%; top: 8%; }
+.universe-meal-node-berry { left: 15%; bottom: 5%; animation-delay: -2s; }
+.universe-meal-node-green { right: 5%; top: 29%; animation-delay: -4s; }
+
+.universe-insight-node {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  width: 11.5rem;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 1.35rem;
+  padding: 0.7rem;
+  animation: universe-float 6.6s ease-in-out infinite;
+}
+
+.universe-insight-node-meals { left: 9%; top: 29%; }
+.universe-insight-node-goals { right: 8%; top: 8%; animation-delay: -1.4s; }
+.universe-insight-node-insights { left: 5%; bottom: 21%; animation-delay: -3s; }
+.universe-insight-node-progress { right: 3%; bottom: 14%; animation-delay: -4.4s; }
+
+.universe-particle {
+  position: absolute;
+  z-index: 7;
+  width: 12px;
+  height: 12px;
+  border: 1px solid hsl(var(--glass-border) / 0.55);
+  border-radius: 999px;
+  animation: universe-pulse 3.8s ease-in-out infinite;
+}
+
+.universe-particle-blue { left: 6%; top: 47%; background: hsl(var(--primary)); box-shadow: 0 0 20px hsl(var(--primary) / 0.95); }
+.universe-particle-gold { right: 32%; top: 4%; background: hsl(var(--accent)); box-shadow: 0 0 20px hsl(var(--accent) / 0.9); animation-delay: -1s; }
+.universe-particle-teal { right: 3%; bottom: 33%; background: hsl(var(--liquid-depth)); box-shadow: 0 0 20px hsl(var(--liquid-depth) / 0.9); animation-delay: -2s; }
+.universe-particle-violet { left: 40%; bottom: 3%; background: hsl(var(--brand-purple)); box-shadow: 0 0 20px hsl(var(--brand-purple) / 0.9); animation-delay: -3s; }
+
+.universe-constellation-compact {
+  width: min(46rem, 92%);
+}
+
+.universe-constellation-compact .universe-core {
+  width: 12rem;
+}
+
+.universe-constellation-compact .universe-meal-node-salmon { left: 12%; top: 20%; }
+.universe-constellation-compact .universe-meal-node-berry { left: 27%; bottom: 5%; }
+.universe-constellation-compact .universe-meal-node-green { right: 7%; top: 34%; }
+
+@keyframes universe-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+@keyframes universe-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.025); }
+}
+
+@keyframes universe-pulse {
+  0%, 100% { opacity: 0.56; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@media (max-width: 767px) {
+  .universe-constellation {
+    width: 34rem;
+    max-width: 112vw;
+  }
+
+  .universe-insight-node {
+    width: 9.5rem;
+    padding: 0.55rem;
+  }
+
+  .universe-insight-node span:last-child span { display: none; }
+  .universe-meal-node-salmon { left: 17%; }
+  .universe-meal-node-green { right: 1%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .universe-core,
+  .universe-meal-node,
+  .universe-insight-node,
+  .universe-particle {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .universe-core,
+  .universe-insight-node {
+    background: hsl(var(--card));
+  }
+}
+
 /* ---------- Welcome tour ---------- */
 @keyframes tour-slide-in {
   from {

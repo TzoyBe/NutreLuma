@@ -1,4 +1,46 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { persistentRateLimitBuckets, rateLimitBucket } = vi.hoisted(() => {
+  const buckets = new Map<string, { count: number; expiresAt: Date }>();
+  const model = {
+    findUnique: vi.fn(async ({ where }: { where: { key: string } }) =>
+      buckets.get(where.key) ?? null,
+    ),
+    upsert: vi.fn(
+      async ({
+        where,
+        create,
+        update,
+      }: {
+        where: { key: string };
+        create: { count: number; expiresAt: Date };
+        update: { count: number; expiresAt: Date };
+      }) => {
+        const value = buckets.has(where.key) ? update : create;
+        buckets.set(where.key, value);
+        return value;
+      },
+    ),
+    update: vi.fn(
+      async ({ where }: { where: { key: string }; data: unknown; select: unknown }) => {
+        const current = buckets.get(where.key)!;
+        const updated = { ...current, count: current.count + 1 };
+        buckets.set(where.key, updated);
+        return { count: updated.count };
+      },
+    ),
+    deleteMany: vi.fn(async () => ({ count: 0 })),
+  };
+  return { persistentRateLimitBuckets: buckets, rateLimitBucket: model };
+});
+
+vi.mock('@/server/db/prisma', () => ({
+  prisma: {
+    rateLimitBucket,
+    $transaction: (callback: (tx: { rateLimitBucket: typeof rateLimitBucket }) => unknown) =>
+      callback({ rateLimitBucket }),
+  },
+}));
 import { hashPassword, verifyPassword } from '@/server/auth/password';
 import {
   createSessionToken,
@@ -57,6 +99,7 @@ describe('session tokens', () => {
 describe('rate limiting', () => {
   beforeEach(() => {
     __resetRateLimits();
+    persistentRateLimitBuckets.clear();
   });
 
   it('επιτρέπει μέχρι το όριο και μετά μπλοκάρει', () => {
@@ -71,10 +114,10 @@ describe('rate limiting', () => {
     expect(hitLimit('b', 1, 60_000)).toBe(false);
   });
 
-  it('μπλοκάρει επαναλαμβανόμενες αποτυχημένες συνδέσεις', () => {
+  it('μπλοκάρει επαναλαμβανόμενες αποτυχημένες συνδέσεις', async () => {
     const attempt = () => assertLoginRateLimit('1.2.3.4', 'user@example.com');
-    for (let i = 0; i < 8; i += 1) attempt();
-    expect(attempt).toThrow(ApiError);
+    for (let i = 0; i < 8; i += 1) await attempt();
+    await expect(attempt()).rejects.toBeInstanceOf(ApiError);
   });
 });
 

@@ -25,6 +25,9 @@ let idCounter = 0;
 const nextId = (p: string) => `${p}-${(idCounter += 1)}`;
 
 const fakePrisma = {
+  auditLog: {
+    create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => data),
+  },
   user: {
     findUnique: vi.fn(async ({ where }: { where: { email?: string; id?: string } }) => {
       return (
@@ -56,7 +59,10 @@ const fakePrisma = {
       return token;
     }),
     findUnique: vi.fn(async ({ where }: { where: { tokenHash: string } }) => {
-      return store.tokens.find((t) => t.tokenHash === where.tokenHash) ?? null;
+      const token = store.tokens.find((t) => t.tokenHash === where.tokenHash);
+      if (!token) return null;
+      const user = store.users.find((candidate) => candidate.id === token.userId)!;
+      return { ...token, user: { email: user.email } };
     }),
     update: vi.fn(
       async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {

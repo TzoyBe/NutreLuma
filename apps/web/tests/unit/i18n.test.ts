@@ -74,7 +74,7 @@ describe('t()', () => {
 
 describe('localeTag', () => {
   it('δίνει έγκυρα BCP-47 tags', () => {
-    expect(localeTag('el')).toBe('en-GB');
+    expect(localeTag('el')).toBe('el-GR');
     expect(localeTag('en')).toBe('en-GB');
   });
 });
@@ -82,8 +82,8 @@ describe('localeTag', () => {
 describe('browser locale detection', () => {
   it('supports Greek and English regional variants only', () => {
     expect(localeFromAcceptLanguage('en-US,en;q=0.8')).toBe('en');
-    expect(localeFromAcceptLanguage('el-GR,el;q=0.9,en;q=0.5')).toBe('en');
-    expect(localeFromAcceptLanguage('de-DE,de;q=0.9')).toBe('en');
+    expect(localeFromAcceptLanguage('el-GR,el;q=0.9,en;q=0.5')).toBe('el');
+    expect(localeFromAcceptLanguage('de-DE,de;q=0.9')).toBeNull();
   });
 
   it('respects quality ordering among supported languages', () => {

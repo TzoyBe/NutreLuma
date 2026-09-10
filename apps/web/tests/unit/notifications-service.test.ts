@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const sendPushNotificationForNotification = vi.hoisted(() => vi.fn(async () => undefined));
+
+vi.mock('@/server/services/push-notifications', () => ({
+  sendPushNotificationForNotification,
+}));
+
 interface Row {
   id: string;
   userId: string;

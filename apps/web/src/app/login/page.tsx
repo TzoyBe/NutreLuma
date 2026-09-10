@@ -1,10 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { LoginForm } from '@/components/forms/login-form';
-import { Card, CardContent } from '@/components/ui/card';
-import { LogoMark } from '@/components/brand/logo';
-import { JoybeeAttribution } from '@/components/brand/joybee';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import { PersonalUniverseAuthShell } from '@/components/auth/personal-universe-auth-shell';
 import { getT } from '@/i18n/locale';
 import { googleAuthConfigured } from '@/server/env';
 
@@ -32,30 +28,17 @@ export default async function LoginPage({
   const params = await searchParams;
 
   return (
-    <main id="main" className="container flex min-h-dvh max-w-md flex-col justify-center py-10">
-      <div className="mb-4 flex justify-end">
-        <LanguageSwitcher />
-      </div>
-      <Link href="/" aria-label={t('app.name')} className="mb-7 flex flex-col items-center gap-3">
-        <LogoMark className="h-16 w-16" title={t('app.name')} />
-        <span className="text-lg font-semibold tracking-tight">
-          Nutre<span className="text-primary">luma</span>
-        </span>
-      </Link>
-
-      <Card>
-        <CardContent>
-          <LoginForm
-            nextPath={params.next}
-            googleEnabled={googleAuthConfigured}
-            initialError={oauthErrorMessage(params.oauthError, t)}
-          />
-        </CardContent>
-      </Card>
-
-      <div className="mt-7 flex justify-center">
-        <JoybeeAttribution prefix={t('app.partOf')} />
-      </div>
-    </main>
+    <PersonalUniverseAuthShell
+      title={t('auth.loginTitle')}
+      subtitle="Continue your journey with a clearer view of your nutrition."
+      backLabel="Back to home"
+      partOfLabel={t('app.partOf')}
+    >
+      <LoginForm
+        nextPath={params.next}
+        googleEnabled={googleAuthConfigured}
+        initialError={oauthErrorMessage(params.oauthError, t)}
+      />
+    </PersonalUniverseAuthShell>
   );
 }

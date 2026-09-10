@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ZodError } from 'zod';
 
 interface WaterRow {
   id: string;
@@ -123,10 +122,10 @@ describe('water tracking service', () => {
   it('rejects unrealistic or invalid water entries before hitting Prisma', async () => {
     await expect(
       water.addWaterEntry('u1', { entryDate: '2026-02-31', volumeMl: 250 } as never),
-    ).rejects.toBeInstanceOf(ZodError);
+    ).rejects.toMatchObject({ name: 'ZodError', issues: expect.any(Array) });
     await expect(
       water.addWaterEntry('u1', { entryDate: '2026-08-07', volumeMl: 20001 } as never),
-    ).rejects.toBeInstanceOf(ZodError);
+    ).rejects.toMatchObject({ name: 'ZodError', issues: expect.any(Array) });
     expect(waterEntry.create).not.toHaveBeenCalled();
   });
 
@@ -194,7 +193,7 @@ describe('activity tracking service', () => {
   it('rejects entries without measurable activity before hitting Prisma', async () => {
     await expect(
       activity.addActivityEntry('u1', { entryDate: '2026-08-07', kind: 'OTHER' } as never),
-    ).rejects.toBeInstanceOf(ZodError);
+    ).rejects.toMatchObject({ name: 'ZodError', issues: expect.any(Array) });
     expect(activityEntry.create).not.toHaveBeenCalled();
   });
 

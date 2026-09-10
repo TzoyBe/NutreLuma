@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ZodError } from 'zod';
 
 type Status = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'MISSED' | 'CANCELLED' | 'PAUSED';
 type Type =
@@ -191,7 +190,7 @@ describe('createMilestone', () => {
         startDate: '2026-08-08',
         endDate: '2026-08-07',
       }),
-    ).rejects.toBeInstanceOf(ZodError);
+    ).rejects.toMatchObject({ name: 'ZodError', issues: expect.any(Array) });
 
     await expect(
       service.createMilestone('u1', {
@@ -200,7 +199,7 @@ describe('createMilestone', () => {
         targetValue: 5,
         startDate: '2026-08-07',
       }),
-    ).rejects.toBeInstanceOf(ZodError);
+    ).rejects.toMatchObject({ name: 'ZodError', issues: expect.any(Array) });
 
     expect(milestone.create).not.toHaveBeenCalled();
   });
