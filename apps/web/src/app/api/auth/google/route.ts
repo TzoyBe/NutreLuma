@@ -2,26 +2,21 @@ import { NextResponse } from 'next/server';
 import { buildGoogleAuthorizationUrl, sanitizeNextPath } from '@/server/auth/google';
 import { env, isProduction } from '@/server/env';
 import { logger } from '@/server/logger';
+import { resolveGoogleOauthOrigin } from '@/server/auth/google-origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function requestedOrigin(request: Request, url: URL): string {
-  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
-  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
-  const host = forwardedHost || request.headers.get('host') || url.host;
-  const protocol = forwardedProto || url.protocol.replace(':', '');
-  return `${protocol}://${host}`;
-}
-
 export const GET = async (request: Request) => {
+  const url = new URL(request.url);
+  const publicOrigin = resolveGoogleOauthOrigin(request, env.APP_URL, isProduction);
+  const nextPath = sanitizeNextPath(url.searchParams.get('next'), '/dashboard');
+  const appMode = url.searchParams.get('app') === 'capacitor' ? 'capacitor' : 'web';
+
   try {
-    const url = new URL(request.url);
-    const origin = requestedOrigin(request, url).replace(/\/+$/, '');
     const canonicalOrigin = env.APP_URL.replace(/\/+$/, '');
-    const nextPath = sanitizeNextPath(url.searchParams.get('next'), '/dashboard');
-    const appMode = url.searchParams.get('app') === 'capacitor' ? 'capacitor' : 'web';
-    if (isProduction && origin !== canonicalOrigin) {
+    const requestOrigin = resolveGoogleOauthOrigin(request, env.APP_URL, false);
+    if (isProduction && requestOrigin !== canonicalOrigin) {
       const canonicalUrl = new URL('/api/auth/google', canonicalOrigin);
       if (nextPath !== '/dashboard') canonicalUrl.searchParams.set('next', nextPath);
       if (appMode === 'capacitor') canonicalUrl.searchParams.set('app', 'capacitor');
@@ -29,7 +24,7 @@ export const GET = async (request: Request) => {
     }
 
     const destination = await buildGoogleAuthorizationUrl(
-      isProduction ? canonicalOrigin : origin,
+      publicOrigin,
       nextPath,
       appMode,
     );
@@ -38,6 +33,9 @@ export const GET = async (request: Request) => {
     logger.warn('google_auth_start_failed', {
       message: error instanceof Error ? error.message : 'unknown',
     });
-    return NextResponse.redirect(new URL('/login?oauthError=google_unavailable', request.url));
+    if (appMode === 'capacitor') {
+      return NextResponse.redirect('nutreluma://auth/callback?error=google_unavailable');
+    }
+    return NextResponse.redirect(new URL('/login?oauthError=google_unavailable', publicOrigin));
   }
 };

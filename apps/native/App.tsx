@@ -26,6 +26,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { api, apiErrorMessage, type DashboardResult, type MobileUser } from './src/api';
+import { parseGoogleAuthCallback } from './src/google-auth';
 import type {
   AppNotification,
   BillingOverviewResult,
@@ -692,17 +693,17 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
   const float = useRef(new Animated.Value(0)).current;
 
   async function completeGoogleUrl(url: string) {
-    let handoffToken = '';
-    try {
-      handoffToken = new URL(url).searchParams.get('token') ?? '';
-    } catch {
-      handoffToken = url.match(/[?&]token=([^&]+)/)?.[1] ?? '';
+    const callback = parseGoogleAuthCallback(url);
+    if (callback.error) {
+      setGoogleLoading(false);
+      setMessage(callback.error);
+      return;
     }
-    if (!handoffToken) return;
+    if (!callback.token) return;
     setGoogleLoading(true);
     setMessage(null);
     try {
-      const result = await api.completeGoogleMobileAuth(decodeURIComponent(handoffToken));
+      const result = await api.completeGoogleMobileAuth(callback.token);
       onAuthenticated({
         token: result.token,
         user: result.user,

@@ -6,24 +6,16 @@ import { env, isProduction } from '@/server/env';
 import { logger } from '@/server/logger';
 import { findOrCreateUserFromGoogle } from '@/server/services/user';
 import { assertAccountActive, recordAuditEvent } from '@/server/services/audit';
+import { resolveGoogleOauthOrigin } from '@/server/auth/google-origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const CAPACITOR_RETURN_SCHEME = 'nutreluma://auth/callback';
 
-function requestedOrigin(request: Request, url: URL): string {
-  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
-  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
-  const host = forwardedHost || request.headers.get('host') || url.host;
-  const protocol = forwardedProto || url.protocol.replace(':', '');
-  return `${protocol}://${host}`;
-}
-
 export const GET = async (request: Request) => {
   const callbackUrl = new URL(request.url);
-  const origin = requestedOrigin(request, callbackUrl).replace(/\/+$/, '');
-  const publicOrigin = isProduction ? env.APP_URL.replace(/\/+$/, '') : origin;
+  const publicOrigin = resolveGoogleOauthOrigin(request, env.APP_URL, isProduction);
 
   try {
     const remoteError = callbackUrl.searchParams.get('error');
