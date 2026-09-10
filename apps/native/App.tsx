@@ -22,6 +22,8 @@ import {
   Text,
   TextInput,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { api, apiErrorMessage, type DashboardResult, type MobileUser } from './src/api';
 import type {
@@ -622,6 +624,63 @@ function ChoiceRow<T extends string>({
   );
 }
 
+function UniverseMealNode({
+  emoji,
+  label,
+  style,
+}: {
+  emoji: string;
+  label: string;
+  style: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={[styles.universeMealNode, style]}>
+      <Text style={styles.universeMealEmoji}>{emoji}</Text>
+      <Text style={styles.universeMealLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function PersonalUniverseStage() {
+  return (
+    <View
+      style={styles.universeStage}
+      accessible
+      accessibilityLabel="Your meals, goals, insights and progress connected around your personal nutrition pattern"
+    >
+      <View style={styles.universeGlow} />
+      <View style={[styles.universeOrbit, styles.universeOrbitOuter]} />
+      <View style={[styles.universeOrbit, styles.universeOrbitInner]} />
+
+      <View style={[styles.universeInsight, styles.universeInsightMeals]}>
+        <Sparkles size={13} color={colors.cyan} />
+        <Text style={styles.universeInsightText}>Meals</Text>
+      </View>
+      <View style={[styles.universeInsight, styles.universeInsightGoals]}>
+        <Target size={13} color={colors.accent} />
+        <Text style={styles.universeInsightText}>Goals</Text>
+      </View>
+
+      <GlassCard radius={999} intensity={34} style={styles.universeCore}>
+        <LogoMark size={48} />
+        <Text style={styles.universeCoreTitle}>Your pattern is{`\n`}getting clearer</Text>
+        <View style={styles.universeLearningBadge}>
+          <View style={styles.universeLearningDot} />
+          <Text style={styles.universeLearningText}>Learning with you</Text>
+        </View>
+      </GlassCard>
+
+      <UniverseMealNode emoji="🥗" label="Fresh" style={styles.universeMealOne} />
+      <UniverseMealNode emoji="🫐" label="Balanced" style={styles.universeMealTwo} />
+      <UniverseMealNode emoji="🥑" label="Personal" style={styles.universeMealThree} />
+
+      <View style={[styles.universeParticle, styles.universeParticleBlue]} />
+      <View style={[styles.universeParticle, styles.universeParticleGold]} />
+      <View style={[styles.universeParticle, styles.universeParticleViolet]} />
+    </View>
+  );
+}
+
 function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) => void }) {
   const [mode, setMode] = useState<AuthMode>('login');
   const [displayName, setDisplayName] = useState('');
@@ -727,7 +786,12 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.authContent}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.brandRow}>
           <LogoMark />
           <Text style={styles.brandText}>
@@ -735,28 +799,37 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
           </Text>
         </View>
 
-        <Animated.View style={[styles.heroPhone, { transform: [{ translateY }] }]}>
-          <View style={styles.heroPhoneTop}>
-            <Text style={styles.miniMuted}>Today</Text>
-            <Text style={styles.heroPhoneTitle}>Lunch scan</Text>
-          </View>
-          <View style={styles.scanPreview}>
-            <View style={styles.scanLine} />
-            <Text style={styles.scanTitle}>AI estimate ready</Text>
-            <Text style={styles.scanCopy}>Calories, macros and notes grouped.</Text>
-          </View>
-          <View style={styles.phoneMetrics}>
-            <MetricCard value="612" label="kcal" />
-            <MetricCard value="38g" label="protein" />
-            <MetricCard value="52g" label="carbs" />
-          </View>
+        <View style={styles.authIntro}>
+          <Text style={styles.authEyebrow}>A more personal you</Text>
+          <Text style={styles.authHeroTitle}>Built around your patterns.</Text>
+          <Text style={styles.authHeroCopy}>
+            Meals, goals and progress connect into guidance that becomes more personal over time.
+          </Text>
+        </View>
+
+        <Animated.View style={[styles.universeFloat, { transform: [{ translateY }] }]}>
+          <PersonalUniverseStage />
         </Animated.View>
 
         <GlassCard style={styles.authPanel}>
-          <Text style={styles.kicker}>Smart nutrition companion</Text>
-          <Text style={styles.title}>See your food differently.</Text>
+          <Text style={styles.kicker}>Nutreluma</Text>
+          <Text style={styles.title}>
+            {mode === 'register'
+              ? 'Create your universe.'
+              : mode === 'forgot'
+                ? 'Reset your password.'
+                : mode === 'verify'
+                  ? 'Verify your email.'
+                  : 'Welcome back.'}
+          </Text>
           <Text style={styles.subtitle}>
-            Log meals, follow your day and keep progress synced across web, iOS and Android.
+            {mode === 'register'
+              ? 'Start with one meal and let your personal picture become clearer.'
+              : mode === 'forgot'
+                ? 'We will send a secure reset link to your inbox.'
+                : mode === 'verify'
+                  ? 'Request a fresh verification link for your account.'
+                  : 'Continue where your meals, goals and progress left off.'}
           </Text>
 
           <View style={styles.segmented}>
@@ -825,6 +898,22 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
             onPress={submit}
             disabled={loading}
           />
+
+          {mode === 'login' || mode === 'register' ? (
+            <>
+              <View style={styles.authDivider}>
+                <View style={styles.authDividerLine} />
+                <Text style={styles.authDividerText}>or</Text>
+                <View style={styles.authDividerLine} />
+              </View>
+              <PillButton
+                label={googleLoading ? 'Opening Google...' : 'Continue with Google'}
+                onPress={() => void startGoogleLogin()}
+                variant="ghost"
+                disabled={googleLoading}
+              />
+            </>
+          ) : null}
 
           <View style={styles.actionRow}>
             <Pressable onPress={() => setMode('forgot')} style={styles.actionButton}>
@@ -6123,7 +6212,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 16,
     paddingTop: 28,
-    gap: 18,
+    paddingBottom: 40,
+    gap: 16,
   },
   brandRow: {
     flexDirection: 'row',
@@ -6184,70 +6274,196 @@ const styles = StyleSheet.create({
   brandAccent: {
     color: colors.primary,
   },
-  heroPhone: {
+  authIntro: {
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  authEyebrow: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2.2,
+    textTransform: 'uppercase',
+  },
+  authHeroTitle: {
+    color: colors.text,
+    maxWidth: 350,
+    textAlign: 'center',
+    fontSize: 34,
+    lineHeight: 37,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+  },
+  authHeroCopy: {
+    color: colors.muted,
+    maxWidth: 350,
+    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  universeFloat: {
     alignSelf: 'center',
-    width: '88%',
-    maxWidth: 340,
-    borderRadius: 34,
-    padding: 12,
-    backgroundColor: 'rgba(16, 23, 43, 0.78)',
+    width: '100%',
+    maxWidth: 390,
+  },
+  universeStage: {
+    height: 286,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  universeGlow: {
+    position: 'absolute',
+    width: 242,
+    height: 242,
+    borderRadius: 121,
+    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.5,
+    shadowRadius: 42,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
+  },
+  universeOrbit: {
+    position: 'absolute',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(191, 210, 248, 0.18)',
+  },
+  universeOrbitOuter: {
+    width: 330,
+    height: 224,
+    transform: [{ rotate: '-8deg' }],
+  },
+  universeOrbitInner: {
+    width: 252,
+    height: 172,
+    borderColor: 'rgba(124, 58, 237, 0.24)',
+    transform: [{ rotate: '18deg' }],
+  },
+  universeCore: {
+    width: 166,
+    height: 166,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.52,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
+  },
+  universeCoreTitle: {
+    color: colors.text,
+    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 19,
+    fontWeight: '900',
+  },
+  universeLearningBadge: {
+    minHeight: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(37, 99, 235, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 111, 245, 0.3)',
+  },
+  universeLearningDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.cyan,
+  },
+  universeLearningText: {
+    color: colors.cyan,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  universeMealNode: {
+    position: 'absolute',
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(21, 29, 53, 0.92)',
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.45,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 8,
+    shadowColor: '#05070F',
+    shadowOpacity: 0.65,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
-  heroPhoneTop: {
-    borderRadius: 22,
-    padding: 14,
-    backgroundColor: 'rgba(191, 210, 248, 0.18)',
+  universeMealEmoji: {
+    fontSize: 25,
   },
-  miniMuted: {
+  universeMealLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  heroPhoneTitle: {
-    color: colors.text,
-    fontSize: 18,
+    fontSize: 8,
     fontWeight: '800',
-    marginTop: 2,
   },
-  scanPreview: {
-    marginTop: 12,
-    minHeight: 120,
-    borderRadius: 22,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-    padding: 14,
-    backgroundColor: colors.accentSoft,
+  universeMealOne: {
+    left: 8,
+    top: 64,
+  },
+  universeMealTwo: {
+    right: 5,
+    top: 38,
+  },
+  universeMealThree: {
+    right: 24,
+    bottom: 20,
+  },
+  universeInsight: {
+    position: 'absolute',
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(17, 24, 46, 0.88)',
     borderWidth: 1,
     borderColor: colors.border,
   },
-  scanLine: {
+  universeInsightMeals: {
+    left: 25,
+    bottom: 40,
+  },
+  universeInsightGoals: {
+    right: 10,
+    top: 115,
+  },
+  universeInsightText: {
+    color: colors.text,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  universeParticle: {
     position: 'absolute',
-    top: 32,
-    left: 18,
-    right: 18,
-    height: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  universeParticleBlue: {
+    left: 94,
+    top: 26,
+    backgroundColor: colors.blueBright,
+  },
+  universeParticleGold: {
+    left: 67,
+    bottom: 18,
     backgroundColor: colors.accent,
   },
-  scanTitle: {
-    color: colors.text,
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  scanCopy: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  phoneMetrics: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+  universeParticleViolet: {
+    right: 82,
+    bottom: 56,
+    backgroundColor: colors.purple,
   },
   metricCard: {
     flex: 1,
@@ -6274,6 +6490,21 @@ const styles = StyleSheet.create({
   authPanel: {
     padding: 18,
     gap: 12,
+  },
+  authDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  authDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  authDividerText: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
   },
   categoryCard: {
     padding: 18,
