@@ -220,6 +220,10 @@ export async function listMilestones(
   return rows.map(toView);
 }
 
+export async function countActiveMilestones(userId: string): Promise<number> {
+  return prisma.milestone.count({ where: { userId, status: 'ACTIVE' } });
+}
+
 export async function getMilestoneForUser(userId: string, milestoneId: string): Promise<MilestoneView> {
   const row = await prisma.milestone.findFirst({ where: { id: milestoneId, userId } });
   if (!row) throw new ApiError('NOT_FOUND', 'Milestone not found.');
@@ -365,4 +369,3 @@ export async function suggestMilestones(
 
   return activeCount > 0 ? suggestions.slice(0, 3) : suggestions;
 }
-

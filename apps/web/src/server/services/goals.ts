@@ -197,3 +197,7 @@ export async function listGoalHistory(userId: string, limit = 50): Promise<GoalH
     waterMl: row.waterMl,
   }));
 }
+
+export async function countGoalHistory(userId: string): Promise<number> {
+  return prisma.nutritionGoal.count({ where: { userId } });
+}

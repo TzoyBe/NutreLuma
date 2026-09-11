@@ -4,10 +4,15 @@ import { redirect } from 'next/navigation';
 import { Scale, Trophy } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
-import { getGoalForDay, listGoalHistory, suggestGoals } from '@/server/services/goals';
+import {
+  countGoalHistory,
+  getGoalForDay,
+  listGoalHistory,
+  suggestGoals,
+} from '@/server/services/goals';
 import { listAchievements } from '@/server/services/achievements';
 import { listBadges } from '@/server/services/badges';
-import { listMilestones } from '@/server/services/milestones';
+import { countActiveMilestones } from '@/server/services/milestones';
 import { GoalsPanel } from '@/components/goals/goals-panel';
 import { GoalsUniverse } from '@/components/goals/goals-universe';
 import { buildGoalUniverseModel } from '@/components/goals/goals-universe-model';
@@ -31,14 +36,16 @@ export default async function GoalsPage() {
   if (!profile) redirect('/onboarding');
 
   const today = todayISO(profile.timezone);
-  const [goal, suggestion, history, achievements, badges, milestones] = await Promise.all([
-    getGoalForDay(user.id, today),
-    suggestGoals(user.id),
-    listGoalHistory(user.id),
-    listAchievements(user.id),
-    listBadges(user.id),
-    listMilestones(user.id, { limit: 100 }),
-  ]);
+  const [goal, suggestion, history, achievements, badges, activeMilestoneCount, historyCount] =
+    await Promise.all([
+      getGoalForDay(user.id, today),
+      suggestGoals(user.id),
+      listGoalHistory(user.id),
+      listAchievements(user.id),
+      listBadges(user.id),
+      countActiveMilestones(user.id),
+      countGoalHistory(user.id),
+    ]);
 
   const universeModel = buildGoalUniverseModel({
     calorieTarget: goal.calorieTarget,
@@ -48,15 +55,15 @@ export default async function GoalsPage() {
     achievementsUnlocked: achievements.filter((achievement) => achievement.unlocked).length,
     achievementsTotal: achievements.length,
     badgesUnlocked: badges.filter((badge) => badge.unlocked).length,
-    activeMilestones: milestones.filter((milestone) => milestone.status === 'ACTIVE').length,
-    historyCount: history.length,
+    activeMilestones: activeMilestoneCount,
+    historyCount,
   });
 
   const journeyStats = [
-    { label: 'Achievements', value: universeModel.journey.achievements },
-    { label: 'Badges', value: universeModel.journey.badges },
-    { label: 'Active milestones', value: universeModel.journey.activeMilestones },
-    { label: 'Goal history', value: universeModel.journey.history },
+    { label: t('achievements.achievements'), value: universeModel.journey.achievements },
+    { label: t('achievements.badges'), value: universeModel.journey.badges },
+    { label: t('achievements.activeGoals'), value: universeModel.journey.activeMilestones },
+    { label: t('goals.history'), value: universeModel.journey.history },
   ];
 
   return (
@@ -66,7 +73,15 @@ export default async function GoalsPage() {
         <p className="text-sm text-muted-foreground">{t('goals.subtitle')}</p>
       </div>
 
-      <GoalsUniverse model={universeModel} />
+      <GoalsUniverse
+        model={universeModel}
+        labels={{
+          title: t('goals.title'),
+          protein: t('goals.protein'),
+          carbohydrate: t('goals.carbohydrate'),
+          fat: t('goals.fat'),
+        }}
+      />
 
       <Card className="goals-journey-strip">
         <CardContent className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

@@ -206,6 +206,18 @@ describe('createMilestone', () => {
 });
 
 describe('milestone CRUD ownership', () => {
+  it('counts every active milestone for the requested user without a list cap', async () => {
+    store.milestones.push(
+      ...Array.from({ length: 101 }, (_, index) =>
+        row({ id: `active-${index}`, userId: 'u1', status: 'ACTIVE' }),
+      ),
+      row({ id: 'paused', userId: 'u1', status: 'PAUSED' }),
+      row({ id: 'other-user', userId: 'u2', status: 'ACTIVE' }),
+    );
+
+    await expect(service.countActiveMilestones('u1')).resolves.toBe(101);
+  });
+
   it('lists only milestones for the requested user and optional status', async () => {
     store.milestones.push(
       row({ id: 'm1', userId: 'u1', status: 'ACTIVE' }),

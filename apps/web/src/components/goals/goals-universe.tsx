@@ -2,7 +2,20 @@ import type * as React from 'react';
 import { Card } from '@/components/ui/card';
 import type { GoalUniverseModel } from './goals-universe-model';
 
-export function GoalsUniverse({ model }: { model: GoalUniverseModel }): React.ReactElement {
+type GoalsUniverseLabels = {
+  title: string;
+  protein: string;
+  carbohydrate: string;
+  fat: string;
+};
+
+export function GoalsUniverse({
+  model,
+  labels,
+}: {
+  model: GoalUniverseModel;
+  labels: GoalsUniverseLabels;
+}): React.ReactElement {
   return (
     <Card className="goals-universe-card overflow-hidden">
       <section
@@ -10,7 +23,7 @@ export function GoalsUniverse({ model }: { model: GoalUniverseModel }): React.Re
         aria-labelledby="goals-universe-title"
       >
         <h2 id="goals-universe-title" className="sr-only">
-          Daily nutrition targets
+          {labels.title}
         </h2>
         <div className="universe-app-orbit" aria-hidden="true" />
         <div className="goals-universe-center">
@@ -23,7 +36,7 @@ export function GoalsUniverse({ model }: { model: GoalUniverseModel }): React.Re
             className={`goals-universe-macro goals-universe-macro-${macro.key}`}
             data-tone={macro.tone}
           >
-            <span className="goals-universe-macro-label">{macro.label}</span>
+            <span className="goals-universe-macro-label">{labels[macro.key]}</span>
             <span className="goals-universe-macro-value">
               {macro.value ?? '--'}
               <span>{macro.unit}</span>
