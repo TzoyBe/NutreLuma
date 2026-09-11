@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Animated,
   Alert,
+  Easing,
   Image,
   KeyboardAvoidingView,
   Linking,
@@ -71,7 +72,7 @@ import {
   UniverseReveal,
   useReducedMotionPreference,
 } from './src/personal-universe-ui';
-import { buildNativeGoalUniverse } from './src/personal-universe-model';
+import { buildNativeGoalUniverse, buildNativeProfileUniverse } from './src/personal-universe-model';
 import {
   filterMilestoneHistory,
   partitionMilestones,
@@ -4495,16 +4496,67 @@ function SegmentedTabs({
   active: ProfileTab;
   onChange: (tab: ProfileTab) => void;
 }) {
+  const reducedMotion = useReducedMotionPreference();
+  const progressRefs = useRef<Record<ProfileTab, Animated.Value>>(
+    Object.fromEntries(
+      PROFILE_TABS.map((tab) => [tab.key, new Animated.Value(tab.key === active ? 1 : 0)]),
+    ) as Record<ProfileTab, Animated.Value>,
+  ).current;
+
+  useEffect(() => {
+    const animations = PROFILE_TABS.map((tab) => {
+      const toValue = tab.key === active ? 1 : 0;
+      if (reducedMotion) {
+        progressRefs[tab.key].setValue(toValue);
+        return null;
+      }
+      return Animated.timing(progressRefs[tab.key], {
+        toValue,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      });
+    }).filter((animation): animation is Animated.CompositeAnimation => animation !== null);
+
+    if (!animations.length) return;
+    const group = Animated.parallel(animations);
+    group.start();
+    return () => group.stop();
+  }, [active, progressRefs, reducedMotion]);
+
   return (
-    <View style={styles.segmented}>
+    <View style={styles.segmented} accessibilityRole="tablist">
       {PROFILE_TABS.map((tab) => {
         const on = tab.key === active;
+        const progress = progressRefs[tab.key];
         return (
           <Pressable
             key={tab.key}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: on }}
             onPress={() => onChange(tab.key)}
-            style={[styles.segment, on ? styles.segmentActive : null]}
+            style={styles.segment}
           >
+            <Animated.View
+              pointerEvents="none"
+              accessible={false}
+              importantForAccessibility="no-hide-descendants"
+              style={[
+                styles.segmentCapsule,
+                {
+                  opacity: progress,
+                  transform: [
+                    {
+                      scale: progress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.86, 1],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
             <Text style={[styles.segmentText, on ? styles.segmentTextActive : null]}>{tab.label}</Text>
           </Pressable>
         );
@@ -4534,6 +4586,7 @@ function ProfileOverviewScreen({
   const [intelligence, setIntelligence] = useState<IntelligenceResult | null>(null);
   const [savingLearning, setSavingLearning] = useState(false);
   const [profileTab, setProfileTab] = useState<ProfileTab>('profile');
+  const [editingProfile, setEditingProfile] = useState(false);
   const [profileBirthDate, setProfileBirthDate] = useState('1990-01-01');
   const [profileGender, setProfileGender] = useState('UNDISCLOSED');
   const [profileHeight, setProfileHeight] = useState('');
@@ -4782,6 +4835,7 @@ function ProfileOverviewScreen({
         timezone: profileTimezone,
       });
       hydrateProfileForm(result.profile);
+      setEditingProfile(false);
       setMessage('Health profile saved.');
     } catch (error) {
       setMessage(apiErrorMessage(error));
@@ -4975,6 +5029,36 @@ function ProfileOverviewScreen({
   const canCancelBilling = Boolean(billingAccess.managedOnWeb && billing?.status === 'ACTIVE');
   const canOfferNativePurchase = billingAccess.canPurchase;
   const canOfferRestore = billingAccess.canPurchase || billingAccess.managedByRevenueCat || billingAccess.needsVerification;
+  const profileAge = computeAge(profileBirthDate);
+  const profileBmi = computeBmi(profileHeight, profileCurrentWeight);
+  const profileUniverseModel = useMemo(
+    () =>
+      buildNativeProfileUniverse({
+        displayName: session.user.displayName,
+        email: session.user.email,
+        dailyTarget:
+          healthProfile?.effectiveDailyCalorieTarget ?? healthProfile?.suggestedDailyCalorieTarget ?? null,
+        age: profileAge,
+        bmi: profileBmi ? profileBmi.value : null,
+        currentWeightKg: profileCurrentWeight.trim() ? Number(profileCurrentWeight) : null,
+        targetWeightKg: profileTargetWeight.trim() ? Number(profileTargetWeight) : null,
+        activityLevel: profileActivity,
+        goal: profileGoal,
+        planStatus: billingAccess.active ? 'Pro' : 'Free',
+      }),
+    [
+      session.user.displayName,
+      session.user.email,
+      healthProfile,
+      profileAge,
+      profileBmi,
+      profileCurrentWeight,
+      profileTargetWeight,
+      profileActivity,
+      profileGoal,
+      billingAccess.active,
+    ],
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.dashboardContent}>
@@ -4988,117 +5072,119 @@ function ProfileOverviewScreen({
         </View>
       </View>
 
-      <GlassCard style={styles.profileCard}>
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>
-            {session.user.displayName.trim().slice(0, 1).toUpperCase() || 'N'}
-          </Text>
+      <UniverseReveal index={0}>
+        <View style={styles.profileHeroStack}>
+          <UniverseHero
+            eyebrow="Personal universe"
+            title={profileUniverseModel.displayName}
+            subtitle={profileUniverseModel.email}
+            accessibilityLabel={`${profileUniverseModel.displayName}. Daily target ${profileUniverseModel.dailyTarget} kcal.`}
+            center={(
+              <View style={styles.profileHeroCenterCopy}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarText}>{profileUniverseModel.initials}</Text>
+                </View>
+                <Text selectable style={styles.goalHeroCalories}>
+                  {profileUniverseModel.dailyTarget}
+                </Text>
+                <Text style={styles.goalHeroUnit}>kcal / day</Text>
+              </View>
+            )}
+            satellites={profileUniverseModel.healthSummary.map((item) => (
+              <UniverseMetric
+                key={item.key}
+                label={item.label}
+                value={item.value}
+                unit={item.unit}
+                tone={item.tone}
+              />
+            ))}
+          />
+          <GlassCard style={styles.goalPrimaryActions}>
+            <View style={styles.actionRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={editingProfile ? 'Close profile editor' : 'Edit profile'}
+                accessibilityState={{ expanded: editingProfile }}
+                onPress={() => setEditingProfile((value) => !value)}
+                style={styles.actionButton}
+              >
+                <Text style={styles.actionText}>{editingProfile ? 'Close editor' : 'Edit profile'}</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.goalActionHint}>
+              {healthProfile?.suggestedDailyCalorieTarget
+                ? `Suggested target: ${healthProfile.suggestedDailyCalorieTarget} kcal.`
+                : 'Open the editor to fine-tune your identity and health details.'}
+            </Text>
+          </GlassCard>
         </View>
-        <View style={styles.profileCopy}>
-          <Text style={styles.profileName}>{session.user.displayName}</Text>
-          <Text style={styles.metricLabel}>{session.user.email}</Text>
-        </View>
-      </GlassCard>
+      </UniverseReveal>
 
       <SegmentedTabs active={profileTab} onChange={setProfileTab} />
 
       {profileTab === 'profile' ? (
         <>
-      <GlassCard style={styles.authPanel}>
-        <View style={styles.healthHero}>
-          <View style={styles.healthHeroMain}>
-            <Text style={styles.kicker}>Daily target</Text>
-            <View style={styles.healthHeroValueRow}>
-              <Text style={styles.calories}>
-                {healthProfile?.effectiveDailyCalorieTarget ??
-                  healthProfile?.suggestedDailyCalorieTarget ??
-                  '--'}
-              </Text>
-              <Text style={styles.healthHeroUnit}>kcal</Text>
-            </View>
-            <Text style={styles.noticeCopy}>
-              {healthProfile?.effectiveDailyCalorieTarget
-                ? 'Based on your profile'
-                : healthProfile?.suggestedDailyCalorieTarget
-                  ? 'Suggested from your profile'
-                  : 'Fill in your profile to get a target'}
-            </Text>
+      {editingProfile ? (
+        <UniverseReveal index={1}>
+          <View style={styles.goalSection}>
+            <CategorySection icon={<UserCircle2 size={18} color={colors.primary} />} title="About you">
+              <Field label="Birth date" value={profileBirthDate} onChangeText={setProfileBirthDate} />
+              <ChoiceRow label="Gender" value={profileGender} options={genders} onChange={setProfileGender} />
+            </CategorySection>
+
+            <CategorySection icon={<Scale size={18} color={colors.primary} />} title="Body">
+              <View style={styles.twoColumn}>
+                <Field label="Height cm" value={profileHeight} onChangeText={setProfileHeight} keyboardType="numeric" />
+                <Field label="Current kg" value={profileCurrentWeight} onChangeText={setProfileCurrentWeight} keyboardType="numeric" />
+              </View>
+              <Field label="Target kg" value={profileTargetWeight} onChangeText={setProfileTargetWeight} keyboardType="numeric" />
+            </CategorySection>
+
+            <CategorySection icon={<Target size={18} color={colors.primary} />} title="Activity & goal">
+              <ChoiceRow label="Activity" value={profileActivity} options={activityLevels} onChange={setProfileActivity} />
+              <ChoiceRow label="Goal" value={profileGoal} options={goals} onChange={setProfileGoal} />
+            </CategorySection>
+
+            <CategorySection icon={<Settings size={18} color={colors.primary} />} title="Preferences">
+              <Field label="Daily calories (optional)" value={profileCalories} onChangeText={setProfileCalories} keyboardType="numeric" />
+              <Field label="Timezone" value={profileTimezone} onChangeText={setProfileTimezone} autoCapitalize="none" />
+              {healthProfile?.suggestedDailyCalorieTarget ? (
+                <Text style={styles.noticeCopy}>Suggested target: {healthProfile.suggestedDailyCalorieTarget} kcal</Text>
+              ) : null}
+            </CategorySection>
+
+            <PillButton label={savingProfile ? 'Saving...' : 'Save health profile'} onPress={saveHealthProfile} disabled={savingProfile} />
           </View>
-          <View style={styles.healthChips}>
-            {(() => {
-              const age = computeAge(profileBirthDate);
-              return age !== null ? (
-                <View style={styles.healthChip}>
-                  <Text style={styles.healthChipValue}>{age}</Text>
-                  <Text style={styles.healthChipLabel}>years</Text>
-                </View>
-              ) : null;
-            })()}
-            {(() => {
-              const bmi = computeBmi(profileHeight, profileCurrentWeight);
-              return bmi ? (
-                <View style={styles.healthChip}>
-                  <Text style={styles.healthChipValue}>{bmi.value}</Text>
-                  <Text style={styles.healthChipLabel}>BMI · {bmi.label}</Text>
-                </View>
-              ) : null;
-            })()}
+        </UniverseReveal>
+      ) : null}
+
+      <UniverseReveal index={2}>
+        <CategorySection icon={<Droplet size={18} color={colors.primary} />} title="Daily targets">
+          <Text style={styles.noticeCopy}>
+            Set your daily water and steps goals — shown on the dashboard rings.
+          </Text>
+          <View style={styles.twoColumn}>
+            <Field
+              label="Water target (ml)"
+              value={targetWaterInput}
+              onChangeText={setTargetWaterInput}
+              keyboardType="numeric"
+            />
+            <Field
+              label="Steps target"
+              value={targetStepsInput}
+              onChangeText={setTargetStepsInput}
+              keyboardType="numeric"
+            />
           </View>
-        </View>
-      </GlassCard>
-
-      <CategorySection icon={<UserCircle2 size={18} color={colors.primary} />} title="About you">
-        <Field label="Birth date" value={profileBirthDate} onChangeText={setProfileBirthDate} />
-        <ChoiceRow label="Gender" value={profileGender} options={genders} onChange={setProfileGender} />
-      </CategorySection>
-
-      <CategorySection icon={<Scale size={18} color={colors.primary} />} title="Body">
-        <View style={styles.twoColumn}>
-          <Field label="Height cm" value={profileHeight} onChangeText={setProfileHeight} keyboardType="numeric" />
-          <Field label="Current kg" value={profileCurrentWeight} onChangeText={setProfileCurrentWeight} keyboardType="numeric" />
-        </View>
-        <Field label="Target kg" value={profileTargetWeight} onChangeText={setProfileTargetWeight} keyboardType="numeric" />
-      </CategorySection>
-
-      <CategorySection icon={<Target size={18} color={colors.primary} />} title="Activity & goal">
-        <ChoiceRow label="Activity" value={profileActivity} options={activityLevels} onChange={setProfileActivity} />
-        <ChoiceRow label="Goal" value={profileGoal} options={goals} onChange={setProfileGoal} />
-      </CategorySection>
-
-      <CategorySection icon={<Settings size={18} color={colors.primary} />} title="Preferences">
-        <Field label="Daily calories (optional)" value={profileCalories} onChangeText={setProfileCalories} keyboardType="numeric" />
-        <Field label="Timezone" value={profileTimezone} onChangeText={setProfileTimezone} autoCapitalize="none" />
-        {healthProfile?.suggestedDailyCalorieTarget ? (
-          <Text style={styles.noticeCopy}>Suggested target: {healthProfile.suggestedDailyCalorieTarget} kcal</Text>
-        ) : null}
-      </CategorySection>
-
-      <PillButton label={savingProfile ? 'Saving...' : 'Save health profile'} onPress={saveHealthProfile} disabled={savingProfile} />
-
-      <CategorySection icon={<Droplet size={18} color={colors.primary} />} title="Daily targets">
-        <Text style={styles.noticeCopy}>
-          Set your daily water and steps goals — shown on the dashboard rings.
-        </Text>
-        <View style={styles.twoColumn}>
-          <Field
-            label="Water target (ml)"
-            value={targetWaterInput}
-            onChangeText={setTargetWaterInput}
-            keyboardType="numeric"
+          <PillButton
+            label={savingActivityTargets ? 'Saving...' : 'Save daily targets'}
+            onPress={saveActivityTargets}
+            disabled={savingActivityTargets}
           />
-          <Field
-            label="Steps target"
-            value={targetStepsInput}
-            onChangeText={setTargetStepsInput}
-            keyboardType="numeric"
-          />
-        </View>
-        <PillButton
-          label={savingActivityTargets ? 'Saving...' : 'Save daily targets'}
-          onPress={saveActivityTargets}
-          disabled={savingActivityTargets}
-        />
-      </CategorySection>
+        </CategorySection>
+      </UniverseReveal>
         </>
       ) : null}
 
@@ -6611,12 +6697,21 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
   },
   segmentActive: {
+    backgroundColor: colors.primary,
+  },
+  segmentCapsule: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: 999,
     backgroundColor: colors.primary,
   },
   segmentText: {
@@ -7389,6 +7484,13 @@ const styles = StyleSheet.create({
   },
   goalHeroStack: {
     gap: 12,
+  },
+  profileHeroStack: {
+    gap: 12,
+  },
+  profileHeroCenterCopy: {
+    alignItems: 'center',
+    gap: 4,
   },
   goalHeroCenterCopy: {
     alignItems: 'center',
