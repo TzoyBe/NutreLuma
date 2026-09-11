@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Camera, PencilLine, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { requirePageUser } from '@/server/auth/guards';
 import { getProfile, getUserTimezone } from '@/server/services/profile';
 import { getFavorites, getFrequentMeals, getRecentMeals } from '@/server/services/meal-history';
+import { AddMealHero } from '@/components/meal/add-meal-hero';
 import { QuickPickSection } from '@/components/meal/quick-pick-section';
 import { HistorySearch } from '@/components/meal/history-search';
 import { getT } from '@/i18n/locale';
@@ -40,22 +41,13 @@ export default async function AddMealPage() {
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" /> {t('common.back')}
       </Link>
-      <h1 className="text-xl font-semibold tracking-tight">{t('addMeal.title')}</h1>
+      <h1 className="sr-only">{t('addMeal.title')}</h1>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/meals/new"
-          className="flex h-14 items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground"
-        >
-          <Camera className="h-5 w-5" aria-hidden="true" /> {t('addMeal.photoOption')}
-        </Link>
-        <Link
-          href="/meals/manual"
-          className="flex h-14 items-center justify-center gap-2 rounded-xl border border-border bg-card font-semibold"
-        >
-          <PencilLine className="h-5 w-5" aria-hidden="true" /> {t('addMeal.manualOption')}
-        </Link>
-      </div>
+      <AddMealHero
+        title={t('addMeal.heroTitle')}
+        subtitle={t('addMeal.heroSubtitle')}
+        manualLabel={t('addMeal.manualOption')}
+      />
 
       <QuickPickSection favorites={favorites} frequent={[]} recent={[]} mode="favorites" />
 
