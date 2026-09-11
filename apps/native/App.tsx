@@ -66,6 +66,13 @@ import { WelcomeTour } from './src/welcome-tour';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
 import { billingAccessView } from './src/billing-state';
 import {
+  UniverseActionTile,
+  UniverseHero,
+  UniverseMetric,
+  UniverseReveal,
+  useReducedMotionPreference,
+} from './src/personal-universe-ui';
+import {
   filterMilestoneHistory,
   partitionMilestones,
   type MilestoneStatusFilter,
