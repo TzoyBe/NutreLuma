@@ -52,7 +52,6 @@ import { API_BASE_URL, colors } from './src/theme';
 import { CalorieGauge, MacroGauge } from './src/gauges';
 import { GoalProgressChart } from './src/goal-chart';
 import { WaterGauge, StepsGauge } from './src/activity-gauges';
-import { GoalTargets } from './src/goal-targets';
 import { AiLoadingCard, AiSpinner } from './src/ai-loader';
 import { GlassBackdrop } from './src/backdrop';
 import { GlassCard } from './src/glass-card';
@@ -72,6 +71,7 @@ import {
   UniverseReveal,
   useReducedMotionPreference,
 } from './src/personal-universe-ui';
+import { buildNativeGoalUniverse } from './src/personal-universe-model';
 import {
   filterMilestoneHistory,
   partitionMilestones,
@@ -94,6 +94,7 @@ import {
   Settings,
   Sparkles,
   Target,
+  Trophy,
   UserCircle2,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -3442,6 +3443,21 @@ function GoalsOverviewScreen({
 
   const { inProgress, history } = partitionMilestones(milestones);
   const visibleHistory = filterMilestoneHistory(history, historyFilter);
+  const universeModel = useMemo(() => {
+    if (!goal) return null;
+
+    return buildNativeGoalUniverse({
+      calorieTarget: goal.goal.calorieTarget,
+      proteinGrams: goal.goal.proteinGrams,
+      carbohydrateGrams: goal.goal.carbohydrateGrams,
+      fatGrams: goal.goal.fatGrams,
+      achievementsUnlocked: achievements,
+      achievementsTotal: achievementTotal,
+      badgesUnlocked: badges,
+      activeMilestones: inProgress.length,
+      historyCount: history.length,
+    });
+  }, [achievementTotal, achievements, badges, goal, history.length, inProgress.length]);
 
   if (milestoneView === 'editor') {
     return (
@@ -3562,220 +3578,246 @@ function GoalsOverviewScreen({
         </View>
       </View>
 
-      <Pressable onPress={onOpenMaintenance}><GlassCard style={styles.featureCard}>
-        <View style={styles.featureIcon}>
-          <Scale size={20} color={colors.primary} />
-        </View>
-        <View style={styles.featureCopy}>
-          <Text style={styles.mealTitle}>Weight maintenance</Text>
-          <Text style={styles.noticeCopy}>Range, trends and stability alerts.</Text>
-        </View>
-        <ChevronRight size={20} color={colors.mutedSoft} />
-      </GlassCard></Pressable>
-
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
       {loading ? (
-        <GlassCard style={styles.summaryCard}>
+        <GlassCard style={[styles.summaryCard, styles.goalUniverseLoading]}>
           <ActivityIndicator color={colors.primary} />
+          <Text style={styles.noticeCopy}>Preparing your goal universe...</Text>
         </GlassCard>
-      ) : goal ? (
+      ) : goal && universeModel ? (
         <>
-          <GlassCard style={styles.authPanel}>
-            <Text style={styles.sectionTitle}>Daily targets</Text>
-            <GoalTargets
-              calories={goal.goal.calorieTarget}
-              protein={goal.goal.proteinGrams}
-              carbs={goal.goal.carbohydrateGrams}
-              fat={goal.goal.fatGrams}
-            />
-            {goal.suggestion ? (
-              <Text style={styles.noticeCopy}>
-                Suggested: {goal.suggestion.calorieTarget} kcal · {goal.suggestion.proteinGrams}g protein
-              </Text>
-            ) : null}
-            <View style={styles.actionRow}>
-              <Pressable onPress={() => setEditingGoal((value) => !value)} style={styles.actionButton}>
-                <Text style={styles.actionText}>{editingGoal ? 'Close edit' : 'Edit goals'}</Text>
-              </Pressable>
-              {goal.suggestion ? (
-                <Pressable onPress={useSuggestedDailyGoals} style={[styles.actionButton, styles.actionPrimary]}>
-                  <Text style={styles.actionPrimaryText}>Use suggestion</Text>
-                </Pressable>
-              ) : null}
+          <UniverseReveal index={0}>
+            <View style={styles.goalHeroStack}>
+              <UniverseHero
+                eyebrow="Daily targets"
+                title="Your goal universe"
+                subtitle={
+                  goal.suggestion
+                    ? 'Your current targets are in orbit, with a fresh suggestion ready to explore.'
+                    : 'A clear daily center for the nutrition targets guiding your progress.'
+                }
+                accessibilityLabel="Daily nutrition targets"
+                center={(
+                  <View style={styles.goalHeroCenterCopy}>
+                    <Text selectable style={styles.goalHeroCalories}>
+                      {universeModel.calories ?? '--'}
+                    </Text>
+                    <Text style={styles.goalHeroUnit}>kcal / day</Text>
+                  </View>
+                )}
+                satellites={universeModel.macros.map((macro) => (
+                  <UniverseMetric
+                    key={macro.key}
+                    label={macro.label}
+                    value={macro.value ?? '--'}
+                    unit={macro.unit}
+                    tone={macro.tone}
+                  />
+                ))}
+              />
+              <GlassCard style={styles.goalPrimaryActions}>
+                <View style={styles.actionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={editingGoal ? 'Close goal editor' : 'Edit goals'}
+                    accessibilityState={{ expanded: editingGoal }}
+                    onPress={() => setEditingGoal((value) => !value)}
+                    style={styles.actionButton}
+                  >
+                    <Text style={styles.actionText}>{editingGoal ? 'Close editor' : 'Edit goals'}</Text>
+                  </Pressable>
+                  {goal.suggestion ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Use suggested daily goals"
+                      onPress={useSuggestedDailyGoals}
+                      style={[styles.actionButton, styles.actionPrimary]}
+                    >
+                      <Sparkles size={17} color={colors.white} />
+                      <Text style={styles.actionPrimaryText}>Use suggestion</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+                <Text style={styles.goalActionHint}>
+                  {goal.suggestion
+                    ? `Suggested ${goal.suggestion.calorieTarget} kcal with ${goal.suggestion.proteinGrams}g protein.`
+                    : 'Fine-tune your targets whenever your routine changes.'}
+                </Text>
+              </GlassCard>
             </View>
-          </GlassCard>
+          </UniverseReveal>
 
           {editingGoal ? (
-            <GlassCard style={styles.authPanel}>
-              <Text style={styles.sectionTitle}>Edit daily goals</Text>
-              <Field label="Calories" value={goalCalories} onChangeText={setGoalCalories} keyboardType="numeric" />
-              <View style={styles.twoColumn}>
-                <Field label="Protein g" value={goalProtein} onChangeText={setGoalProtein} keyboardType="numeric" />
-                <Field label="Carbs g" value={goalCarbs} onChangeText={setGoalCarbs} keyboardType="numeric" />
-              </View>
-              <View style={styles.twoColumn}>
-                <Field label="Fat g" value={goalFat} onChangeText={setGoalFat} keyboardType="numeric" />
-                <Field label="Fiber g" value={goalFiber} onChangeText={setGoalFiber} keyboardType="numeric" />
-              </View>
-              <Text style={styles.noticeCopy}>
-                Water & steps targets are set from the dashboard.
-              </Text>
-              <PillButton label={savingGoal ? 'Saving...' : 'Save goals'} onPress={saveGoal} disabled={savingGoal} />
-            </GlassCard>
+            <UniverseReveal index={1}>
+              <GlassCard style={styles.goalEditorCard}>
+                <View style={styles.goalSectionHeading}>
+                  <Text style={styles.sectionTitle}>Edit daily goals</Text>
+                  <Text style={styles.noticeCopy}>Adjust the targets that shape your daily plan.</Text>
+                </View>
+                <Field label="Calories" value={goalCalories} onChangeText={setGoalCalories} keyboardType="numeric" />
+                <View style={styles.twoColumn}>
+                  <Field label="Protein g" value={goalProtein} onChangeText={setGoalProtein} keyboardType="numeric" />
+                  <Field label="Carbs g" value={goalCarbs} onChangeText={setGoalCarbs} keyboardType="numeric" />
+                </View>
+                <View style={styles.twoColumn}>
+                  <Field label="Fat g" value={goalFat} onChangeText={setGoalFat} keyboardType="numeric" />
+                  <Field label="Fiber g" value={goalFiber} onChangeText={setGoalFiber} keyboardType="numeric" />
+                </View>
+                <Text style={styles.noticeCopy}>
+                  Water & steps targets are set from the dashboard.
+                </Text>
+                <PillButton label={savingGoal ? 'Saving...' : 'Save goals'} onPress={saveGoal} disabled={savingGoal} />
+              </GlassCard>
+            </UniverseReveal>
           ) : null}
 
-          <View style={styles.macroGrid}>
-            <MetricCard value={`${achievements}/${achievementTotal}`} label="achievements" />
-            <MetricCard value={String(badges)} label="badges" />
-          </View>
+          <UniverseReveal index={2}>
+            <View style={styles.goalSection}>
+              <View style={styles.goalSectionHeading}>
+                <Text style={styles.sectionTitle}>Your journey</Text>
+                <Text style={styles.noticeCopy}>Wins, momentum and the milestones still in motion.</Text>
+              </View>
+              <View style={styles.goalJourneyGrid}>
+                {universeModel.journey.map((item) => {
+                  const isActiveMilestones = item.key === 'activeMilestones';
+                  const isHistory = item.key === 'history';
+                  const disabled = !isActiveMilestones && !isHistory;
+                  const detail = item.key === 'achievements'
+                    ? 'Unlocked wins'
+                    : item.key === 'badges'
+                      ? 'Earned badges'
+                      : isActiveMilestones
+                        ? 'Active and paused'
+                        : 'Completed and past';
+                  const icon = item.key === 'achievements'
+                    ? <Trophy size={17} color={colors.accent} />
+                    : item.key === 'badges'
+                      ? <Sparkles size={17} color={colors.violet} />
+                      : isActiveMilestones
+                        ? <Target size={17} color={colors.success} />
+                        : <CalendarDays size={17} color={colors.blueBright} />;
 
-          <View style={styles.milestoneNavGrid}>
-            <Pressable onPress={() => setMilestoneView('inProgress')} style={styles.milestoneNavPressable}>
-              <GlassCard style={styles.milestoneNavCard}>
-                <Target size={22} color={colors.primary} />
-                <View style={styles.mealItemCopy}><Text style={styles.mealTitle}>In progress</Text><Text style={styles.noticeCopy}>Active and paused milestones</Text></View>
-                <Text style={styles.milestoneCount}>{inProgress.length}</Text>
-                <ChevronRight size={20} color={colors.mutedSoft} />
-              </GlassCard>
-            </Pressable>
-            <Pressable onPress={() => setMilestoneView('history')} style={styles.milestoneNavPressable}>
-              <GlassCard style={styles.milestoneNavCard}>
-                <CalendarDays size={22} color={colors.accent} />
-                <View style={styles.mealItemCopy}><Text style={styles.mealTitle}>History</Text><Text style={styles.noticeCopy}>Completed and past milestones</Text></View>
-                <Text style={styles.milestoneCount}>{history.length}</Text>
-                <ChevronRight size={20} color={colors.mutedSoft} />
-              </GlassCard>
-            </Pressable>
-            <Pressable onPress={openNewMilestone} style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}>
-              <Plus size={18} color={colors.white} /><Text style={styles.actionPrimaryText}>Create milestone</Text>
-            </Pressable>
-          </View>
+                  return (
+                    <UniverseActionTile
+                      key={item.key}
+                      label={item.label}
+                      value={item.value}
+                      detail={detail}
+                      tone={item.tone}
+                      icon={icon}
+                      disabled={disabled}
+                      onPress={
+                        isActiveMilestones
+                          ? () => setMilestoneView('inProgress')
+                          : isHistory
+                            ? () => setMilestoneView('history')
+                            : () => undefined
+                      }
+                      style={styles.goalJourneyTile}
+                    />
+                  );
+                })}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={openNewMilestone}
+                style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}
+              >
+                <Plus size={18} color={colors.white} />
+                <Text style={styles.actionPrimaryText}>Create milestone</Text>
+              </Pressable>
+            </View>
+          </UniverseReveal>
 
-          {suggestions.length ? (
-            <GlassCard style={styles.authPanel}>
-              <Text style={styles.sectionTitle}>Smart milestone ideas</Text>
+          {suggestions.length > 0 ? (
+            <UniverseReveal index={3}>
+              <View style={styles.goalSection}>
+                <View style={styles.goalSectionHeading}>
+                  <Text style={styles.sectionTitle}>Smart milestone ideas</Text>
+                  <Text style={styles.noticeCopy}>Swipe through ideas built around your current routine.</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  nestedScrollEnabled
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.goalSuggestionRow}
+                >
+                  {suggestions.map((suggestion) => (
+                    <GlassCard key={`${suggestion.type}-${suggestion.title}`} style={styles.goalSuggestionCard}>
+                      <View style={styles.goalSuggestionIcon}>
+                        <Sparkles size={18} color={colors.accent} />
+                      </View>
+                      <Text style={styles.mealTitle}>{suggestion.title}</Text>
+                      <Text style={styles.noticeCopy}>{suggestion.description}</Text>
+                      <Text style={styles.metricLabel}>
+                        {milestoneTypeLabel(suggestion.type)} - {suggestion.targetValue}
+                        {suggestion.unit ? ` ${suggestion.unit}` : ''}
+                        {suggestion.endDate ? ` by ${suggestion.endDate}` : ''}
+                      </Text>
+                      <View style={styles.goalSuggestionActions}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Start ${suggestion.title}`}
+                          onPress={() => saveMilestone(suggestion)}
+                          disabled={savingMilestone}
+                          style={[styles.actionButton, styles.actionPrimary]}
+                        >
+                          <Text style={styles.actionPrimaryText}>{savingMilestone ? 'Saving...' : 'Start'}</Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit ${suggestion.title}`}
+                          onPress={() => applySuggestion(suggestion)}
+                          style={styles.actionButton}
+                        >
+                          <Text style={styles.actionText}>Edit</Text>
+                        </Pressable>
+                      </View>
+                    </GlassCard>
+                  ))}
+                </ScrollView>
+              </View>
+            </UniverseReveal>
+          ) : null}
+
+          <UniverseReveal index={4}>
+            <View style={styles.goalSection}>
+              <Text style={styles.sectionTitle}>More for your goals</Text>
+              <Pressable accessibilityRole="button" onPress={onOpenMaintenance}>
+                <GlassCard style={styles.featureCard}>
+                  <View style={styles.featureIcon}>
+                    <Scale size={20} color={colors.primary} />
+                  </View>
+                  <View style={styles.featureCopy}>
+                    <Text style={styles.mealTitle}>Weight maintenance</Text>
+                    <Text style={styles.noticeCopy}>Range, trends and stability alerts.</Text>
+                  </View>
+                  <ChevronRight size={20} color={colors.mutedSoft} />
+                </GlassCard>
+              </Pressable>
+            </View>
+          </UniverseReveal>
+
+          <UniverseReveal index={5}>
+            <View style={styles.goalSection}>
+              <View style={styles.goalSectionHeading}>
+                <Text style={styles.sectionTitle}>Goal history</Text>
+                <Text style={styles.noticeCopy}>Your six most recent daily target changes.</Text>
+              </View>
               <View style={styles.mealList}>
-                {suggestions.map((suggestion) => (
-                  <GlassCard key={`${suggestion.type}-${suggestion.title}`} style={styles.suggestionCard}>
-                    <Text style={styles.mealTitle}>{suggestion.title}</Text>
-                    <Text style={styles.noticeCopy}>{suggestion.description}</Text>
-                    <Text style={styles.metricLabel}>
-                      {milestoneTypeLabel(suggestion.type)} - {suggestion.targetValue}
-                      {suggestion.unit ? ` ${suggestion.unit}` : ''}
-                      {suggestion.endDate ? ` by ${suggestion.endDate}` : ''}
-                    </Text>
-                    <View style={styles.actionRow}>
-                      <Pressable
-                        onPress={() => saveMilestone(suggestion)}
-                        disabled={savingMilestone}
-                        style={[styles.actionButton, styles.actionPrimary]}
-                      >
-                        <Text style={styles.actionPrimaryText}>{savingMilestone ? 'Saving...' : 'Start'}</Text>
-                      </Pressable>
-                      <Pressable onPress={() => applySuggestion(suggestion)} style={styles.actionButton}>
-                        <Text style={styles.actionText}>Edit</Text>
-                      </Pressable>
+                {goal.history.slice(0, 6).map((row, index) => (
+                  <View key={row.id ?? row.effectiveFrom ?? `goal-${index}`} style={styles.mealCard}>
+                    <View style={styles.mealItemCopy}>
+                      <Text style={styles.mealTitle}>{row.effectiveFrom ?? 'Fallback goal'}</Text>
+                      <Text style={styles.metricLabel}>{row.source.toLowerCase()}</Text>
                     </View>
-                  </GlassCard>
+                    <Text style={styles.mealCalories}>{row.calorieTarget ?? '--'} kcal</Text>
+                  </View>
                 ))}
               </View>
-            </GlassCard>
-          ) : null}
-
-          <GlassCard style={[styles.authPanel, styles.hidden]}>
-            <Text style={styles.sectionTitle}>
-              {editingMilestoneId ? 'Edit milestone' : 'Custom milestone'}
-            </Text>
-            <Field label="Title" value={milestoneTitle} onChangeText={setMilestoneTitle} />
-            <Field label="Description optional" value={milestoneDescription} onChangeText={setMilestoneDescription} />
-            {!editingMilestoneId ? (
-              <ChoiceRow
-                label="Type"
-                value={milestoneType}
-                options={milestoneTypes}
-                onChange={setMilestoneType}
-              />
-            ) : (
-              <Text style={styles.metricLabel}>Type: {milestoneTypeLabel(milestoneType)}</Text>
-            )}
-            <View style={styles.twoColumn}>
-              <Field label="Target" value={milestoneTarget} onChangeText={setMilestoneTarget} keyboardType="numeric" />
-              <Field label="Daily limit" value={milestoneThreshold} onChangeText={setMilestoneThreshold} keyboardType="numeric" />
             </View>
-            <View style={styles.twoColumn}>
-              <Field label="Start value" value={milestoneStartValue} onChangeText={setMilestoneStartValue} keyboardType="numeric" />
-              <Field label="Unit" value={milestoneUnit} onChangeText={setMilestoneUnit} autoCapitalize="none" />
-            </View>
-            <View style={styles.twoColumn}>
-              <Field label="Start date" value={milestoneStart} onChangeText={setMilestoneStart} />
-              <Field label="End date" value={milestoneEnd} onChangeText={setMilestoneEnd} />
-            </View>
-            <View style={styles.actionRow}>
-              <Pressable
-                onPress={() => saveMilestone()}
-                disabled={savingMilestone}
-                style={[styles.actionButton, styles.actionPrimary]}
-              >
-                <Text style={styles.actionPrimaryText}>{savingMilestone ? 'Saving...' : editingMilestoneId ? 'Save' : 'Create'}</Text>
-              </Pressable>
-              {editingMilestoneId ? (
-                <Pressable onPress={resetMilestoneForm} style={styles.actionButton}>
-                  <Text style={styles.actionText}>Cancel edit</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </GlassCard>
-
-          <Text style={styles.hidden}>Milestones</Text>
-          <View style={styles.hidden}>
-            {milestones.length ? (
-              milestones.map((milestone) => (
-                <MilestoneCard key={milestone.id} milestone={milestone}>
-                  <View style={styles.actionRow}>
-                    {!['COMPLETED', 'CANCELLED'].includes(milestone.status) ? (
-                      <Pressable onPress={() => editMilestone(milestone)} style={styles.actionButton}>
-                        <Text style={styles.actionText}>Edit</Text>
-                      </Pressable>
-                    ) : null}
-                    {milestone.status === 'ACTIVE' ? (
-                      <Pressable onPress={() => milestoneAction(milestone.id, 'pause')} style={styles.actionButton}>
-                        <Text style={styles.actionText}>Pause</Text>
-                      </Pressable>
-                    ) : null}
-                    {milestone.status === 'PAUSED' ? (
-                      <Pressable onPress={() => milestoneAction(milestone.id, 'resume')} style={styles.actionButton}>
-                        <Text style={styles.actionText}>Resume</Text>
-                      </Pressable>
-                    ) : null}
-                    {!['COMPLETED', 'CANCELLED'].includes(milestone.status) ? (
-                      <Pressable onPress={() => milestoneAction(milestone.id, 'cancel')} style={styles.actionButton}>
-                        <Text style={styles.actionText}>Cancel</Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                </MilestoneCard>
-              ))
-            ) : (
-              <View style={styles.emptyCard}>
-                <Text style={styles.noticeTitle}>No milestones yet</Text>
-                <Text style={styles.noticeCopy}>Use a smart idea or create a custom milestone above.</Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={styles.sectionTitle}>Goal history</Text>
-          <View style={styles.mealList}>
-            {goal.history.slice(0, 6).map((row, index) => (
-              <View key={row.id ?? row.effectiveFrom ?? `goal-${index}`} style={styles.mealCard}>
-                <View style={styles.mealItemCopy}>
-                  <Text style={styles.mealTitle}>{row.effectiveFrom ?? 'Fallback goal'}</Text>
-                  <Text style={styles.metricLabel}>{row.source.toLowerCase()}</Text>
-                </View>
-                <Text style={styles.mealCalories}>{row.calorieTarget ?? '--'} kcal</Text>
-              </View>
-            ))}
-          </View>
+          </UniverseReveal>
         </>
       ) : (
         <View style={styles.emptyCard}>
@@ -7339,8 +7381,95 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
     borderColor: colors.success,
   },
-  hidden: {
-    display: 'none',
+  goalUniverseLoading: {
+    minHeight: 280,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  goalHeroStack: {
+    gap: 12,
+  },
+  goalHeroCenterCopy: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  goalHeroCalories: {
+    color: colors.text,
+    fontSize: 38,
+    lineHeight: 43,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  goalHeroUnit: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  goalPrimaryActions: {
+    padding: 14,
+    gap: 10,
+    backgroundColor: 'rgba(17, 24, 46, 0.9)',
+    borderTopColor: 'rgba(225, 234, 255, 0.54)',
+    borderCurve: 'continuous',
+  },
+  goalActionHint: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+  },
+  goalEditorCard: {
+    padding: 18,
+    gap: 12,
+    backgroundColor: 'rgba(17, 24, 46, 0.94)',
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(45, 212, 191, 0.54)',
+    borderCurve: 'continuous',
+  },
+  goalSection: {
+    gap: 12,
+  },
+  goalSectionHeading: {
+    gap: 2,
+  },
+  goalJourneyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  goalJourneyTile: {
+    minWidth: 132,
+    flexBasis: 132,
+    flexGrow: 1,
+  },
+  goalSuggestionRow: {
+    gap: 12,
+    paddingRight: 16,
+  },
+  goalSuggestionCard: {
+    width: 272,
+    minHeight: 232,
+    padding: 16,
+    gap: 8,
+    backgroundColor: 'rgba(17, 24, 46, 0.9)',
+    borderTopColor: 'rgba(255, 183, 3, 0.42)',
+    borderCurve: 'continuous',
+  },
+  goalSuggestionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 183, 3, 0.3)',
+  },
+  goalSuggestionActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 'auto',
   },
   subscreenHeader: {
     flexDirection: 'row',
@@ -7357,24 +7486,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glassBg,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  milestoneNavGrid: {
-    gap: 12,
-  },
-  milestoneNavPressable: {
-    borderRadius: 24,
-  },
-  milestoneNavCard: {
-    minHeight: 84,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  milestoneCount: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900',
   },
   filterRow: {
     gap: 8,
@@ -7635,10 +7746,6 @@ const styles = StyleSheet.create({
   },
   settingsCopy: {
     flex: 1,
-  },
-  suggestionCard: {
-    gap: 10,
-    padding: 14,
   },
   quickLogGrid: {
     gap: 12,
