@@ -1170,19 +1170,37 @@ function AddMealScreen({
           </Pressable>
         </View>
 
-        <View style={styles.segmented}>
-          {(['photo', 'manual'] as const).map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => setMode(option)}
-              style={[styles.segment, mode === option ? styles.segmentActive : null]}
-            >
-              <Text style={[styles.segmentText, mode === option ? styles.segmentTextActive : null]}>
-                {option === 'photo' ? 'Photo' : 'Manual'}
-              </Text>
+        {mode === 'photo' && !asset ? (
+          <UniverseHero
+            eyebrow="Add meal"
+            title="Point, shoot, done."
+            subtitle="Snap your plate — we'll work out the calories and macros for you."
+            center={
+              <Pressable
+                onPress={takePhoto}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Take a meal photo"
+                style={styles.mealShutter}
+              >
+                <Text style={styles.mealShutterGlyph}>📷</Text>
+              </Pressable>
+            }
+            satellites={[]}
+          />
+        ) : null}
+
+        {mode === 'photo' && !asset ? (
+          <View style={styles.mealHeroLinks}>
+            <Pressable onPress={pickFromLibrary} disabled={loading} style={styles.mealHeroLink}>
+              <Text style={styles.mealHeroLinkText}>Choose from gallery</Text>
             </Pressable>
-          ))}
-        </View>
+            <View style={styles.mealHeroLinkDot} />
+            <Pressable onPress={() => setMode('manual')} style={styles.mealHeroLink}>
+              <Text style={styles.mealHeroLinkText}>Manual Entry</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <GlassCard style={styles.authPanel}>
           <View style={styles.notificationHeader}>
@@ -1278,26 +1296,13 @@ function AddMealScreen({
           </GlassCard>
         ) : null}
 
-        {mode === 'photo' ? (
-          <>
-            {asset ? (
-              <GlassCard style={styles.photoPanel}>
-                <Image source={{ uri: asset.uri }} style={styles.photoPreview} />
-                <Pressable onPress={() => setAsset(null)} style={styles.photoRemoveButton}>
-                  <Text style={styles.photoRemoveText}>Change photo</Text>
-                </Pressable>
-              </GlassCard>
-            ) : null}
-
-            <View style={styles.actionRow}>
-              <Pressable onPress={takePhoto} disabled={loading} style={[styles.actionButton, styles.actionPrimary]}>
-                <Text style={styles.actionPrimaryText}>Camera</Text>
-              </Pressable>
-              <Pressable onPress={pickFromLibrary} disabled={loading} style={styles.actionButton}>
-                <Text style={styles.actionText}>Gallery</Text>
-              </Pressable>
-            </View>
-          </>
+        {mode === 'photo' && asset ? (
+          <GlassCard style={styles.photoPanel}>
+            <Image source={{ uri: asset.uri }} style={styles.photoPreview} />
+            <Pressable onPress={() => setAsset(null)} style={styles.photoRemoveButton}>
+              <Text style={styles.photoRemoveText}>Change photo</Text>
+            </Pressable>
+          </GlassCard>
         ) : null}
 
         {mode === 'manual' || asset ? (
@@ -1328,6 +1333,9 @@ function AddMealScreen({
           />
           {mode === 'manual' ? (
             <>
+              <Pressable onPress={() => setMode('photo')} style={styles.mealHeroBackLink}>
+                <Text style={styles.mealHeroLinkText}>Prefer a photo? Take one instead</Text>
+              </Pressable>
               <Field label="Date time" value={manualDateTime} onChangeText={setManualDateTime} />
               <Field label="Total calories" value={manualCalories} onChangeText={setManualCalories} keyboardType="numeric" />
               <View style={styles.twoColumn}>
@@ -7003,6 +7011,46 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '800',
     fontSize: 12,
+  },
+  mealShutter: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: 'rgba(225, 234, 255, 0.4)',
+  },
+  mealShutterGlyph: {
+    fontSize: 34,
+  },
+  mealHeroLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+    marginTop: -8,
+  },
+  mealHeroLinkDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+  },
+  mealHeroLink: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  mealHeroLinkText: {
+    color: colors.muted,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  mealHeroBackLink: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   mealTypeRow: {
     gap: 8,
