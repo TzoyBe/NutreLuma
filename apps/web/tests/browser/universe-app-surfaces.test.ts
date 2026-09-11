@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { build } from 'esbuild';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import postcss from 'postcss';
@@ -112,4 +114,38 @@ test('the no-backdrop-filter fallback paints opaque readable hero surfaces', asy
     expect(alpha).toBeGreaterThanOrEqual(0.98);
     expect(await hero.evaluate((node) => getComputedStyle(node).backgroundImage)).toBe('none');
   }
+});
+
+test('keyboard focus reveals the complete Greek Account tab without changing selection', async () => {
+  const bundle = await build({
+    stdin: {
+      contents: `import React from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { ProfileTabs } from './src/components/profile/profile-tabs';
+        import { LocaleProvider } from './src/i18n/client';
+        createRoot(document.getElementById('root')).render(
+          React.createElement(LocaleProvider, { locale: 'el' },
+            React.createElement(ProfileTabs, { profileSummary: null, profileEditor: null,
+              coaching: null, plan: null, account: null })));`,
+      resolveDir: process.cwd(),
+    },
+    bundle: true, write: false, format: 'iife', platform: 'browser', jsx: 'automatic',
+    alias: { '@': path.resolve('src') },
+    define: { 'process.env.NODE_ENV': '"production"' },
+  });
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setContent(`<style>${css}</style><main style="padding:16px"><div id="root"></div></main>`);
+  await page.addScriptTag({ content: bundle.outputFiles[0].text });
+  await page.getByRole('tab').first().waitFor();
+  for (let index = 0; index < 4; index++) await page.keyboard.press('Tab');
+  const account = page.getByRole('tab').last();
+  expect(await account.evaluate((node) => document.activeElement === node)).toBe(true);
+  const tab = (await account.boundingBox())!;
+  const strip = (await page.getByRole('tablist').boundingBox())!;
+  expect(tab.x).toBeGreaterThanOrEqual(strip.x);
+  expect(tab.x + tab.width).toBeLessThanOrEqual(strip.x + strip.width);
+  expect(await page.getByRole('tab').first().getAttribute('aria-selected')).toBe('true');
+  await page.keyboard.press('Enter');
+  await expect.poll(() => account.getAttribute('aria-selected')).toBe('true');
 });

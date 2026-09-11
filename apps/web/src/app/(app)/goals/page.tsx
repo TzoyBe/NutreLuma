@@ -83,37 +83,38 @@ export default async function GoalsPage() {
         }}
       />
 
-      <Card className="goals-journey-strip">
-        <CardContent className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
-            {journeyStats.map((stat) => (
-              <div key={stat.label} className="goals-journey-stat min-w-0">
-                <p className="text-lg font-semibold tabular-nums">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/goals/achievements"
-              className={cn(buttonVariants({ variant: 'primary', size: 'md' }), 'shrink-0')}
-            >
-              <Trophy className="h-4 w-4" aria-hidden="true" />
-              {t('goals.openAchievements')}
-            </Link>
-            <Link
-              href="/maintenance"
-              className={cn(buttonVariants({ variant: 'secondary', size: 'md' }), 'shrink-0')}
-            >
-              <Scale className="h-4 w-4" aria-hidden="true" />
-              {t('common.open')}
-              <span className="sr-only"> {t('maintenance.lockedTitle')}</span>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
       <GoalsPanel
+        journey={
+          <Card className="goals-journey-strip">
+            <CardContent className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
+                {journeyStats.map((stat) => (
+                  <div key={stat.label} className="goals-journey-stat min-w-0">
+                    <p className="text-lg font-semibold tabular-nums">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/goals/achievements"
+                  className={cn(buttonVariants({ variant: 'primary', size: 'md' }), 'shrink-0')}
+                >
+                  <Trophy className="h-4 w-4" aria-hidden="true" />
+                  {t('goals.openAchievements')}
+                </Link>
+                <Link
+                  href="/maintenance"
+                  className={cn(buttonVariants({ variant: 'secondary', size: 'md' }), 'shrink-0')}
+                >
+                  <Scale className="h-4 w-4" aria-hidden="true" />
+                  {t('common.open')}
+                  <span className="sr-only"> {t('maintenance.lockedTitle')}</span>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        }
         goal={{
           calorieTarget: goal.calorieTarget,
           proteinGrams: goal.proteinGrams,

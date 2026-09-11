@@ -52,10 +52,12 @@ export function GoalsPanel({
   goal,
   suggestion,
   history,
+  journey,
 }: {
   goal: GoalValues;
   suggestion: GoalSuggestionValues | null;
   history: GoalHistoryRow[];
+  journey?: React.ReactNode;
 }) {
   const t = useT();
   const router = useRouter();
@@ -265,6 +267,8 @@ export function GoalsPanel({
           ) : null}
         </CardContent>
       </Card>
+
+      {journey}
 
       <Card solid className="bg-muted/20 shadow-none">
         <CardHeader>

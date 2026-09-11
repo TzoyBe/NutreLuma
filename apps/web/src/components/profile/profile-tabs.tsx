@@ -74,6 +74,9 @@ export function ProfileTabs({
             role="tab"
             aria-selected={active === key}
             aria-controls={`profile-panel-${key}`}
+            onFocus={(event) =>
+              event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+            }
             onClick={() => setActive(key)}
             className={cn(
               'min-h-11 flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
