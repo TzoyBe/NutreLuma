@@ -13,6 +13,7 @@ import { Field, fieldAria, Input, Select } from '@/components/ui/field';
 import { Disclaimer } from '@/components/ui/misc';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
+import { ProfileSaveSuccessContext } from '@/components/profile/profile-save-success-context';
 
 /** Ίδιο ύφος με τις category cards του native app: εικόνα + τίτλος ανά ομάδα
  * πεδίων, αντί όλα τα fields σε ένα ενιαίο grid. */
@@ -95,6 +96,7 @@ export function ProfileForm({
   const t = useT();
   const router = useRouter();
   const toast = useToast();
+  const onProfileSaveSuccess = React.useContext(ProfileSaveSuccessContext);
   const [values, setValues] = React.useState<ProfileFormValues>({
     ...EMPTY,
     timezone:
@@ -159,6 +161,7 @@ export function ProfileForm({
     try {
       await api.put('/api/profile', parsed.data);
       toast.push(t('toast.profileSaved'), 'success');
+      onProfileSaveSuccess?.();
       if (redirectTo) {
         router.replace(redirectTo);
         router.refresh();

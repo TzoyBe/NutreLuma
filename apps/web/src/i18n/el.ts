@@ -418,6 +418,13 @@ export const el = {
     categoryBody: 'Σώμα',
     categoryActivityGoal: 'Δραστηριότητα & στόχος',
     categoryPreferences: 'Προτιμήσεις',
+    editProfile: 'Επεξεργασία προφίλ',
+    age: 'Ηλικία',
+    bmi: 'ΔΜΣ',
+    bmiUnderweight: 'Λιποβαρής',
+    bmiHealthy: 'Υγιές εύρος',
+    bmiOverweight: 'Υπέρβαρος',
+    bmiObese: 'Παχυσαρκία',
   },
   settings: {
     language: 'Γλώσσα',

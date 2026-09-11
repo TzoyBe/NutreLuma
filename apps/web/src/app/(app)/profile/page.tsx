@@ -44,13 +44,22 @@ function computeAge(birthDateISO: string): number | null {
   return age >= 0 && age < 130 ? age : null;
 }
 
-function computeBmi(heightCm: number, weightKg: number): { value: number; label: string } | null {
+function computeBmi(
+  heightCm: number,
+  weightKg: number,
+): { value: number; labelKey: TranslationKey } | null {
   const h = heightCm / 100;
   if (!Number.isFinite(h) || !Number.isFinite(weightKg) || h <= 0 || weightKg <= 0) return null;
   const bmi = weightKg / (h * h);
   if (!Number.isFinite(bmi) || bmi < 8 || bmi > 90) return null;
-  const label = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Healthy' : bmi < 30 ? 'Overweight' : 'Obese';
-  return { value: Math.round(bmi * 10) / 10, label };
+  const labelKey = bmi < 18.5
+    ? 'profile.bmiUnderweight'
+    : bmi < 25
+      ? 'profile.bmiHealthy'
+      : bmi < 30
+        ? 'profile.bmiOverweight'
+        : 'profile.bmiObese';
+  return { value: Math.round(bmi * 10) / 10, labelKey };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -89,7 +98,7 @@ export default async function ProfileAccountPage() {
     email: user.email,
     dailyTarget,
     age,
-    bmi,
+    bmi: bmi ? { value: bmi.value, label: t(bmi.labelKey) } : null,
     currentWeightKg: profile?.currentWeightKg,
     targetWeightKg: profile?.targetWeightKg,
     activityLevel: profile?.activityLevel,
@@ -225,8 +234,8 @@ export default async function ProfileAccountPage() {
           title: t('profile.title'),
           dailyTarget: t('onboarding.dailyCalorieTarget'),
           planStatus: t('profile.tabPlan'),
-          age: 'Age',
-          bmi: 'BMI',
+          age: t('profile.age'),
+          bmi: t('profile.bmi'),
         }}
       />
       <ProfileTabs

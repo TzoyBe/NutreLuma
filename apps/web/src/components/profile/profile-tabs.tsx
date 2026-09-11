@@ -4,6 +4,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
 import { Button } from '@/components/ui/button';
+import { ProfileSaveSuccessContext } from './profile-save-success-context';
 
 /**
  * Tabbed Profile για το web — parity με το mobile (Profile / Coaching / Plan /
@@ -36,6 +37,7 @@ export function ProfileTabs({
   const t = useT();
   const [active, setActive] = React.useState<TabKey>('profile');
   const [editing, setEditing] = React.useState(false);
+  const handleProfileSaveSuccess = React.useCallback(() => setEditing(false), []);
   const profile = (
     <>
       {profileSummary}
@@ -46,10 +48,12 @@ export function ProfileTabs({
         aria-controls="profile-editor"
         onClick={() => setEditing((current) => !current)}
       >
-        Edit profile
+        {t('profile.editProfile')}
       </Button>
       <div id="profile-editor" hidden={!editing}>
-        {editing ? profileEditor : null}
+        <ProfileSaveSuccessContext.Provider value={handleProfileSaveSuccess}>
+          {editing ? profileEditor : null}
+        </ProfileSaveSuccessContext.Provider>
       </div>
     </>
   );
@@ -57,14 +61,22 @@ export function ProfileTabs({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 rounded-2xl border border-border bg-secondary/40 p-1">
+      <div
+        role="tablist"
+        aria-label={t('profile.title')}
+        className="flex gap-1 rounded-2xl border border-border bg-secondary/40 p-1"
+      >
         {TABS.map(([key, labelKey]) => (
           <button
             key={key}
+            id={`profile-tab-${key}`}
             type="button"
+            role="tab"
+            aria-selected={active === key}
+            aria-controls={`profile-panel-${key}`}
             onClick={() => setActive(key)}
             className={cn(
-              'flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
+              'min-h-11 flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
               active === key
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground',
@@ -76,7 +88,14 @@ export function ProfileTabs({
       </div>
 
       {(Object.keys(slots) as TabKey[]).map((key) => (
-        <div key={key} className={cn('space-y-4', active === key ? '' : 'hidden')}>
+        <div
+          key={key}
+          id={`profile-panel-${key}`}
+          role="tabpanel"
+          aria-labelledby={`profile-tab-${key}`}
+          hidden={active !== key}
+          className="space-y-4"
+        >
           {slots[key]}
         </div>
       ))}

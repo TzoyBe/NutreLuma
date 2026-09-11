@@ -409,6 +409,13 @@ export const en: Translations = {
     categoryBody: 'Body',
     categoryActivityGoal: 'Activity & goal',
     categoryPreferences: 'Preferences',
+    editProfile: 'Edit profile',
+    age: 'Age',
+    bmi: 'BMI',
+    bmiUnderweight: 'Underweight',
+    bmiHealthy: 'Healthy',
+    bmiOverweight: 'Overweight',
+    bmiObese: 'Obese',
   },
   settings: {
     language: 'Language',

@@ -15,6 +15,7 @@ const fixtures = vi.hoisted(() => ({
     preferredUnits: 'METRIC', timezone: 'Europe/Athens',
   },
   googleIdentity: null as { id: string } | null,
+  locale: 'en' as 'en' | 'el',
 }));
 
 vi.mock('@/server/auth/guards', () => ({ requirePageUser: async () => ({
@@ -31,7 +32,7 @@ vi.mock('@/server/db/prisma', () => ({ prisma: {
     useBehaviorPatterns: true, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01'),
   }) },
 } }));
-vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => ({ value: 'en' }) }) }));
+vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => ({ value: fixtures.locale }) }) }));
 
 function findElement(node: ReactNode, type: unknown): ReactElement<Record<string, unknown>> | undefined {
   for (const child of Children.toArray(node)) {
@@ -42,7 +43,7 @@ function findElement(node: ReactNode, type: unknown): ReactElement<Record<string
   }
 }
 
-afterEach(() => { vi.useRealTimers(); fixtures.googleIdentity = null; });
+afterEach(() => { vi.useRealTimers(); fixtures.googleIdentity = null; fixtures.locale = 'en'; });
 
 describe('ProfileAccountPage', () => {
   it('builds the hero from effective targets and subscription state while retaining editable saved values', async () => {
@@ -62,5 +63,14 @@ describe('ProfileAccountPage', () => {
     fixtures.googleIdentity = identity;
     const tabs = findElement(await ProfileAccountPage(), ProfileTabs)!;
     expect(findElement(tabs.props.account as ReactNode, DangerZonePanel)?.props.passwordRequired).toBe(identity === null);
+  });
+
+  it('localizes age, BMI, and the BMI category in the profile hero', async () => {
+    fixtures.locale = 'el';
+
+    const universe = findElement(await ProfileAccountPage(), ProfileUniverse)!;
+
+    expect(universe.props.labels).toMatchObject({ age: 'Ηλικία', bmi: 'ΔΜΣ' });
+    expect((universe.props.model as { bmiLabel: string }).bmiLabel).toBe('Υγιές εύρος');
   });
 });
