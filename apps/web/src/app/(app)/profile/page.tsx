@@ -19,7 +19,20 @@ import { getT } from '@/i18n/locale';
 import { getIntelligenceSettings } from '@/server/services/personal-intelligence';
 import { IntelligenceSettings } from '@/components/intelligence/intelligence-panel';
 import { ProfileTabs } from '@/components/profile/profile-tabs';
+import { ProfileUniverse } from '@/components/profile/profile-universe';
+import { buildProfileUniverseModel } from '@/components/profile/profile-universe-model';
+import { resolveAccessState, type AccessStateKind } from '@/lib/billing/access';
+import type { TranslationKey } from '@/i18n';
+import { env } from '@/server/env';
 import { CreditCard } from 'lucide-react';
+
+const STATUS_KEY: Record<AccessStateKind, TranslationKey> = {
+  TRIAL: 'billing.statusTrial',
+  ACTIVE: 'billing.statusActive',
+  GRACE: 'billing.statusGrace',
+  LOCKED: 'billing.statusLocked',
+  UNLIMITED: 'billing.statusUnlimited',
+};
 
 function computeAge(birthDateISO: string): number | null {
   const d = new Date(birthDateISO);
@@ -49,76 +62,94 @@ export const dynamic = 'force-dynamic';
 export default async function ProfileAccountPage() {
   const t = await getT();
   const user = await requirePageUser();
-  const [profile, intelligenceSettings, googleIdentity] = await Promise.all([
+  const [profile, intelligenceSettings, googleIdentity, subscription] = await Promise.all([
     getProfile(user.id),
     getIntelligenceSettings(user.id),
     prisma.authIdentity.findFirst({
       where: { userId: user.id, provider: 'GOOGLE' },
       select: { id: true },
     }),
+    prisma.subscription.findUnique({
+      where: { userId: user.id },
+      select: { status: true, provider: true, accessUntil: true, autoRenew: true },
+    }),
   ]);
 
   const age = profile ? computeAge(profile.birthDate) : null;
   const bmi = profile ? computeBmi(profile.heightCm, profile.currentWeightKg) : null;
   const dailyTarget = profile?.effectiveDailyCalorieTarget ?? profile?.dailyCalorieTarget ?? null;
+  const accessState = resolveAccessState({
+    role: user.role,
+    billingEnabled: env.BILLING_ENABLED,
+    graceDays: env.SUBSCRIPTION_GRACE_DAYS,
+    subscription,
+  });
+  const profileModel = buildProfileUniverseModel({
+    displayName: user.displayName,
+    email: user.email,
+    dailyTarget,
+    age,
+    bmi,
+    currentWeightKg: profile?.currentWeightKg,
+    targetWeightKg: profile?.targetWeightKg,
+    activityLevel: profile?.activityLevel,
+    goal: profile?.goal,
+    planStatus: t(STATUS_KEY[accessState.kind]),
+  });
 
-  const profileTab = (
-    <>
-      <div className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-primary/10 p-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t('dashboard.target')}
-          </p>
-          <p className="text-3xl font-bold tabular-nums">
-            {dailyTarget ?? '--'}
-            <span className="ml-1 text-sm font-semibold text-muted-foreground">kcal</span>
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          {age !== null ? (
-            <div className="rounded-xl border border-border bg-secondary/50 px-3 py-1.5 text-center">
-              <p className="text-lg font-bold tabular-nums leading-none">{age}</p>
-              <p className="text-[10px] text-muted-foreground">years</p>
+  const profileSummary = (
+    <Card solid className="shadow-none">
+      <CardHeader>
+        <CardTitle>{t('settings.profile')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <dl className="profile-universe-summary grid gap-4 sm:grid-cols-2">
+          {profileModel.healthSummary.map((item) => (
+            <div key={item.key}>
+              <dt className="text-xs text-muted-foreground">{t(`onboarding.${item.key}`)}</dt>
+              <dd className="mt-1 text-sm font-semibold tabular-nums">
+                {item.key === 'activityLevel' && profile
+                  ? t(`activity.${profile.activityLevel}`)
+                  : item.key === 'goal' && profile
+                    ? t(`goal.${profile.goal}`)
+                    : item.value}
+              </dd>
             </div>
-          ) : null}
-          {bmi ? (
-            <div className="rounded-xl border border-border bg-secondary/50 px-3 py-1.5 text-center">
-              <p className="text-lg font-bold tabular-nums leading-none">{bmi.value}</p>
-              <p className="text-[10px] text-muted-foreground">BMI · {bmi.label}</p>
-            </div>
-          ) : null}
-        </div>
-      </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
+  );
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settings.profile')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm
-            submitLabel={t('common.save')}
-            initial={
-              profile
-                ? {
-                    birthDate: profile.birthDate,
-                    gender: profile.gender,
-                    heightCm: String(profile.heightCm),
-                    currentWeightKg: String(profile.currentWeightKg),
-                    targetWeightKg: profile.targetWeightKg ? String(profile.targetWeightKg) : '',
-                    activityLevel: profile.activityLevel,
-                    goal: profile.goal,
-                    dailyCalorieTarget: profile.dailyCalorieTarget
-                      ? String(profile.dailyCalorieTarget)
-                      : '',
-                    preferredUnits: profile.preferredUnits,
-                    timezone: profile.timezone,
-                  }
-                : null
-            }
-          />
-        </CardContent>
-      </Card>
-    </>
+  const profileEditor = (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('settings.profile')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ProfileForm
+          submitLabel={t('common.save')}
+          initial={
+            profile
+              ? {
+                  birthDate: profile.birthDate,
+                  gender: profile.gender,
+                  heightCm: String(profile.heightCm),
+                  currentWeightKg: String(profile.currentWeightKg),
+                  targetWeightKg: profile.targetWeightKg ? String(profile.targetWeightKg) : '',
+                  activityLevel: profile.activityLevel,
+                  goal: profile.goal,
+                  dailyCalorieTarget: profile.dailyCalorieTarget
+                    ? String(profile.dailyCalorieTarget)
+                    : '',
+                  preferredUnits: profile.preferredUnits,
+                  timezone: profile.timezone,
+                }
+              : null
+          }
+        />
+      </CardContent>
+    </Card>
   );
 
   const planTab = (
@@ -188,8 +219,19 @@ export default async function ProfileAccountPage() {
 
   return (
     <>
+      <ProfileUniverse
+        model={profileModel}
+        labels={{
+          title: t('profile.title'),
+          dailyTarget: t('onboarding.dailyCalorieTarget'),
+          planStatus: t('profile.tabPlan'),
+          age: 'Age',
+          bmi: 'BMI',
+        }}
+      />
       <ProfileTabs
-        profile={profileTab}
+        profileSummary={profileSummary}
+        profileEditor={profileEditor}
         coaching={<IntelligenceSettings initial={intelligenceSettings} />}
         plan={planTab}
         account={accountTab}

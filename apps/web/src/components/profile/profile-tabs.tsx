@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
+import { Button } from '@/components/ui/button';
 
 /**
  * Tabbed Profile για το web — parity με το mobile (Profile / Coaching / Plan /
@@ -20,18 +21,38 @@ const TABS: ReadonlyArray<readonly [TabKey, string]> = [
 ];
 
 export function ProfileTabs({
-  profile,
+  profileSummary,
+  profileEditor,
   coaching,
   plan,
   account,
 }: {
-  profile: React.ReactNode;
+  profileSummary: React.ReactNode;
+  profileEditor: React.ReactNode;
   coaching: React.ReactNode;
   plan: React.ReactNode;
   account: React.ReactNode;
 }) {
   const t = useT();
   const [active, setActive] = React.useState<TabKey>('profile');
+  const [editing, setEditing] = React.useState(false);
+  const profile = (
+    <>
+      {profileSummary}
+      <Button
+        type="button"
+        variant="secondary"
+        aria-expanded={editing}
+        aria-controls="profile-editor"
+        onClick={() => setEditing((current) => !current)}
+      >
+        Edit profile
+      </Button>
+      <div id="profile-editor" hidden={!editing}>
+        {editing ? profileEditor : null}
+      </div>
+    </>
+  );
   const slots: Record<TabKey, React.ReactNode> = { profile, coaching, plan, account };
 
   return (
