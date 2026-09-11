@@ -2,6 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { GoalsPanel } from '@/components/goals/goals-panel';
+import { LocaleProvider } from '@/i18n/client';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -9,10 +10,6 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/components/toast', () => ({
   useToast: () => ({ push: vi.fn() }),
-}));
-
-vi.mock('@/i18n/client', () => ({
-  useT: () => (key: string) => key,
 }));
 
 describe('GoalsPanel', () => {
@@ -58,5 +55,14 @@ describe('GoalsPanel', () => {
 
     expect(html).toContain('2026-09-06');
     expect(html).not.toContain('2026-09-07');
+  });
+
+  it('uses Greek for the goals edit action when Greek is selected', () => {
+    const html = renderToStaticMarkup(React.createElement(LocaleProvider, {
+      locale: 'el',
+      children: React.createElement(GoalsPanel, { goal, suggestion: null, history: [] }),
+    }));
+    expect(html).toContain('Επεξεργασία στόχων');
+    expect(html).not.toContain('Edit goals');
   });
 });

@@ -17,7 +17,7 @@ export function GoalsUniverse({
   labels: GoalsUniverseLabels;
 }): React.ReactElement {
   return (
-    <Card className="goals-universe-card overflow-hidden">
+    <Card className="goals-universe-card universe-app-hero universe-app-reveal overflow-hidden">
       <section
         className="goals-universe glass-specular"
         aria-labelledby="goals-universe-title"

@@ -18,7 +18,7 @@ export function ProfileUniverse({
   labels?: ProfileUniverseLabels;
 }): React.ReactElement {
   return (
-    <Card className="profile-universe-card overflow-hidden">
+    <Card className="profile-universe-card universe-app-hero universe-app-reveal overflow-hidden">
       <section className="profile-universe" aria-labelledby="profile-universe-title">
         <CardContent className="space-y-6">
           <h2 id="profile-universe-title" className="sr-only">{labels.title}</h2>
@@ -42,11 +42,11 @@ export function ProfileUniverse({
             </div>
           </div>
           <dl className="profile-universe-chips flex flex-wrap gap-3">
-            <div className="rounded-xl border border-border bg-secondary/40 px-4 py-2">
+            <div className="universe-app-chip rounded-xl border border-border bg-secondary/40 px-4 py-2">
               <dt className="text-xs text-muted-foreground">{labels.age}</dt>
               <dd className="font-semibold tabular-nums">{model.age}</dd>
             </div>
-            <div className="rounded-xl border border-border bg-secondary/40 px-4 py-2">
+            <div className="universe-app-chip rounded-xl border border-border bg-secondary/40 px-4 py-2">
               <dt className="text-xs text-muted-foreground">{labels.bmi}</dt>
               <dd className="font-semibold tabular-nums">
                 {model.bmi}{model.bmiLabel !== '--' ? <span className="ml-2 text-xs font-normal text-muted-foreground">{model.bmiLabel}</span> : null}

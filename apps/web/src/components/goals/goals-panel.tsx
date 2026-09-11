@@ -130,7 +130,7 @@ export function GoalsPanel({
               onClick={() => setEditing((current) => !current)}
               className="sm:flex-1"
             >
-              Edit goals
+              {t('goals.editGoals')}
             </Button>
             {suggestion ? (
               <Button type="button" variant="outline" onClick={applySuggestion}>

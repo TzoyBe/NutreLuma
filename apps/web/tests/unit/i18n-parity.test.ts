@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { el } from '@/i18n/el';
 import { en } from '@/i18n/en';
+import { t, type TranslationKey } from '@/i18n';
 
 /** Όλα τα leaf paths (π.χ. "billing.title") ενός λεξικού. */
 function leafPaths(obj: Record<string, unknown>, prefix = ''): string[] {
@@ -13,6 +14,17 @@ function leafPaths(obj: Record<string, unknown>, prefix = ''): string[] {
 }
 
 describe('i18n dictionary parity (EL ↔ EN)', () => {
+  it.each(['en', 'el'] as const)('resolves application universe labels in %s without leaking keys', (locale) => {
+    for (const key of [
+      'goals.editGoals', 'goals.closeGoals', 'goals.journey', 'goals.activeMilestones',
+      'profile.editProfile', 'profile.closeProfile', 'profile.summary',
+    ]) {
+      const label = t(key as TranslationKey, locale);
+      expect(label, `${locale}: ${key}`).not.toBe(key);
+      expect(label.trim()).not.toBe('');
+    }
+  });
+
   const elKeys = new Set(leafPaths(el as unknown as Record<string, unknown>));
   const enKeys = new Set(leafPaths(en as unknown as Record<string, unknown>));
 

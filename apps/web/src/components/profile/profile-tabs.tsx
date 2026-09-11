@@ -64,7 +64,7 @@ export function ProfileTabs({
       <div
         role="tablist"
         aria-label={t('profile.title')}
-        className="flex gap-1 rounded-2xl border border-border bg-secondary/40 p-1"
+        className="universe-app-tabs flex gap-1 rounded-2xl border border-border bg-secondary/40 p-1"
       >
         {TABS.map(([key, labelKey]) => (
           <button
