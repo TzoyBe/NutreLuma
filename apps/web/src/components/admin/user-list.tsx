@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiClientError } from '@/lib/api-client';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
 import { useT } from '@/i18n/client';
@@ -53,11 +53,19 @@ export function AdminUserList({ users }: { users: AdminUserRow[] }) {
               </Link>
               <p className="truncate text-sm text-muted-foreground">{user.email}</p>
             </div>
-            <p className="text-sm">
-              {user.accessUntilLabel
-                ? `${t('admin.accessUntil')} ${user.accessUntilLabel}`
-                : t('admin.noAccess')}
-            </p>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <p className="text-sm">
+                {user.accessUntilLabel
+                  ? `${t('admin.accessUntil')} ${user.accessUntilLabel}`
+                  : t('admin.noAccess')}
+              </p>
+              <Link
+                href={`/admin/users/${user.id}`}
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                {t('admin.manageUser')}
+              </Link>
+            </div>
           </div>
 
           <div className="mt-3 grid gap-2 sm:grid-cols-[6rem,1fr,auto]">

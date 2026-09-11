@@ -517,6 +517,7 @@ export const en: Translations = {
     extended: 'Access extended.',
     accessUntil: 'Access until',
     noAccess: 'No access',
+    manageUser: 'Manage user',
     dbTitle: 'Database',
     dbSubtitle: 'View, edit and delete records. Use with care.',
     dbModels: 'Tables',
