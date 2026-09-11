@@ -3781,24 +3781,6 @@ function GoalsOverviewScreen({
             </UniverseReveal>
           ) : null}
 
-          <UniverseReveal index={4}>
-            <View style={styles.goalSection}>
-              <Text style={styles.sectionTitle}>More for your goals</Text>
-              <Pressable accessibilityRole="button" onPress={onOpenMaintenance}>
-                <GlassCard style={styles.featureCard}>
-                  <View style={styles.featureIcon}>
-                    <Scale size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.featureCopy}>
-                    <Text style={styles.mealTitle}>Weight maintenance</Text>
-                    <Text style={styles.noticeCopy}>Range, trends and stability alerts.</Text>
-                  </View>
-                  <ChevronRight size={20} color={colors.mutedSoft} />
-                </GlassCard>
-              </Pressable>
-            </View>
-          </UniverseReveal>
-
           <UniverseReveal index={5}>
             <View style={styles.goalSection}>
               <View style={styles.goalSectionHeading}>
@@ -3825,6 +3807,24 @@ function GoalsOverviewScreen({
           <Text style={styles.noticeCopy}>Pull down to try again.</Text>
         </View>
       )}
+
+      <UniverseReveal index={4}>
+        <View style={styles.goalSection}>
+          <Text style={styles.sectionTitle}>More for your goals</Text>
+          <Pressable accessibilityRole="button" onPress={onOpenMaintenance}>
+            <GlassCard style={styles.featureCard}>
+              <View style={styles.featureIcon}>
+                <Scale size={20} color={colors.primary} />
+              </View>
+              <View style={styles.featureCopy}>
+                <Text style={styles.mealTitle}>Weight maintenance</Text>
+                <Text style={styles.noticeCopy}>Range, trends and stability alerts.</Text>
+              </View>
+              <ChevronRight size={20} color={colors.mutedSoft} />
+            </GlassCard>
+          </Pressable>
+        </View>
+      </UniverseReveal>
     </ScrollView>
   );
 }
@@ -6914,7 +6914,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   mealTypePill: {
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 14,
     borderRadius: 999,
     alignItems: 'center',
@@ -7492,7 +7492,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   filterButton: {
-    minHeight: 42,
+    minHeight: 44,
     paddingHorizontal: 16,
     borderRadius: 16,
     alignItems: 'center',
