@@ -72,6 +72,7 @@ export function GoalsPanel({
   const [steps, setSteps] = React.useState(str(goal.stepsTarget));
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [saving, setSaving] = React.useState(false);
+  const [editing, setEditing] = React.useState(false);
 
   function applySuggestion() {
     if (!suggestion) return;
@@ -81,6 +82,7 @@ export function GoalsPanel({
     setFat(String(suggestion.fatGrams));
     setFiber(String(suggestion.fiberGrams));
     setWater(String(suggestion.waterMl));
+    setEditing(true);
   }
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
@@ -101,6 +103,7 @@ export function GoalsPanel({
         stepsTarget: optionalNumber(steps),
       });
       toast.push(t('goals.saved'), 'success');
+      setEditing(false);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiClientError) {
@@ -118,140 +121,152 @@ export function GoalsPanel({
   return (
     <div className="space-y-5">
       <Card>
-        <CardContent>
-          <form onSubmit={save} noValidate className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label={`${t('goals.calories')} (kcal)`}
-                htmlFor="calorieTarget"
-                error={errors.calorieTarget}
-              >
-                <Input
-                  {...fieldAria('calorieTarget', errors.calorieTarget)}
-                  type="number"
-                  inputMode="numeric"
-                  min={CALORIE_LIMITS.minDailyTarget}
-                  max={CALORIE_LIMITS.maxDailyTarget}
-                  step={10}
-                  value={calories}
-                  onChange={(e) => setCalories(e.target.value)}
-                  required
-                />
-              </Field>
-
-              <Field label={`${t('goals.water')} (ml)`} htmlFor="waterMl" error={errors.waterMl}>
-                <Input
-                  {...fieldAria('waterMl', errors.waterMl)}
-                  type="number"
-                  inputMode="numeric"
-                  min={200}
-                  max={8000}
-                  step={50}
-                  value={water}
-                  onChange={(e) => setWater(e.target.value)}
-                />
-              </Field>
-
-              <Field label={t('goals.stepsTarget')} htmlFor="stepsTarget" error={errors.stepsTarget}>
-                <Input
-                  {...fieldAria('stepsTarget', errors.stepsTarget)}
-                  type="number"
-                  inputMode="numeric"
-                  min={1000}
-                  max={100000}
-                  step={500}
-                  value={steps}
-                  onChange={(e) => setSteps(e.target.value)}
-                />
-              </Field>
-
-              <Field
-                label={`${t('goals.protein')} (g)`}
-                htmlFor="proteinGrams"
-                error={errors.proteinGrams}
-              >
-                <Input
-                  {...fieldAria('proteinGrams', errors.proteinGrams)}
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="1"
-                  value={protein}
-                  onChange={(e) => setProtein(e.target.value)}
-                />
-              </Field>
-
-              <Field
-                label={`${t('goals.carbohydrate')} (g)`}
-                htmlFor="carbohydrateGrams"
-                error={errors.carbohydrateGrams}
-              >
-                <Input
-                  {...fieldAria('carbohydrateGrams', errors.carbohydrateGrams)}
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="1"
-                  value={carbs}
-                  onChange={(e) => setCarbs(e.target.value)}
-                />
-              </Field>
-
-              <Field label={`${t('goals.fat')} (g)`} htmlFor="fatGrams" error={errors.fatGrams}>
-                <Input
-                  {...fieldAria('fatGrams', errors.fatGrams)}
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="1"
-                  value={fat}
-                  onChange={(e) => setFat(e.target.value)}
-                />
-              </Field>
-
-              <Field
-                label={`${t('goals.fiber')} (g)`}
-                htmlFor="fiberGrams"
-                error={errors.fiberGrams}
-              >
-                <Input
-                  {...fieldAria('fiberGrams', errors.fiberGrams)}
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="1"
-                  value={fiber}
-                  onChange={(e) => setFiber(e.target.value)}
-                />
-              </Field>
-            </div>
-
-            {errors.form ? (
-              <p role="alert" className="text-sm font-medium text-destructive">
-                {errors.form}
-              </p>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              aria-expanded={editing}
+              aria-controls="daily-goals-editor"
+              onClick={() => setEditing((current) => !current)}
+              className="sm:flex-1"
+            >
+              Edit goals
+            </Button>
+            {suggestion ? (
+              <Button type="button" variant="outline" onClick={applySuggestion}>
+                <Wand2 className="h-4 w-4" aria-hidden="true" />
+                {t('goals.useSuggestion')}
+              </Button>
             ) : null}
+          </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button type="submit" loading={saving} className="sm:flex-1">
+          <p className="text-xs text-muted-foreground">
+            {suggestion ? t('goals.suggestionHint') : t('goals.noProfile')}
+          </p>
+
+          {editing ? (
+            <form id="daily-goals-editor" onSubmit={save} noValidate className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label={`${t('goals.calories')} (kcal)`}
+                  htmlFor="calorieTarget"
+                  error={errors.calorieTarget}
+                >
+                  <Input
+                    {...fieldAria('calorieTarget', errors.calorieTarget)}
+                    type="number"
+                    inputMode="numeric"
+                    min={CALORIE_LIMITS.minDailyTarget}
+                    max={CALORIE_LIMITS.maxDailyTarget}
+                    step={10}
+                    value={calories}
+                    onChange={(e) => setCalories(e.target.value)}
+                    required
+                  />
+                </Field>
+
+                <Field label={`${t('goals.water')} (ml)`} htmlFor="waterMl" error={errors.waterMl}>
+                  <Input
+                    {...fieldAria('waterMl', errors.waterMl)}
+                    type="number"
+                    inputMode="numeric"
+                    min={200}
+                    max={8000}
+                    step={50}
+                    value={water}
+                    onChange={(e) => setWater(e.target.value)}
+                  />
+                </Field>
+
+                <Field label={t('goals.stepsTarget')} htmlFor="stepsTarget" error={errors.stepsTarget}>
+                  <Input
+                    {...fieldAria('stepsTarget', errors.stepsTarget)}
+                    type="number"
+                    inputMode="numeric"
+                    min={1000}
+                    max={100000}
+                    step={500}
+                    value={steps}
+                    onChange={(e) => setSteps(e.target.value)}
+                  />
+                </Field>
+
+                <Field
+                  label={`${t('goals.protein')} (g)`}
+                  htmlFor="proteinGrams"
+                  error={errors.proteinGrams}
+                >
+                  <Input
+                    {...fieldAria('proteinGrams', errors.proteinGrams)}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="1"
+                    value={protein}
+                    onChange={(e) => setProtein(e.target.value)}
+                  />
+                </Field>
+
+                <Field
+                  label={`${t('goals.carbohydrate')} (g)`}
+                  htmlFor="carbohydrateGrams"
+                  error={errors.carbohydrateGrams}
+                >
+                  <Input
+                    {...fieldAria('carbohydrateGrams', errors.carbohydrateGrams)}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="1"
+                    value={carbs}
+                    onChange={(e) => setCarbs(e.target.value)}
+                  />
+                </Field>
+
+                <Field label={`${t('goals.fat')} (g)`} htmlFor="fatGrams" error={errors.fatGrams}>
+                  <Input
+                    {...fieldAria('fatGrams', errors.fatGrams)}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="1"
+                    value={fat}
+                    onChange={(e) => setFat(e.target.value)}
+                  />
+                </Field>
+
+                <Field
+                  label={`${t('goals.fiber')} (g)`}
+                  htmlFor="fiberGrams"
+                  error={errors.fiberGrams}
+                >
+                  <Input
+                    {...fieldAria('fiberGrams', errors.fiberGrams)}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="1"
+                    value={fiber}
+                    onChange={(e) => setFiber(e.target.value)}
+                  />
+                </Field>
+              </div>
+
+              {errors.form ? (
+                <p role="alert" className="text-sm font-medium text-destructive">
+                  {errors.form}
+                </p>
+              ) : null}
+
+              <Button type="submit" loading={saving} block>
                 {t('common.save')}
               </Button>
-              {suggestion ? (
-                <Button type="button" variant="outline" onClick={applySuggestion}>
-                  <Wand2 className="h-4 w-4" aria-hidden="true" />
-                  {t('goals.useSuggestion')}
-                </Button>
-              ) : null}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              {suggestion ? t('goals.suggestionHint') : t('goals.noProfile')}
-            </p>
-          </form>
+            </form>
+          ) : null}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card solid className="bg-muted/20 shadow-none">
         <CardHeader>
           <CardTitle>{t('goals.history')}</CardTitle>
         </CardHeader>
@@ -260,7 +275,7 @@ export function GoalsPanel({
             <p className="text-sm text-muted-foreground">{t('goals.historyEmpty')}</p>
           ) : (
             <ul className="divide-y divide-border">
-              {history.map((row) => (
+              {history.slice(0, 6).map((row) => (
                 <li key={row.id} className="flex items-baseline justify-between gap-3 py-2">
                   <div>
                     <p className="text-sm font-medium">
