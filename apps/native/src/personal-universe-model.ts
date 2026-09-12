@@ -221,3 +221,143 @@ export function buildNativeProfileUniverse(
     ],
   };
 }
+
+export interface NativeStatsUniverseInput {
+  average7: number;
+  average30: number;
+  weekTotal: number;
+  daysWithinTargetPercent: number | null;
+}
+
+export interface NativeStatsUniverseModel {
+  hero: number;
+  satellites: Array<{
+    key: 'average30' | 'weekTotal' | 'daysWithinTarget';
+    label: string;
+    value: string;
+    unit?: string;
+    tone: NativeUniverseTone;
+  }>;
+}
+
+export function buildNativeStatsUniverse(input: NativeStatsUniverseInput): NativeStatsUniverseModel {
+  return {
+    hero: Math.round(input.average7),
+    satellites: [
+      { key: 'average30', label: 'Avg 30', value: `${Math.round(input.average30)}`, unit: 'kcal', tone: 'cyan' },
+      { key: 'weekTotal', label: 'Week total', value: `${Math.round(input.weekTotal)}`, unit: 'kcal', tone: 'gold' },
+      {
+        key: 'daysWithinTarget',
+        label: 'Within target',
+        value: input.daysWithinTargetPercent === null ? '--' : `${input.daysWithinTargetPercent}`,
+        unit: input.daysWithinTargetPercent === null ? undefined : '%',
+        tone: 'violet',
+      },
+    ],
+  };
+}
+
+export interface NativeHistoryUniverseInput {
+  dayTotal: number;
+  weekTotal: number;
+  weekAverage: number;
+  monthAverage: number;
+}
+
+export interface NativeHistoryUniverseModel {
+  hero: number;
+  satellites: Array<{
+    key: 'weekTotal' | 'weekAverage' | 'monthAverage';
+    label: string;
+    value: string;
+    unit: 'kcal';
+    tone: NativeUniverseTone;
+  }>;
+}
+
+export function buildNativeHistoryUniverse(input: NativeHistoryUniverseInput): NativeHistoryUniverseModel {
+  return {
+    hero: Math.round(input.dayTotal),
+    satellites: [
+      { key: 'weekTotal', label: 'Week total', value: `${Math.round(input.weekTotal)}`, unit: 'kcal', tone: 'cyan' },
+      { key: 'weekAverage', label: 'Week avg', value: `${Math.round(input.weekAverage)}`, unit: 'kcal', tone: 'gold' },
+      { key: 'monthAverage', label: 'Month avg', value: `${Math.round(input.monthAverage)}`, unit: 'kcal', tone: 'violet' },
+    ],
+  };
+}
+
+export interface NativeInsightsUniverseInput {
+  calibrationScore: number;
+  qualityScore: number | null;
+  correctionRate30d: number;
+  energyConfidencePercent: number | null;
+}
+
+export interface NativeInsightsUniverseModel {
+  hero: number;
+  satellites: Array<{
+    key: 'dataConfidence' | 'correctionRate' | 'energyConfidence';
+    label: string;
+    value: string;
+    unit?: string;
+    tone: NativeUniverseTone;
+  }>;
+}
+
+export function buildNativeInsightsUniverse(input: NativeInsightsUniverseInput): NativeInsightsUniverseModel {
+  return {
+    hero: input.calibrationScore,
+    satellites: [
+      {
+        key: 'dataConfidence',
+        label: 'Data confidence',
+        value: input.qualityScore === null ? '--' : `${input.qualityScore}`,
+        unit: input.qualityScore === null ? undefined : '%',
+        tone: 'cyan',
+      },
+      { key: 'correctionRate', label: '30d corrections', value: `${input.correctionRate30d}`, unit: '%', tone: 'gold' },
+      {
+        key: 'energyConfidence',
+        label: 'Energy confidence',
+        value: input.energyConfidencePercent === null ? '--' : `${input.energyConfidencePercent}`,
+        unit: input.energyConfidencePercent === null ? undefined : '%',
+        tone: 'violet',
+      },
+    ],
+  };
+}
+
+export interface NativeProgressUniverseInput {
+  currentWeightKg: number | null;
+  targetWeightKg: number | null;
+  weekTotalKcal: number;
+  avg7Kcal: number;
+  calibrationScore: number;
+}
+
+export interface NativeProgressUniverseModel {
+  heroDeltaKg: number | null;
+  satellites: Array<{
+    key: 'history' | 'stats' | 'insights';
+    label: string;
+    value: string;
+    unit?: string;
+    tone: NativeUniverseTone;
+  }>;
+}
+
+export function buildNativeProgressUniverse(input: NativeProgressUniverseInput): NativeProgressUniverseModel {
+  const heroDeltaKg =
+    input.currentWeightKg !== null && input.targetWeightKg !== null
+      ? Math.round((input.currentWeightKg - input.targetWeightKg) * 10) / 10
+      : null;
+
+  return {
+    heroDeltaKg,
+    satellites: [
+      { key: 'history', label: 'This week', value: `${Math.round(input.weekTotalKcal)}`, unit: 'kcal', tone: 'cyan' },
+      { key: 'stats', label: '7-day avg', value: `${Math.round(input.avg7Kcal)}`, unit: 'kcal', tone: 'gold' },
+      { key: 'insights', label: 'Calibration', value: `${input.calibrationScore}`, unit: '%', tone: 'violet' },
+    ],
+  };
+}
