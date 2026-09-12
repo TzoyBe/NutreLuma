@@ -11,6 +11,8 @@ import { formatDateInTz, formatTimeInTz, todayISO } from '@/lib/dates';
 import { EmptyState, StatTile } from '@/components/ui/misc';
 import { MealCard } from '@/components/meal/meal-card';
 import { HistoryFilters } from '@/components/history/history-filters';
+import { HistoryUniverse } from '@/components/history/history-universe';
+import { buildHistoryUniverseModel } from '@/components/history/history-universe-model';
 import { getT } from '@/i18n/locale';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -48,6 +50,8 @@ export default async function HistoryPage({
     ),
   ]);
 
+  const universeModel = buildHistoryUniverseModel(totals);
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const buildPageUrl = (nextPage: number) => {
     const params = new URLSearchParams(flat);
@@ -61,6 +65,17 @@ export default async function HistoryPage({
         <h1 className="text-xl font-semibold">{t('history.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('history.subtitle')}</p>
       </div>
+
+      <HistoryUniverse
+        model={universeModel}
+        title={t('history.title')}
+        heroLabel={t('history.dayTotal')}
+        labels={{
+          weekTotal: t('history.weekTotal'),
+          weekAverage: t('history.weekAverage'),
+          monthAverage: t('history.monthAverage'),
+        }}
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label={t('history.dayTotal')} value={totals.dayTotal} suffix="kcal" />
