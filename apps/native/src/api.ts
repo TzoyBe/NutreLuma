@@ -124,6 +124,15 @@ export interface StatsOverviewResult {
   } | null;
 }
 
+export interface HistoryTotalsResult {
+  dayTotal: number;
+  weekTotal: number;
+  weekAverage: number;
+  monthTotal: number;
+  monthAverage: number;
+  target: number | null;
+}
+
 export interface GoalView {
   id: string | null;
   effectiveFrom: string | null;
@@ -746,6 +755,11 @@ export const api = {
 
   stats(token: string, days = 30) {
     return request<StatsOverviewResult>(`/api/stats?days=${days}`, { token });
+  },
+
+  historyTotals(token: string, date?: string) {
+    const query = date ? `?date=${encodeURIComponent(date)}` : '';
+    return request<HistoryTotalsResult>(`/api/history-totals${query}`, { token });
   },
 
   insights(token: string) {
