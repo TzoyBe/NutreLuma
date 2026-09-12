@@ -213,3 +213,24 @@ export async function ensureMealReminderNotifications(userId: string): Promise<v
     });
   }
 }
+
+/**
+ * Καλείται από cron (όχι από κάποιον logged-in client) ώστε τα reminders να
+ * φτάνουν σε χρήστες που δεν ανοίγουν καθόλου την εφαρμογή εκείνη τη μέρα.
+ */
+export async function runMealReminderNotificationsForAllUsers(): Promise<{
+  userCount: number;
+}> {
+  const userIds = await prisma.healthProfile.findMany({ select: { userId: true } });
+  for (const { userId } of userIds) {
+    try {
+      await ensureMealReminderNotifications(userId);
+    } catch (error) {
+      logger.error('meal_reminder_cron_failed', {
+        userId,
+        message: error instanceof Error ? error.message : 'unknown',
+      });
+    }
+  }
+  return { userCount: userIds.length };
+}

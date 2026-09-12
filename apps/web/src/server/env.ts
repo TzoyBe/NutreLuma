@@ -83,6 +83,7 @@ const envSchema = z.object({
   PASSWORD_RESET_TTL_MINUTES: intFromEnv(60),
   EMAIL_VERIFICATION_TTL_HOURS: intFromEnv(24),
   EXPO_ACCESS_TOKEN: z.string().optional().default(''),
+  CRON_SECRET: z.string().optional().default(''),
 
   DEFAULT_DAILY_WATER_TARGET_ML: intFromEnv(2500),
 
@@ -159,6 +160,7 @@ function load() {
     PASSWORD_RESET_TTL_MINUTES: process.env.PASSWORD_RESET_TTL_MINUTES,
     EMAIL_VERIFICATION_TTL_HOURS: process.env.EMAIL_VERIFICATION_TTL_HOURS,
     EXPO_ACCESS_TOKEN: process.env.EXPO_ACCESS_TOKEN,
+    CRON_SECRET: process.env.CRON_SECRET,
     DEFAULT_DAILY_WATER_TARGET_ML: process.env.DEFAULT_DAILY_WATER_TARGET_ML,
     DEFAULT_LOCALE: process.env.DEFAULT_LOCALE,
     DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE,
