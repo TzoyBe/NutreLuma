@@ -77,8 +77,10 @@ import {
   buildNativeHistoryUniverse,
   buildNativeInsightsUniverse,
   buildNativeProfileUniverse,
+  buildNativeProgressUniverse,
   buildNativeRecipeUniverse,
   buildNativeStatsUniverse,
+  type NativeProgressUniverseModel,
 } from './src/personal-universe-model';
 import {
   filterMilestoneHistory,
@@ -4449,17 +4451,30 @@ function ProgressScreen({
   const [targetWeightKg, setTargetWeightKg] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [universeModel, setUniverseModel] = useState<NativeProgressUniverseModel | null>(null);
 
   async function load(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const [weightRes, profileRes] = await Promise.all([
+      const [weightRes, profileRes, historyTotals, stats, intelligence] = await Promise.all([
         api.weights(session.token),
         api.profile(session.token),
+        api.historyTotals(session.token),
+        api.stats(session.token, 30),
+        api.intelligence(session.token),
       ]);
       setWeights(weightRes.entries ?? []);
       setTargetWeightKg(profileRes.profile?.targetWeightKg ?? null);
+      setUniverseModel(
+        buildNativeProgressUniverse({
+          currentWeightKg: weightRes.entries?.[0]?.weightKg ?? null,
+          targetWeightKg: profileRes.profile?.targetWeightKg ?? null,
+          weekTotalKcal: historyTotals.weekTotal,
+          avg7Kcal: stats.average7,
+          calibrationScore: intelligence.calibration?.score ?? 0,
+        }),
+      );
     } catch {
       // Κρατάμε ό,τι έχουμε ήδη· το γράφημα δείχνει κενή κατάσταση αν χρειαστεί.
     } finally {
@@ -4489,6 +4504,46 @@ function ProgressScreen({
           </View>
         </View>
       </View>
+
+      {universeModel ? (
+        <UniverseReveal index={0}>
+          <UniverseHero
+            eyebrow="Your progress"
+            title="Your progress universe"
+            subtitle="Weight vs. target, with quick jumps into history, stats, and insights."
+            accessibilityLabel={
+              universeModel.heroDeltaKg === null
+                ? 'Weight delta unavailable'
+                : `${universeModel.heroDeltaKg > 0 ? 'Above' : 'At or below'} target by ${Math.abs(universeModel.heroDeltaKg)} kilograms`
+            }
+            center={(
+              <View style={styles.goalHeroCenterCopy}>
+                <Text selectable style={styles.goalHeroCalories}>
+                  {universeModel.heroDeltaKg === null
+                    ? '--'
+                    : `${universeModel.heroDeltaKg > 0 ? '+' : ''}${universeModel.heroDeltaKg}`}
+                </Text>
+                <Text style={styles.goalHeroUnit}>kg vs. target</Text>
+              </View>
+            )}
+            satellites={universeModel.satellites.map((satellite) => (
+              <Pressable
+                key={satellite.key}
+                onPress={
+                  satellite.key === 'history' ? onOpenHistory : satellite.key === 'stats' ? onOpenStats : onOpenInsights
+                }
+              >
+                <UniverseMetric
+                  label={satellite.label}
+                  value={satellite.value}
+                  unit={satellite.unit}
+                  tone={satellite.tone}
+                />
+              </Pressable>
+            ))}
+          />
+        </UniverseReveal>
+      ) : null}
 
       {loading ? (
         <View style={styles.gaugeCard}>
