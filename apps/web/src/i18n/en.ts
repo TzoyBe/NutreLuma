@@ -596,6 +596,8 @@ export const en: Translations = {
   },
   recipes: {
     navTitle: 'Recipes',
+    subtitle: "Today's meal plan and the recipes you've saved.",
+    mealsPlannedToday: 'Meals planned today',
     savedTitle: 'Saved recipes',
     savedSubtitle: 'Recipes you saved from your suggestions.',
     title: 'AI meal plan', description: 'Create up to three suggestions tailored to your remaining targets today.', newSuggestion: 'New suggestion', createSuggestions: 'Create suggestions', calories: 'Calories', protein: 'Protein', carbs: 'Carbs', fat: 'Fat', fibre: 'Fibre', remaining: 'Remaining', empty: 'Suggestions are created only when you request them.', disclaimer: 'Recipes and nutrition values are automated estimates. Always check ingredients, allergies and quantities. The app does not replace a doctor or dietitian.', breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', ingredientsSteps: 'Ingredients and steps', allergens: 'Allergen check', save: 'Save recipe', saving: 'Saving…', saved: 'Saved', savedConfirmation: 'Recipe saved.', shoppingList: 'Shopping list', generateFailed: 'Could not generate recipes.',
