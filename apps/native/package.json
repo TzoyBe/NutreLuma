@@ -28,6 +28,7 @@
     "vitest": "^4.1.11"
   },
   "scripts": {
+    "eas-build-pre-install": "node scripts/bump-version.js",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
