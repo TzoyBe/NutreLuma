@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Disclaimer, EmptyState, StatTile } from '@/components/ui/misc';
 import { BarChart, DistributionBar, LineChart } from '@/components/charts';
 import { ConsistencyHeatmap } from '@/components/stats/consistency-heatmap';
+import { StatsUniverse } from '@/components/stats/stats-universe';
+import { buildStatsUniverseModel } from '@/components/stats/stats-universe-model';
 import { cn } from '@/lib/utils';
 import { getLocale, getT } from '@/i18n/locale';
 
@@ -31,6 +33,13 @@ export default async function StatsPage({
   const params = await searchParams;
   const days = params.days === '90' ? 90 : 30;
   const stats = await getStatsOverview(user.id, days);
+
+  const universeModel = buildStatsUniverseModel({
+    average7: stats.average7,
+    average30: stats.average30,
+    weekTotal: stats.weekTotal,
+    daysWithinTargetPercent: stats.daysWithinTargetPercent,
+  });
 
   const chartData = stats.dailyTotals.map((point) => ({
     label: formatDayISOHuman(point.day),
@@ -94,6 +103,17 @@ export default async function StatsPage({
         <EmptyState title={t('stats.noData')} />
       ) : (
         <>
+          <StatsUniverse
+            model={universeModel}
+            title={t('stats.title')}
+            heroLabel={t('stats.avg7')}
+            labels={{
+              average30: t('stats.avg30'),
+              weekTotal: t('history.weekTotal'),
+              daysWithinTarget: t('stats.daysWithinTarget'),
+            }}
+          />
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile label={t('stats.avg7')} value={stats.average7} suffix="kcal" />
             <StatTile label={t('stats.avg30')} value={stats.average30} suffix="kcal" />

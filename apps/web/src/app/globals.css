@@ -601,6 +601,72 @@
   .recipes-universe-macro-label { min-height: 2.5em; text-wrap: balance; }
 }
 
+/* ---------- Personal Universe: generic hero (Progress/History/Stats/Insights) ---------- */
+.universe-hero-orbit {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  justify-items: center;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+.universe-hero-orbit.glass-specular::before { display: none; }
+
+.universe-hero-orbit-center {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: clamp(8rem, 24vw, 12rem);
+  aspect-ratio: 1;
+  margin-block: 0.75rem 1.25rem;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--glass-border) / 0.35);
+  background:
+    radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.24), transparent 70%),
+    hsl(var(--glass-bg) / 0.98);
+  box-shadow: inset 0 1px 0 hsl(var(--liquid-edge) / 0.35), 0 0 36px -20px hsl(var(--primary) / 0.7);
+}
+.universe-hero-orbit-center > :first-child {
+  font-family: var(--font-sora), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.universe-hero-orbit-center > :last-child,
+.universe-hero-satellite-label {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+}
+
+.universe-hero-satellite {
+  --macro-color: var(--nutrition-protein);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  min-width: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid hsl(var(--macro-color) / 0.48);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.universe-hero-satellite[data-tone='gold'] { --macro-color: var(--nutrition-carbs); }
+.universe-hero-satellite[data-tone='violet'] { --macro-color: var(--nutrition-fat); }
+.universe-hero-satellite-value {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.universe-hero-satellite-value > span { margin-inline-start: 0.2rem; font-size: 0.75rem; }
+@media (max-width: 400px) {
+  .universe-hero-orbit { grid-template-columns: 1fr 1.4fr 1fr; }
+  .universe-hero-satellite-label { min-height: 2.5em; text-wrap: balance; }
+}
+
 .profile-universe-avatar {
   position: relative;
   width: clamp(5rem, 10vw, 6rem);
