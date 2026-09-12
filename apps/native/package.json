@@ -1,6 +1,6 @@
 {
   "name": "nutreluma-native",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.ts",
   "dependencies": {
     "expo": "~57.0.21",
@@ -39,7 +39,7 @@
     "build:ios:preview": "npx eas-cli build --platform ios --profile preview",
     "build:android:preview": "npx eas-cli build --platform android --profile preview",
     "build:ios:production": "npx eas-cli build --platform ios --profile production",
-    "build:android:production": "node scripts/eas-cli.mjs build --platform android --profile production",
+    "build:android:production": "node scripts/bump-version.js && node scripts/eas-cli.mjs build --platform android --profile production",
     "submit:ios": "npx eas-cli submit --platform ios --profile production",
     "submit:android": "npx eas-cli submit --platform android --profile production"
   },
