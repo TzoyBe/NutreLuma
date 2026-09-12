@@ -53,37 +53,17 @@ type Plan = {
 
 export function DailyPlanPanel({ date }: { date: string }) {
   const [plan, setPlan] = React.useState<Plan | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [saved, setSaved] = React.useState<string[]>([]);
   const [savingRecipe, setSavingRecipe] = React.useState<string | null>(null);
   const toast = useToast();
   const t = useT();
 
   React.useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
     setPlan(null);
     setSaved([]);
     setSavingRecipe(null);
-
-    api
-      .get<{ plan: Plan | null }>(`/api/meal-plan?date=${encodeURIComponent(date)}`)
-      .then((result) => {
-        if (!cancelled) setPlan(result.plan);
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          toast.push(error instanceof ApiClientError ? error.message : t('recipes.generateFailed'), 'error');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [date, t, toast]);
+  }, [date]);
 
   async function generate(force = false) {
     setLoading(true);

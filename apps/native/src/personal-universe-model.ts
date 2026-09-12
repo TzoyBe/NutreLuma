@@ -114,6 +114,63 @@ export function buildNativeGoalUniverse(
   };
 }
 
+export interface NativeRecipeUniverseInput {
+  hasPlan: boolean;
+  plannedCalories: number;
+  plannedProteinGrams: number;
+  plannedCarbohydrateGrams: number;
+  plannedFatGrams: number;
+  mealsPlanned: number;
+  savedCount: number;
+}
+
+export interface NativeRecipeUniverseModel {
+  calories: number | null;
+  macros: Array<{
+    key: 'protein' | 'carbohydrate' | 'fat';
+    label: string;
+    value: number | null;
+    unit: 'g';
+    tone: NativeUniverseTone;
+  }>;
+  journey: { mealsPlanned: string; saved: string };
+}
+
+export function buildNativeRecipeUniverse(
+  input: NativeRecipeUniverseInput,
+): NativeRecipeUniverseModel {
+  return {
+    calories: input.hasPlan ? Math.round(input.plannedCalories) : null,
+    macros: [
+      {
+        key: 'protein',
+        label: 'Protein',
+        value: input.hasPlan ? Math.round(input.plannedProteinGrams) : null,
+        unit: 'g',
+        tone: 'cyan',
+      },
+      {
+        key: 'carbohydrate',
+        label: 'Carbs',
+        value: input.hasPlan ? Math.round(input.plannedCarbohydrateGrams) : null,
+        unit: 'g',
+        tone: 'gold',
+      },
+      {
+        key: 'fat',
+        label: 'Fat',
+        value: input.hasPlan ? Math.round(input.plannedFatGrams) : null,
+        unit: 'g',
+        tone: 'violet',
+      },
+    ],
+    journey: {
+      mealsPlanned: String(input.mealsPlanned),
+      saved: String(input.savedCount),
+    },
+  };
+}
+
 export function buildNativeProfileUniverse(
   input: NativeProfileUniverseInput,
 ): NativeProfileUniverseModel {

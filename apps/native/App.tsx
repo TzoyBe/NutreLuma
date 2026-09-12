@@ -72,7 +72,11 @@ import {
   UniverseReveal,
   useReducedMotionPreference,
 } from './src/personal-universe-ui';
-import { buildNativeGoalUniverse, buildNativeProfileUniverse } from './src/personal-universe-model';
+import {
+  buildNativeGoalUniverse,
+  buildNativeProfileUniverse,
+  buildNativeRecipeUniverse,
+} from './src/personal-universe-model';
 import {
   filterMilestoneHistory,
   partitionMilestones,
@@ -4023,6 +4027,28 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
     load();
   }, []);
 
+  const universeModel = useMemo(() => {
+    const totals = planMeals.reduce(
+      (acc, recipe) => ({
+        calories: acc.calories + (recipe.estimatedCalories ?? 0),
+        protein: acc.protein + (recipe.macros?.proteinGrams ?? 0),
+        carbohydrate: acc.carbohydrate + (recipe.macros?.carbohydrateGrams ?? 0),
+        fat: acc.fat + (recipe.macros?.fatGrams ?? 0),
+      }),
+      { calories: 0, protein: 0, carbohydrate: 0, fat: 0 },
+    );
+
+    return buildNativeRecipeUniverse({
+      hasPlan: planMeals.length > 0,
+      plannedCalories: totals.calories,
+      plannedProteinGrams: totals.protein,
+      plannedCarbohydrateGrams: totals.carbohydrate,
+      plannedFatGrams: totals.fat,
+      mealsPlanned: planMeals.length,
+      savedCount: recipes.length,
+    });
+  }, [planMeals, recipes.length]);
+
   return (
     <ScrollView
       contentContainerStyle={styles.dashboardContent}
@@ -4044,13 +4070,52 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
         </View>
       </View>
 
-      <Pressable
-        onPress={generatePlan}
-        disabled={generating}
-        style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}
-      >
-        <Text style={styles.actionPrimaryText}>{generating ? 'Generating...' : 'Generate plan'}</Text>
-      </Pressable>
+      <UniverseReveal index={0}>
+        <View style={styles.goalHeroStack}>
+          <UniverseHero
+            eyebrow="Today's suggestions"
+            title="Your recipe universe"
+            subtitle={
+              planMeals.length
+                ? 'A fresh set of recipes built around your remaining targets today.'
+                : 'Press generate to build recipes from your remaining targets today.'
+            }
+            accessibilityLabel="Recipe plan for today"
+            center={(
+              <View style={styles.goalHeroCenterCopy}>
+                <Text selectable style={styles.goalHeroCalories}>
+                  {universeModel.calories ?? '--'}
+                </Text>
+                <Text style={styles.goalHeroUnit}>kcal planned</Text>
+              </View>
+            )}
+            satellites={universeModel.macros.map((macro) => (
+              <UniverseMetric
+                key={macro.key}
+                label={macro.label}
+                value={macro.value ?? '--'}
+                unit={macro.unit}
+                tone={macro.tone}
+              />
+            ))}
+          />
+          <GlassCard style={styles.goalPrimaryActions}>
+            <View style={styles.actionRow}>
+              <UniverseMetric label="Meals planned" value={universeModel.journey.mealsPlanned} tone="emerald" />
+              <UniverseMetric label="Saved recipes" value={universeModel.journey.saved} tone="blue" />
+            </View>
+            <Pressable
+              onPress={generatePlan}
+              disabled={generating}
+              style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}
+            >
+              <Text style={styles.actionPrimaryText}>
+                {generating ? 'Generating...' : planMeals.length ? 'New suggestions' : 'Generate plan'}
+              </Text>
+            </Pressable>
+          </GlassCard>
+        </View>
+      </UniverseReveal>
 
       {generating ? (
         <AiLoadingCard
