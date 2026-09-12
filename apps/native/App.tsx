@@ -76,6 +76,7 @@ import {
   buildNativeGoalUniverse,
   buildNativeProfileUniverse,
   buildNativeRecipeUniverse,
+  buildNativeStatsUniverse,
 } from './src/personal-universe-model';
 import {
   filterMilestoneHistory,
@@ -2551,6 +2552,15 @@ function StatsScreen({
     total: slice.total,
   }));
 
+  const universeModel = stats
+    ? buildNativeStatsUniverse({
+        average7: stats.average7,
+        average30: stats.average30,
+        weekTotal: stats.weekTotal,
+        daysWithinTargetPercent: stats.daysWithinTargetPercent,
+      })
+    : null;
+
   return (
     <ScrollView
       contentContainerStyle={styles.dashboardContent}
@@ -2597,6 +2607,32 @@ function StatsScreen({
         </GlassCard>
       ) : stats && stats.daysLogged > 0 ? (
         <>
+          {universeModel ? (
+            <UniverseReveal index={0}>
+              <UniverseHero
+                eyebrow={`${days}-day overview`}
+                title="Your stats universe"
+                subtitle="A snapshot of your recent calorie consistency."
+                accessibilityLabel={`Average 7-day calories: ${universeModel.hero}`}
+                center={(
+                  <View style={styles.goalHeroCenterCopy}>
+                    <Text selectable style={styles.goalHeroCalories}>{universeModel.hero}</Text>
+                    <Text style={styles.goalHeroUnit}>kcal · 7-day avg</Text>
+                  </View>
+                )}
+                satellites={universeModel.satellites.map((satellite) => (
+                  <UniverseMetric
+                    key={satellite.key}
+                    label={satellite.label}
+                    value={satellite.value}
+                    unit={satellite.unit}
+                    tone={satellite.tone}
+                  />
+                ))}
+              />
+            </UniverseReveal>
+          ) : null}
+
           <View style={styles.macroGrid}>
             <MetricCard value={formatWholeNumber(stats.average7)} label="avg 7 kcal" />
             <MetricCard value={formatWholeNumber(stats.average30)} label="avg 30 kcal" />
