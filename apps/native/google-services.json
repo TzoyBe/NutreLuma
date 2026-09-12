@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "799291451665",
+    "project_id": "nutreluma-47275",
+    "storage_bucket": "nutreluma-47275.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:799291451665:android:b14123915d1156db1444b0",
+        "android_client_info": {
+          "package_name": "com.joybeedigital.nutreluma"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpSShu_hA8xCZnYeFB_H2nI_WrgAPNfug"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
