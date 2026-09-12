@@ -75,6 +75,7 @@ import {
 import {
   buildNativeGoalUniverse,
   buildNativeHistoryUniverse,
+  buildNativeInsightsUniverse,
   buildNativeProfileUniverse,
   buildNativeRecipeUniverse,
   buildNativeStatsUniverse,
@@ -2764,6 +2765,16 @@ function InsightsScreen({ session, onBack }: { session: Session; onBack: () => v
   const calibration = intelligence?.calibration;
   const quality = insights?.quality;
 
+  const universeModel =
+    calibration && quality
+      ? buildNativeInsightsUniverse({
+          calibrationScore: calibration.score,
+          qualityScore: quality.score,
+          correctionRate30d: intelligence?.correctionRates?.['30d'] ?? 0,
+          energyConfidencePercent: insights?.energy ? Math.round(insights.energy.confidence * 100) : null,
+        })
+      : null;
+
   return (
     <ScrollView
       contentContainerStyle={styles.dashboardContent}
@@ -2789,11 +2800,37 @@ function InsightsScreen({ session, onBack }: { session: Session; onBack: () => v
         </GlassCard>
       ) : (
         <>
-          <View style={styles.macroGrid}>
-            <MetricCard value={calibration ? `${calibration.score}%` : '--'} label="calibration" />
-            <MetricCard value={quality ? `${quality.score}%` : '--'} label={`quality ${quality?.level ?? ''}`} />
-            <MetricCard value={`${intelligence?.correctionRates?.['30d'] ?? 0}%`} label="30d corrections" />
-          </View>
+          {universeModel ? (
+            <UniverseReveal index={0}>
+              <UniverseHero
+                eyebrow="Personal signals"
+                title="Your insights universe"
+                subtitle="How well the app understands your logging habits."
+                accessibilityLabel={`Calibration score: ${universeModel.hero}%`}
+                center={(
+                  <View style={styles.goalHeroCenterCopy}>
+                    <Text selectable style={styles.goalHeroCalories}>{universeModel.hero}%</Text>
+                    <Text style={styles.goalHeroUnit}>calibration</Text>
+                  </View>
+                )}
+                satellites={universeModel.satellites.map((satellite) => (
+                  <UniverseMetric
+                    key={satellite.key}
+                    label={satellite.label}
+                    value={satellite.value}
+                    unit={satellite.unit}
+                    tone={satellite.tone}
+                  />
+                ))}
+              />
+            </UniverseReveal>
+          ) : (
+            <View style={styles.macroGrid}>
+              <MetricCard value={calibration ? `${calibration.score}%` : '--'} label="calibration" />
+              <MetricCard value={quality ? `${quality.score}%` : '--'} label={`quality ${quality?.level ?? ''}`} />
+              <MetricCard value={`${intelligence?.correctionRates?.['30d'] ?? 0}%`} label="30d corrections" />
+            </View>
+          )}
 
           {insights?.energy ? (
             <GlassCard style={styles.authPanel}>
