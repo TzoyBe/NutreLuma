@@ -13,6 +13,7 @@ backups/
 .env.*.local
 uploads
 *.log
+apps/native/google-services.json
 # archives / build info (keep repo lean)
 *.zip
 *.tar.gz

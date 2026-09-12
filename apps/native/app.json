@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.joybeedigital.nutreluma",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0B1020",
         "foregroundImage": "./assets/android-icon-foreground.png",
