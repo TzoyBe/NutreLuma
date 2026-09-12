@@ -6,6 +6,11 @@ import { getProfile } from '@/server/services/profile';
 import { listWeightEntries } from '@/server/services/weight';
 import { Card, CardContent } from '@/components/ui/card';
 import { GoalProgressChart } from '@/components/progress/goal-progress-chart';
+import { ProgressUniverse } from '@/components/progress/progress-universe';
+import { buildProgressUniverseModel } from '@/components/progress/progress-universe-model';
+import { getHistoryTotals, getStatsOverview } from '@/server/services/stats';
+import { getPersonalCalibration } from '@/server/services/personal-intelligence';
+import { todayISO } from '@/lib/dates';
 import { getT } from '@/i18n/locale';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,6 +28,20 @@ export default async function ProgressPage() {
     getProfile(user.id),
     listWeightEntries(user.id, { limit: 30 }),
   ]);
+
+  const today = profile ? todayISO(profile.timezone) : null;
+  const [historyTotals, statsOverview, calibration] = await Promise.all([
+    today ? getHistoryTotals(user.id, today, profile!.timezone, profile!.effectiveDailyCalorieTarget) : null,
+    getStatsOverview(user.id, 30),
+    getPersonalCalibration(user.id),
+  ]);
+  const universeModel = buildProgressUniverseModel({
+    currentWeightKg: weights[0]?.weightKg ?? null,
+    targetWeightKg: profile?.targetWeightKg ?? null,
+    weekTotalKcal: historyTotals?.weekTotal ?? 0,
+    avg7Kcal: statsOverview.average7,
+    calibrationScore: calibration.score,
+  });
 
   const history = { href: '/history', title: t('progress.history'), desc: t('progress.historyDesc'), Icon: CalendarDays };
   const insights = { href: '/insights', title: t('progress.insights'), desc: t('progress.insightsDesc'), Icon: Sparkles };
@@ -53,6 +72,16 @@ export default async function ProgressPage() {
         <h1 className="text-xl font-semibold">{t('progress.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('progress.subtitle')}</p>
       </div>
+
+      <ProgressUniverse
+        model={universeModel}
+        title={t('progress.title')}
+        labels={{
+          history: t('progress.history'),
+          stats: t('progress.stats'),
+          insights: t('progress.insights'),
+        }}
+      />
 
       <GoalProgressChart
         points={weights.map((w) => ({ entryDate: w.entryDate, weightKg: w.weightKg }))}
