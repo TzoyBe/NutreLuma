@@ -31,16 +31,18 @@ export default async function ProgressPage() {
 
   const today = profile ? todayISO(profile.timezone) : null;
   const [historyTotals, statsOverview, calibration] = await Promise.all([
-    today ? getHistoryTotals(user.id, today, profile!.timezone, profile!.effectiveDailyCalorieTarget) : null,
-    getStatsOverview(user.id, 30),
-    getPersonalCalibration(user.id),
+    today
+      ? getHistoryTotals(user.id, today, profile!.timezone, profile!.effectiveDailyCalorieTarget).catch(() => null)
+      : Promise.resolve(null),
+    getStatsOverview(user.id, 30).catch(() => null),
+    getPersonalCalibration(user.id).catch(() => null),
   ]);
   const universeModel = buildProgressUniverseModel({
     currentWeightKg: weights[0]?.weightKg ?? null,
     targetWeightKg: profile?.targetWeightKg ?? null,
     weekTotalKcal: historyTotals?.weekTotal ?? 0,
-    avg7Kcal: statsOverview.average7,
-    calibrationScore: calibration.score,
+    avg7Kcal: statsOverview?.average7 ?? 0,
+    calibrationScore: calibration?.score ?? 0,
   });
 
   const history = { href: '/history', title: t('progress.history'), desc: t('progress.historyDesc'), Icon: CalendarDays };

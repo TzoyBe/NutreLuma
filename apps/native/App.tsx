@@ -2273,7 +2273,7 @@ function HistoryScreen({
           minCalories,
           maxCalories,
         }),
-        api.historyTotals(session.token),
+        api.historyTotals(session.token).catch(() => null),
       ]);
       setMeals(Array.isArray(result.meals) ? result.meals : []);
       setTotal(result.total ?? 0);
@@ -4460,20 +4460,22 @@ function ProgressScreen({
       const [weightRes, profileRes, historyTotals, stats, intelligence] = await Promise.all([
         api.weights(session.token),
         api.profile(session.token),
-        api.historyTotals(session.token),
-        api.stats(session.token, 30),
-        api.intelligence(session.token),
+        api.historyTotals(session.token).catch(() => null),
+        api.stats(session.token, 30).catch(() => null),
+        api.intelligence(session.token).catch(() => null),
       ]);
       setWeights(weightRes.entries ?? []);
       setTargetWeightKg(profileRes.profile?.targetWeightKg ?? null);
       setUniverseModel(
-        buildNativeProgressUniverse({
-          currentWeightKg: weightRes.entries?.[0]?.weightKg ?? null,
-          targetWeightKg: profileRes.profile?.targetWeightKg ?? null,
-          weekTotalKcal: historyTotals.weekTotal,
-          avg7Kcal: stats.average7,
-          calibrationScore: intelligence.calibration?.score ?? 0,
-        }),
+        historyTotals && stats && intelligence
+          ? buildNativeProgressUniverse({
+              currentWeightKg: weightRes.entries?.[0]?.weightKg ?? null,
+              targetWeightKg: profileRes.profile?.targetWeightKg ?? null,
+              weekTotalKcal: historyTotals.weekTotal,
+              avg7Kcal: stats.average7,
+              calibrationScore: intelligence.calibration?.score ?? 0,
+            })
+          : null,
       );
     } catch {
       // Κρατάμε ό,τι έχουμε ήδη· το γράφημα δείχνει κενή κατάσταση αν χρειαστεί.
