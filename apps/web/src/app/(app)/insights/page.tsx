@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { todayISO } from '@/lib/dates';
 import { IntelligenceSettings } from '@/components/intelligence/intelligence-panel';
 import { getT } from '@/i18n/locale';
+import { InsightsUniverse } from '@/components/insights/insights-universe';
+import { buildInsightsUniverseModel } from '@/components/insights/insights-universe-model';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> { const t = await getT(); return { title: t('insights.title') }; }
@@ -23,6 +25,12 @@ export default async function InsightsPage() {
     getPersonalCalibration(user.id), getCorrectionRates(user.id), getDailyDataQuality(user.id, today, profile.timezone), getPersonalPatterns(user.id, profile.timezone), getPersonalEnergyEstimate(user.id, profile.timezone),
     import('@/server/services/personal-intelligence').then(({ getIntelligenceSettings }) => getIntelligenceSettings(user.id)),
   ]);
+  const universeModel = buildInsightsUniverseModel({
+    calibrationScore: calibration.score,
+    qualityScore: quality?.score ?? null,
+    correctionRate30d: rates['30d'],
+    energyConfidencePercent: energy ? Math.round(energy.confidence * 100) : null,
+  });
   const levelLabels: Record<string, string> = {
     HIGH: t('insights.levelHigh'),
     MEDIUM: t('insights.levelMedium'),
@@ -31,6 +39,16 @@ export default async function InsightsPage() {
   };
   return <>
     <div className="space-y-1"><h1 className="text-xl font-semibold">{t('insights.title')}</h1><p className="text-sm text-muted-foreground">{t('insights.subtitle')}</p></div>
+    <InsightsUniverse
+      model={universeModel}
+      title={t('insights.title')}
+      heroLabel={t('insights.calibration')}
+      labels={{
+        dataConfidence: t('insights.dataConfidence'),
+        correctionRate: t('insights.correctionRate'),
+        energyConfidence: t('insights.confidence'),
+      }}
+    />
     <div className="grid gap-3 sm:grid-cols-3">
       <Metric icon={<BrainCircuit className="h-4 w-4" aria-hidden="true" />} label={t('insights.calibration')} value={`${calibration.score}%`} detail={`${calibration.corrections} ${t('insights.corrections')}`} />
       <Metric icon={<Gauge className="h-4 w-4" aria-hidden="true" />} label={t('insights.dataConfidence')} value={`${quality.score}%`} detail={levelLabels[quality.level] ?? quality.level} />
