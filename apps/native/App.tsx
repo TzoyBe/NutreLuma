@@ -26,7 +26,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { api, apiErrorMessage, type DashboardResult, type MobileUser } from './src/api';
+import { api, apiErrorMessage, type DashboardResult, type HistoryTotalsResult, type MobileUser } from './src/api';
 import { parseGoogleAuthCallback } from './src/google-auth';
 import type {
   AppNotification,
@@ -74,6 +74,7 @@ import {
 } from './src/personal-universe-ui';
 import {
   buildNativeGoalUniverse,
+  buildNativeHistoryUniverse,
   buildNativeProfileUniverse,
   buildNativeRecipeUniverse,
   buildNativeStatsUniverse,
@@ -2249,6 +2250,7 @@ function HistoryScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [totals, setTotals] = useState<HistoryTotalsResult | null>(null);
   const pageSize = 12;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -2257,19 +2259,23 @@ function HistoryScreen({
     else setLoading(true);
     setMessage(null);
     try {
-      const result = await api.meals(session.token, {
-        page: nextPage,
-        pageSize,
-        from,
-        to,
-        mealType,
-        search,
-        minCalories,
-        maxCalories,
-      });
+      const [result, totalsResult] = await Promise.all([
+        api.meals(session.token, {
+          page: nextPage,
+          pageSize,
+          from,
+          to,
+          mealType,
+          search,
+          minCalories,
+          maxCalories,
+        }),
+        api.historyTotals(session.token),
+      ]);
       setMeals(Array.isArray(result.meals) ? result.meals : []);
       setTotal(result.total ?? 0);
       setPage(result.page ?? nextPage);
+      setTotals(totalsResult);
     } catch (error) {
       setMessage(apiErrorMessage(error));
     } finally {
@@ -2321,6 +2327,8 @@ function HistoryScreen({
     }
   }, [from, to, mealType, search, minCalories, maxCalories]);
 
+  const universeModel = totals ? buildNativeHistoryUniverse(totals) : null;
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -2346,6 +2354,32 @@ function HistoryScreen({
             <Text style={styles.logoutText}>Back</Text>
           </Pressable>
         </View>
+
+        {universeModel ? (
+          <UniverseReveal index={0}>
+            <UniverseHero
+              eyebrow="Today"
+              title="Your history universe"
+              subtitle="How today compares to your recent averages."
+              accessibilityLabel={`Today's total: ${universeModel.hero} kcal`}
+              center={(
+                <View style={styles.goalHeroCenterCopy}>
+                  <Text selectable style={styles.goalHeroCalories}>{universeModel.hero}</Text>
+                  <Text style={styles.goalHeroUnit}>kcal today</Text>
+                </View>
+              )}
+              satellites={universeModel.satellites.map((satellite) => (
+                <UniverseMetric
+                  key={satellite.key}
+                  label={satellite.label}
+                  value={satellite.value}
+                  unit={satellite.unit}
+                  tone={satellite.tone}
+                />
+              ))}
+            />
+          </UniverseReveal>
+        ) : null}
 
         <GlassCard style={styles.authPanel}>
           <Text style={styles.titleSmall}>Find a meal</Text>
