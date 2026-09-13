@@ -34,4 +34,22 @@ export const colors = {
 /** Signature gradient (gold→blue→violet) — reserve for logo/premium/achievement. */
 export const signatureGradient = ['#FFB703', '#2563EB', '#7C3AED'] as const;
 
+/** Dashboard-specific aurora language: dark glass plus restrained semantic glows. */
+export const auroraTheme = {
+  background: '#020711',
+  surface: 'rgba(5, 12, 30, 0.72)',
+  border: 'rgba(120, 170, 255, 0.22)',
+  text: '#F4F7FF',
+  muted: '#91A8CF',
+  calorie: '#FFD66B',
+  metrics: {
+    protein: '#42B8FF',
+    carbohydrate: '#FFC95B',
+    fat: '#EA63F7',
+    fiber: '#42E89A',
+    water: '#39AEFF',
+    steps: '#36DFD7',
+  },
+} as const;
+
 export const API_BASE_URL = 'https://www.nutreluma.com';

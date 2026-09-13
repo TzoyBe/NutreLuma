@@ -14,6 +14,7 @@ declare module 'lucide-react-native' {
 
   export type LucideIcon = ComponentType<LucideProps>;
 
+  export const Apple: LucideIcon;
   export const BarChart3: LucideIcon;
   export const Bell: LucideIcon;
   export const CalendarDays: LucideIcon;
@@ -21,15 +22,23 @@ declare module 'lucide-react-native' {
   export const ChefHat: LucideIcon;
   export const ChevronLeft: LucideIcon;
   export const ChevronRight: LucideIcon;
+  export const Compass: LucideIcon;
+  export const Dna: LucideIcon;
   export const Droplet: LucideIcon;
   export const Eye: LucideIcon;
   export const EyeOff: LucideIcon;
+  export const FilePlus: LucideIcon;
   export const Flame: LucideIcon;
   export const Footprints: LucideIcon;
+  export const Heart: LucideIcon;
+  export const House: LucideIcon;
+  export const Leaf: LucideIcon;
   export const LayoutDashboard: LucideIcon;
   export const LineChart: LucideIcon;
+  export const Mic: LucideIcon;
   export const Plus: LucideIcon;
   export const Scale: LucideIcon;
+  export const Scan: LucideIcon;
   export const Settings: LucideIcon;
   export const Sparkles: LucideIcon;
   export const Target: LucideIcon;
@@ -37,4 +46,5 @@ declare module 'lucide-react-native' {
   export const TrendingDown: LucideIcon;
   export const Trophy: LucideIcon;
   export const UserCircle2: LucideIcon;
+  export const Wheat: LucideIcon;
 }

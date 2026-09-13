@@ -50,19 +50,17 @@ import type {
 } from './src/api';
 import { clearStoredSession, loadStoredSession, saveStoredSession } from './src/session-storage';
 import { API_BASE_URL, colors } from './src/theme';
-import { CalorieGauge, MacroGauge } from './src/gauges';
 import { GoalProgressChart } from './src/goal-chart';
-import { WaterGauge, StepsGauge } from './src/activity-gauges';
 import { AiLoadingCard, AiSpinner } from './src/ai-loader';
 import { GlassBackdrop } from './src/backdrop';
 import { GlassCard } from './src/glass-card';
-import { OrbitStage, OrbitRow, OrbitCenter, Satellite } from './src/orbit-cluster';
 import { MealReel, MealReelCard } from './src/meal-reel';
 import { GlassSheet } from './src/glass-sheet';
 import { SwipeableRow } from './src/swipeable-row';
-import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
+import { AuroraDashboard } from './src/aurora-dashboard';
+import { buildAuroraDashboardModel, type AuroraMetricKey } from './src/aurora-dashboard-model';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
 import { billingAccessView } from './src/billing-state';
 import {
@@ -97,7 +95,9 @@ import {
   Droplet,
   Eye,
   EyeOff,
-  LayoutDashboard,
+  Compass,
+  Heart,
+  House,
   LineChart,
   Plus,
   Scale,
@@ -131,7 +131,7 @@ type Screen =
   | 'recipesOverview'
   | 'profile'
   | 'profileOverview';
-type MainTab = 'dashboard' | 'progress' | 'goals' | 'recipes' | 'profile';
+type MainTab = 'dashboard' | 'progress' | 'recipes' | 'profile';
 
 class AppErrorBoundary extends Component<
   { children: ReactNode; onReset: () => void },
@@ -166,11 +166,10 @@ class AppErrorBoundary extends Component<
 }
 
 const mainTabs: Array<{ screen: MainTab; label: string; Icon: LucideIcon }> = [
-  { screen: 'dashboard', label: 'Today', Icon: LayoutDashboard },
-  { screen: 'progress', label: 'Progress', Icon: LineChart },
-  { screen: 'goals', label: 'Goals', Icon: Target },
-  { screen: 'recipes', label: 'Recipes', Icon: ChefHat },
-  { screen: 'profile', label: 'Profile', Icon: UserCircle2 },
+  { screen: 'dashboard', label: 'Home', Icon: House },
+  { screen: 'progress', label: 'Insights', Icon: LineChart },
+  { screen: 'recipes', label: 'Discover', Icon: Compass },
+  { screen: 'profile', label: 'You', Icon: Heart },
 ];
 
 function isMainTab(screen: Screen): screen is MainTab {
@@ -551,6 +550,12 @@ function BottomNav({
             </Pressable>
           );
         })}
+        <View style={styles.navMotto} pointerEvents="none">
+          <Text style={styles.navMottoText}>GOOD</Text>
+          <Text style={styles.navMottoText}>NUTRITION</Text>
+          <Text style={styles.navMottoText}>BRIGHTER</Text>
+          <Text style={styles.navMottoText}>HUMANS</Text>
+        </View>
       </View>
     </View>
   );
@@ -5898,9 +5903,6 @@ function DashboardScreen({
   const [addingWater, setAddingWater] = useState(false);
   const [showAddChoice, setShowAddChoice] = useState(false);
   const [addingSteps, setAddingSteps] = useState(false);
-  // Απενεργοποιεί το scroll του dashboard όσο ο χρήστης σέρνει ένα gauge, ώστε
-  // η κάθετη κίνηση να αλλάζει την τιμή αντί να σκρολάρει τη σελίδα.
-  const [scrollEnabled, setScrollEnabled] = useState(true);
   const STEPS_FALLBACK = 10000;
   const { presentPaywall } = useRevenueCat();
 
@@ -6004,196 +6006,76 @@ function DashboardScreen({
   const consumed = Math.round(dashboard?.summary?.consumed ?? 0);
   const rawTarget = dashboard?.summary?.target ?? 0;
   const target = rawTarget > 0 ? rawTarget : null;
-  const remaining = dashboard?.summary?.remaining ?? (target !== null ? target - consumed : null);
-  const progress = Math.round(
-    dashboard?.summary?.progressPercent ?? (target ? (consumed / target) * 100 : 0),
-  );
-  const overTarget = dashboard?.summary?.overTarget ?? (remaining !== null && remaining < 0);
   const macroMap = dashboardMacroMap(dashboard?.macros);
-  // Brand kit v2 nutrition data colors (σταθερά semantics σε όλες τις οθόνες).
-  const macroConfig = [
-    { key: 'protein', label: 'Protein', color: '#38BDF8' },
-    { key: 'carbohydrate', label: 'Carbohydrates', color: '#FFB703' },
-    { key: 'fat', label: 'Fat', color: '#A855F7' },
-    { key: 'fiber', label: 'Fibre', color: '#10B981' },
-  ] as const;
+
+  const auroraModel = buildAuroraDashboardModel({
+    calories: { current: consumed, target },
+    protein: {
+      current: macroMap.protein?.consumed ?? 0,
+      target: macroMap.protein?.target ?? null,
+    },
+    carbohydrate: {
+      current: macroMap.carbohydrate?.consumed ?? 0,
+      target: macroMap.carbohydrate?.target ?? null,
+    },
+    fat: { current: macroMap.fat?.consumed ?? 0, target: macroMap.fat?.target ?? null },
+    fiber: { current: macroMap.fiber?.consumed ?? 0, target: macroMap.fiber?.target ?? null },
+    water: { current: waterMl, target: waterTarget },
+    steps: { current: steps, target: stepsTarget ?? STEPS_FALLBACK },
+  });
+
+  function openMealLogger() {
+    if (canWrite) onAddMeal();
+    else void presentPaywall();
+  }
+
+  function openMetric(key: AuroraMetricKey) {
+    if (key === 'water' && isToday) void commitWater(waterMl + 250);
+    else if (key === 'steps' && isToday) void commitSteps(steps + 1000);
+    else onOpenGoals();
+  }
 
   return (
     <View style={styles.dashboardRoot}>
-    <ScrollView
-      contentContainerStyle={styles.dashboardContent}
-      scrollEnabled={scrollEnabled}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => load(true)}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      <View style={styles.dashboardHeader}>
-        <View style={styles.brandRowCompact}>
-          <LogoMark />
-          <View>
-            <Text style={styles.kicker}>NutreLuma</Text>
-            <Text style={styles.headerName}>Dashboard</Text>
-          </View>
-        </View>
-        <View style={styles.headerActions}>
-          <Pressable onPress={onOpenNotifications} style={styles.bellButton}>
-            <Bell size={18} color={colors.muted} />
-            {unreadNotifications > 0 ? (
-              <View style={styles.bellBadge}>
-                <Text style={styles.bellBadgeText}>
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                </Text>
-              </View>
-            ) : null}
-          </Pressable>
-        </View>
-      </View>
-
-      {session.needsProfile ? (
-        <View style={styles.noticeCard}>
-          <Text style={styles.noticeTitle}>Profile setup needed</Text>
-          <Text style={styles.noticeCopy}>
-            Complete the native onboarding flow to unlock the dashboard.
-          </Text>
-        </View>
-      ) : null}
-
-      <DateNav date={date} maxDate={today} onChange={setDate} />
-
-      {false && isToday ? (
-        <View style={styles.progressSectionHeaderEnd}>
-          <Pressable onPress={onOpenSettings} hitSlop={8} style={styles.gaugeSettingsButton}>
-            <Settings size={16} color={colors.muted} />
-            <Text style={styles.linkText}>Targets</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {loading ? (
-        <View style={styles.orbitLoading}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
-      ) : (
-        <OrbitStage>
-          {/* Σειρά 1: protein — water — carbs. Σειρά 2: fat — steps — fiber.
-              Το μικρότερο μέγεθος (104 αντί για 132/140) δίνεται με πραγματικά
-              props (scale/size) στα ίδια τα gauges — ΟΧΙ με CSS transform —
-              ώστε η μαθηματική του drag-to-set gesture (που βασίζεται σε
-              πραγματικό locationX/Y σε pixels) να παραμένει σωστή. Water/Steps
-              ΧΩΡΙΣ Satellite float animation για τον ίδιο λόγο. */}
-          <OrbitRow>
-            <Satellite delay={0}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[0].label}
-                consumed={macroMap[macroConfig[0].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[0].key]?.target ?? null}
-                over={macroMap[macroConfig[0].key]?.overTarget ?? false}
-                color={macroConfig[0].color}
-              />
-            </Satellite>
-            <WaterGauge
-              size={120}
-              consumedMl={waterMl}
-              targetMl={waterTarget}
-              scaleMax={1.5 * (waterTarget ?? 3000)}
-              onCommit={isToday ? commitWater : undefined}
-              onDragStateChange={(d) => setScrollEnabled(!d)}
-            />
-            <Satellite delay={260}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[1].label}
-                consumed={macroMap[macroConfig[1].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[1].key]?.target ?? null}
-                over={macroMap[macroConfig[1].key]?.overTarget ?? false}
-                color={macroConfig[1].color}
-              />
-            </Satellite>
-          </OrbitRow>
-
-          <OrbitCenter>
-            <CalorieGauge
-              consumed={consumed}
-              target={target}
-              remaining={remaining}
-              overTarget={overTarget}
-              progressPercent={progress}
-              labels={{
-                of: `of ${target ?? 0} kcal`,
-                remaining: `${Math.abs(remaining ?? 0)} kcal remaining`,
-                over: `${Math.abs(remaining ?? 0)} kcal over target`,
-                noTarget: 'No target set',
-                kcal: 'kcal',
-              }}
-            />
-          </OrbitCenter>
-
-          <OrbitRow>
-            <Satellite delay={520}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[2].label}
-                consumed={macroMap[macroConfig[2].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[2].key]?.target ?? null}
-                over={macroMap[macroConfig[2].key]?.overTarget ?? false}
-                color={macroConfig[2].color}
-              />
-            </Satellite>
-            <StepsGauge
-              size={120}
-              steps={steps}
-              targetSteps={stepsTarget ?? STEPS_FALLBACK}
-              scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
-              onCommit={isToday ? commitSteps : undefined}
-              onDragStateChange={(d) => setScrollEnabled(!d)}
-            />
-            <Satellite delay={780}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[3].label}
-                consumed={macroMap[macroConfig[3].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[3].key]?.target ?? null}
-                over={macroMap[macroConfig[3].key]?.overTarget ?? false}
-                color={macroConfig[3].color}
-              />
-            </Satellite>
-          </OrbitRow>
-        </OrbitStage>
-      )}
-
-      {error ? (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorText}>{error}</Text>
-          <PillButton label="Try again" onPress={() => load()} variant="ghost" />
-        </View>
-      ) : null}
-
-      <Text style={styles.sectionTitle}>Meals</Text>
-      <MealReel>
-        {meals.map((meal) => (
-          <MealReelCard
-            key={meal.id}
-            onPress={() => onOpenMeal(meal.id)}
-            photo={<MealPhoto token={session.token} mealId={meal.id} style={StyleSheet.absoluteFill} />}
-            title={meal.title || meal.mealType || 'Meal'}
-            meta={formatMealTime(meal.mealDateTime) ?? ''}
-            kcal={meal.finalCalories ?? 0}
+      <ScrollView
+        contentContainerStyle={styles.dashboardContent}
+        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}
+      >
+        {loading ? (
+          <View style={styles.orbitLoading}><ActivityIndicator color={colors.primary} /></View>
+        ) : (
+          <AuroraDashboard
+            model={auroraModel}
+            firstName={(session.user.displayName ?? '').split(' ')[0]}
+            unreadNotifications={unreadNotifications}
+            onNotifications={onOpenNotifications}
+            onCalories={onOpenGoals}
+            onMetric={openMetric}
+            onAddMeal={openMealLogger}
+            onAddWater={() => void commitWater(waterMl + 250)}
+            onAddActivity={() => void commitSteps(steps + 1000)}
+            onQuickAdd={() => setShowAddChoice(true)}
+            dateControl={<DateNav date={date} maxDate={today} onChange={setDate} />}
           />
-        ))}
-        {!meals.length ? (
-          <GlassCard style={styles.emptyCard}>
-            <Text style={styles.noticeTitle}>No meals yet</Text>
-            <Text style={styles.noticeCopy}>Add your first meal from camera or gallery.</Text>
-          </GlassCard>
-        ) : null}
-      </MealReel>
+        )}
 
-      <GlassSheet visible={showAddChoice} onClose={() => setShowAddChoice(false)}>
+        {error ? (
+          <View style={styles.errorCard}>
+            <Text selectable style={styles.errorText}>{error}</Text>
+            <PillButton label="Try again" onPress={() => load()} variant="ghost" />
+          </View>
+        ) : null}
+
+        <Text style={styles.sectionTitle}>Today's meals</Text>
+        <MealReel>
+          {meals.map((meal) => (
+            <MealReelCard key={meal.id} onPress={() => onOpenMeal(meal.id)} photo={<MealPhoto token={session.token} mealId={meal.id} style={StyleSheet.absoluteFill} />} title={meal.title || meal.mealType || 'Meal'} meta={formatMealTime(meal.mealDateTime) ?? ''} kcal={meal.finalCalories ?? 0} />
+          ))}
+          {!meals.length ? <GlassCard style={styles.emptyCard}><Text style={styles.noticeTitle}>No meals yet</Text><Text style={styles.noticeCopy}>Add your first meal from camera or gallery.</Text></GlassCard> : null}
+        </MealReel>
+
+        <GlassSheet visible={showAddChoice} onClose={() => setShowAddChoice(false)}>
         <Text style={styles.sectionTitle}>What do you want to add?</Text>
         <View style={styles.addChoiceCards}>
           <Pressable
@@ -6234,13 +6116,8 @@ function DashboardScreen({
         <Pressable onPress={() => setShowAddChoice(false)} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Cancel</Text>
         </Pressable>
-      </GlassSheet>
-    </ScrollView>
-    {isToday ? (
-      <GradientFab onPress={() => setShowAddChoice(true)} style={styles.dashboardFab}>
-        <Plus size={26} color={colors.white} />
-      </GradientFab>
-    ) : null}
+        </GlassSheet>
+      </ScrollView>
     </View>
   );
 }
@@ -7061,6 +6938,7 @@ const styles = StyleSheet.create({
   },
   dashboardRoot: {
     flex: 1,
+    backgroundColor: '#020711',
   },
   dashboardFab: {
     position: 'absolute',
@@ -7076,7 +6954,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 20,
     gap: 16,
-    paddingBottom: 112,
+    paddingBottom: 132,
   },
   addMealContent: {
     padding: 16,
@@ -7911,32 +7789,41 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingTop: 8,
     paddingBottom: Platform.select({ ios: 26, android: 16, default: 16 }),
   },
   bottomNav: {
-    minHeight: 66,
-    borderRadius: 28,
-    padding: 6,
+    minHeight: 82,
+    borderTopLeftRadius: 46,
+    borderTopRightRadius: 62,
+    borderBottomRightRadius: 34,
+    borderBottomLeftRadius: 54,
+    padding: 7,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     overflow: 'hidden',
-    backgroundColor: 'rgba(18, 27, 49, 0.78)',
+    backgroundColor: 'rgba(7, 17, 40, 0.92)',
     borderWidth: 1,
     borderColor: colors.glassBorder,
   },
   navItem: {
     flex: 1,
-    minHeight: 54,
-    borderRadius: 20,
+    minHeight: 64,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 34,
+    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
   },
   navItemActive: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: 'rgba(62, 89, 255, 0.38)',
+    borderWidth: 1,
+    borderColor: 'rgba(123, 198, 255, 0.68)',
+    boxShadow: '0 4px 24px rgba(75, 79, 255, 0.5)',
   },
   navIconWrap: {
     minWidth: 24,
@@ -7959,6 +7846,18 @@ const styles = StyleSheet.create({
   },
   navLabelActive: {
     color: colors.text,
+  },
+  navMotto: {
+    width: 48,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 1,
+  },
+  navMottoText: {
+    color: 'rgba(167, 188, 226, 0.68)',
+    fontSize: 6,
+    fontWeight: '700',
+    letterSpacing: 1.1,
   },
   navBadge: {
     position: 'absolute',
