@@ -17,7 +17,6 @@ import {
   Pressable,
   RefreshControl,
   useWindowDimensions,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,6 +25,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, apiErrorMessage, type DashboardResult, type HistoryTotalsResult, type MobileUser } from './src/api';
 import { parseGoogleAuthCallback } from './src/google-auth';
 import type {
@@ -523,8 +523,14 @@ function BottomNav({
   unreadNotifications: number;
   onChange: (screen: MainTab) => void;
 }) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.bottomNavWrap}>
+    <View
+      style={[
+        styles.bottomNavWrap,
+        { paddingBottom: Platform.select({ ios: insets.bottom || 26, default: insets.bottom + 16 }) },
+      ]}
+    >
       <View style={styles.bottomNav}>
         {mainTabs.map((tab) => {
           const selected = active === tab.screen;
@@ -6446,7 +6452,7 @@ export default function App() {
   return (
     <AppErrorBoundary onReset={handleBoundaryReset}>
       <RevenueCatProvider appUserID={session?.user.id ?? null}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <GlassBackdrop />
         <StatusBar style="light" />
         <View style={styles.appBody} {...panResponder.panHandlers}>
@@ -7913,7 +7919,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: 14,
     paddingTop: 8,
-    paddingBottom: Platform.select({ ios: 26, android: 16, default: 16 }),
   },
   bottomNav: {
     minHeight: 66,
