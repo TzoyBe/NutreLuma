@@ -15,6 +15,9 @@ vi.mock('@/server/services/recipe-plans', () => ({
   }),
 }));
 vi.mock('@/server/services/saved-recipes', () => ({ listSavedRecipes: async () => [{}, {}] }));
+vi.mock('@/server/services/subscription', () => ({
+  getAccessState: async () => ({ kind: 'ACTIVE', canWrite: true, accessUntil: null, daysRemaining: null, autoRenew: false }),
+}));
 vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => ({ value: 'en' }) }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh() {} }), redirect: vi.fn() }));
 
