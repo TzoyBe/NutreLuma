@@ -34,12 +34,10 @@ const DESTRUCTIVE_AMBIENT = 'hsla(0, 72%, 51%, 0.25)';
 // Calorie gauge (μεγάλο)
 // ---------------------------------------------------------------------------
 
-const C_SIZE = 208;
-const C_CENTER = C_SIZE / 2;
-const C_RADIUS = 84;
-const C_STROKE = 16;
-const C_CIRC = 2 * Math.PI * C_RADIUS;
-const C_RENDER = 248; // pixel μέγεθος απόδοσης
+const C_SIZE_BASE = 208;
+const C_RADIUS_BASE = 84;
+const C_STROKE_BASE = 16;
+const C_RENDER_BASE = 248; // pixel μέγεθος απόδοσης
 
 type CalorieGaugeProps = {
   consumed: number;
@@ -54,6 +52,10 @@ type CalorieGaugeProps = {
     noTarget: string;
     kcal: string;
   };
+  /** Ομοιόμορφη σμίκρυνση (πραγματικό μέγεθος, όχι CSS transform) — ώστε το
+   * dashboard να χωράει σε μία οθόνη χωρίς scroll σε μικρότερες συσκευές.
+   * 1 = πλήρες μέγεθος. */
+  scale?: number;
 };
 
 export function CalorieGauge({
@@ -63,7 +65,17 @@ export function CalorieGauge({
   overTarget,
   progressPercent,
   labels,
+  scale = 1,
 }: CalorieGaugeProps) {
+  const C_SIZE = C_SIZE_BASE * scale;
+  const C_CENTER = C_SIZE / 2;
+  const C_RADIUS = C_RADIUS_BASE * scale;
+  const C_STROKE = C_STROKE_BASE * scale;
+  const C_CIRC = 2 * Math.PI * C_RADIUS;
+  const C_RENDER = C_RENDER_BASE * scale;
+  // Το κείμενο συρρικνώνεται πιο ήπια από το ring, ώστε να μένει ευανάγνωστο
+  // ακόμα κι όταν το gauge μικραίνει αρκετά για να χωρέσει η οθόνη χωρίς scroll.
+  const textScale = Math.max(0.8, scale);
   const hasTarget = target !== null && target > 0;
   const fraction = hasTarget ? Math.max(0, Math.min(1, progressPercent / 100)) : 0;
   const dashoffset = C_CIRC * (1 - fraction);
@@ -173,8 +185,10 @@ export function CalorieGauge({
         </Svg>
 
         <View style={styles.center} pointerEvents="none">
-          <Flame size={22} color={overTarget ? DESTRUCTIVE : PRIMARY} />
-          <Text style={styles.calorieValue}>{consumed}</Text>
+          <Flame size={22 * textScale} color={overTarget ? DESTRUCTIVE : PRIMARY} />
+          <Text style={[styles.calorieValue, { fontSize: 40 * textScale, lineHeight: 42 * textScale }]}>
+            {consumed}
+          </Text>
           <Text style={styles.calorieCaption}>{hasTarget ? labels.of : labels.kcal}</Text>
           {hasTarget ? (
             <View

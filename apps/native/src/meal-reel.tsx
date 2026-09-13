@@ -25,15 +25,19 @@ export function MealReelCard({
   title,
   meta,
   kcal,
+  /** Ομοιόμορφη σμίκρυνση της κάρτας — ώστε το dashboard να χωράει σε μία
+   * οθόνη χωρίς scroll σε μικρότερες συσκευές. 1 = πλήρες μέγεθος. */
+  scale = 1,
 }: {
   onPress: () => void;
   photo: ReactNode;
   title: string;
   meta: string;
   kcal: number;
+  scale?: number;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.card}>
+    <Pressable onPress={onPress} style={[styles.card, { width: CARD_W * scale, height: CARD_H * scale }]}>
       <View style={StyleSheet.absoluteFill}>{photo}</View>
       <View style={styles.footer}>
         <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
@@ -56,8 +60,6 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   card: {
-    width: CARD_W,
-    height: CARD_H,
     borderRadius: 22,
     overflow: 'hidden',
     borderWidth: 1,

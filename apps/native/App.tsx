@@ -5909,6 +5909,24 @@ function DashboardScreen({
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const STEPS_FALLBACK = 10000;
   const { presentPaywall } = useRevenueCat();
+  const insets = useSafeAreaInsets();
+
+  // "Fit to screen" — μετράμε πόσο ύψος έχει πραγματικά το ελαστικό κομμάτι
+  // (orbit gauges + meals) αφού τα σταθερά στοιχεία (header/date/section title)
+  // πάρουν τον δικό τους χώρο, και υπολογίζουμε ένα ομοιόμορφο scale ώστε όλο
+  // το dashboard να χωράει σε μία οθόνη χωρίς scroll, σε οποιοδήποτε μέγεθος.
+  const [flexZoneHeight, setFlexZoneHeight] = useState<number | null>(null);
+  const GAUGE_STAGE_NATURAL_H = 578; // 2 σειρές δορυφόρων + κεντρικό ring, στο scale=1
+  const MEAL_SECTION_NATURAL_H = 156; // ύψος MealReel card, στο scale=1
+  const FLEX_ZONE_OVERHEAD_H = 50; // "Meals" τίτλος + τα κενά γύρω του
+  const FLEX_ZONE_NATURAL_H = GAUGE_STAGE_NATURAL_H + FLEX_ZONE_OVERHEAD_H + MEAL_SECTION_NATURAL_H;
+  const fitRatio = flexZoneHeight !== null ? flexZoneHeight / FLEX_ZONE_NATURAL_H : 1;
+  const gaugeScale = Math.min(1, Math.max(0.62, fitRatio));
+  const mealCardScale = Math.min(1, Math.max(0.75, fitRatio));
+  // Ο πραγματικός χώρος που πιάνει το πλωτό BottomNav κάτω — τον αφαιρούμε από
+  // το scroll content ώστε το flex:1 dashboardFlexZone να μετρήσει το σωστό
+  // διαθέσιμο ύψος (βλ. bottomNavWrap paddingBottom στο App()).
+  const bottomNavFootprint = 66 + 8 + (Platform.OS === 'ios' ? insets.bottom || 26 : insets.bottom + 16);
 
   // Τα confirmed meals έρχονται ήδη σκοπαρισμένα στην ημέρα από το backend, αλλά
   // τα drafts (pending) όχι — γι' αυτό φιλτράρουμε τα drafts στην επιλεγμένη μέρα
@@ -6027,7 +6045,10 @@ function DashboardScreen({
   return (
     <View style={styles.dashboardRoot}>
     <ScrollView
-      contentContainerStyle={styles.dashboardContent}
+      contentContainerStyle={[
+        styles.dashboardContent,
+        { flexGrow: 1, paddingBottom: bottomNavFootprint },
+      ]}
       scrollEnabled={scrollEnabled}
       refreshControl={
         <RefreshControl
@@ -6079,99 +6100,6 @@ function DashboardScreen({
         </View>
       ) : null}
 
-      {loading ? (
-        <View style={styles.orbitLoading}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
-      ) : (
-        <OrbitStage>
-          {/* Σειρά 1: protein — water — carbs. Σειρά 2: fat — steps — fiber.
-              Το μικρότερο μέγεθος (104 αντί για 132/140) δίνεται με πραγματικά
-              props (scale/size) στα ίδια τα gauges — ΟΧΙ με CSS transform —
-              ώστε η μαθηματική του drag-to-set gesture (που βασίζεται σε
-              πραγματικό locationX/Y σε pixels) να παραμένει σωστή. Water/Steps
-              ΧΩΡΙΣ Satellite float animation για τον ίδιο λόγο. */}
-          <OrbitRow>
-            <Satellite delay={0}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[0].label}
-                consumed={macroMap[macroConfig[0].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[0].key]?.target ?? null}
-                over={macroMap[macroConfig[0].key]?.overTarget ?? false}
-                color={macroConfig[0].color}
-              />
-            </Satellite>
-            <WaterGauge
-              size={120}
-              consumedMl={waterMl}
-              targetMl={waterTarget}
-              scaleMax={1.5 * (waterTarget ?? 3000)}
-              onCommit={isToday ? commitWater : undefined}
-              onDragStateChange={(d) => setScrollEnabled(!d)}
-            />
-            <Satellite delay={260}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[1].label}
-                consumed={macroMap[macroConfig[1].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[1].key]?.target ?? null}
-                over={macroMap[macroConfig[1].key]?.overTarget ?? false}
-                color={macroConfig[1].color}
-              />
-            </Satellite>
-          </OrbitRow>
-
-          <OrbitCenter>
-            <CalorieGauge
-              consumed={consumed}
-              target={target}
-              remaining={remaining}
-              overTarget={overTarget}
-              progressPercent={progress}
-              labels={{
-                of: `of ${target ?? 0} kcal`,
-                remaining: `${Math.abs(remaining ?? 0)} kcal remaining`,
-                over: `${Math.abs(remaining ?? 0)} kcal over target`,
-                noTarget: 'No target set',
-                kcal: 'kcal',
-              }}
-            />
-          </OrbitCenter>
-
-          <OrbitRow>
-            <Satellite delay={520}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[2].label}
-                consumed={macroMap[macroConfig[2].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[2].key]?.target ?? null}
-                over={macroMap[macroConfig[2].key]?.overTarget ?? false}
-                color={macroConfig[2].color}
-              />
-            </Satellite>
-            <StepsGauge
-              size={120}
-              steps={steps}
-              targetSteps={stepsTarget ?? STEPS_FALLBACK}
-              scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
-              onCommit={isToday ? commitSteps : undefined}
-              onDragStateChange={(d) => setScrollEnabled(!d)}
-            />
-            <Satellite delay={780}>
-              <MacroGauge
-                scale={104 / 132}
-                label={macroConfig[3].label}
-                consumed={macroMap[macroConfig[3].key]?.consumed ?? 0}
-                target={macroMap[macroConfig[3].key]?.target ?? null}
-                over={macroMap[macroConfig[3].key]?.overTarget ?? false}
-                color={macroConfig[3].color}
-              />
-            </Satellite>
-          </OrbitRow>
-        </OrbitStage>
-      )}
-
       {error ? (
         <View style={styles.errorCard}>
           <Text style={styles.errorText}>{error}</Text>
@@ -6179,25 +6107,133 @@ function DashboardScreen({
         </View>
       ) : null}
 
-      <Text style={styles.sectionTitle}>Meals</Text>
-      <MealReel>
-        {meals.map((meal) => (
-          <MealReelCard
-            key={meal.id}
-            onPress={() => onOpenMeal(meal.id)}
-            photo={<MealPhoto token={session.token} mealId={meal.id} style={StyleSheet.absoluteFill} />}
-            title={meal.title || meal.mealType || 'Meal'}
-            meta={formatMealTime(meal.mealDateTime) ?? ''}
-            kcal={meal.finalCalories ?? 0}
-          />
-        ))}
-        {!meals.length ? (
-          <GlassCard style={styles.emptyCard}>
-            <Text style={styles.noticeTitle}>No meals yet</Text>
-            <Text style={styles.noticeCopy}>Add your first meal from camera or gallery.</Text>
-          </GlassCard>
-        ) : null}
-      </MealReel>
+      {/* Το "ελαστικό" κομμάτι του dashboard: παίρνει ό,τι ύψος περισσεύει κάτω
+          από header/date/error (flex:1 μέσα σε ScrollView με flexGrow:1), και
+          μετράμε πόσο χώρο πήρε πραγματικά ώστε να σμικρύνουμε gauges + meal
+          cards αναλογικά — έτσι όλο το dashboard χωράει σε μία οθόνη χωρίς
+          scroll, ανεξαρτήτως μεγέθους συσκευής (βλ. gaugeScale/mealCardScale). */}
+      <View
+        style={styles.dashboardFlexZone}
+        onLayout={(e) => setFlexZoneHeight(e.nativeEvent.layout.height)}
+      >
+        {loading ? (
+          <View style={styles.orbitLoading}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : (
+          <View style={styles.orbitStageWrap}>
+            <OrbitStage>
+              {/* Σειρά 1: protein — water — carbs. Σειρά 2: fat — steps — fiber.
+                  Το μικρότερο μέγεθος δίνεται με πραγματικά props (scale/size)
+                  στα ίδια τα gauges — ΟΧΙ με CSS transform — ώστε η μαθηματική
+                  του drag-to-set gesture (που βασίζεται σε πραγματικό
+                  locationX/Y σε pixels) να παραμένει σωστή. Water/Steps ΧΩΡΙΣ
+                  Satellite float animation για τον ίδιο λόγο. gaugeScale
+                  προσαρμόζει όλα τα μεγέθη ώστε να χωράνε χωρίς scroll. */}
+              <OrbitRow>
+                <Satellite delay={0}>
+                  <MacroGauge
+                    scale={(104 / 132) * gaugeScale}
+                    label={macroConfig[0].label}
+                    consumed={macroMap[macroConfig[0].key]?.consumed ?? 0}
+                    target={macroMap[macroConfig[0].key]?.target ?? null}
+                    over={macroMap[macroConfig[0].key]?.overTarget ?? false}
+                    color={macroConfig[0].color}
+                  />
+                </Satellite>
+                <WaterGauge
+                  size={120 * gaugeScale}
+                  consumedMl={waterMl}
+                  targetMl={waterTarget}
+                  scaleMax={1.5 * (waterTarget ?? 3000)}
+                  onCommit={isToday ? commitWater : undefined}
+                  onDragStateChange={(d) => setScrollEnabled(!d)}
+                />
+                <Satellite delay={260}>
+                  <MacroGauge
+                    scale={(104 / 132) * gaugeScale}
+                    label={macroConfig[1].label}
+                    consumed={macroMap[macroConfig[1].key]?.consumed ?? 0}
+                    target={macroMap[macroConfig[1].key]?.target ?? null}
+                    over={macroMap[macroConfig[1].key]?.overTarget ?? false}
+                    color={macroConfig[1].color}
+                  />
+                </Satellite>
+              </OrbitRow>
+
+              <OrbitCenter>
+                <CalorieGauge
+                  scale={gaugeScale}
+                  consumed={consumed}
+                  target={target}
+                  remaining={remaining}
+                  overTarget={overTarget}
+                  progressPercent={progress}
+                  labels={{
+                    of: `of ${target ?? 0} kcal`,
+                    remaining: `${Math.abs(remaining ?? 0)} kcal remaining`,
+                    over: `${Math.abs(remaining ?? 0)} kcal over target`,
+                    noTarget: 'No target set',
+                    kcal: 'kcal',
+                  }}
+                />
+              </OrbitCenter>
+
+              <OrbitRow>
+                <Satellite delay={520}>
+                  <MacroGauge
+                    scale={(104 / 132) * gaugeScale}
+                    label={macroConfig[2].label}
+                    consumed={macroMap[macroConfig[2].key]?.consumed ?? 0}
+                    target={macroMap[macroConfig[2].key]?.target ?? null}
+                    over={macroMap[macroConfig[2].key]?.overTarget ?? false}
+                    color={macroConfig[2].color}
+                  />
+                </Satellite>
+                <StepsGauge
+                  size={120 * gaugeScale}
+                  steps={steps}
+                  targetSteps={stepsTarget ?? STEPS_FALLBACK}
+                  scaleMax={1.5 * (stepsTarget ?? STEPS_FALLBACK)}
+                  onCommit={isToday ? commitSteps : undefined}
+                  onDragStateChange={(d) => setScrollEnabled(!d)}
+                />
+                <Satellite delay={780}>
+                  <MacroGauge
+                    scale={(104 / 132) * gaugeScale}
+                    label={macroConfig[3].label}
+                    consumed={macroMap[macroConfig[3].key]?.consumed ?? 0}
+                    target={macroMap[macroConfig[3].key]?.target ?? null}
+                    over={macroMap[macroConfig[3].key]?.overTarget ?? false}
+                    color={macroConfig[3].color}
+                  />
+                </Satellite>
+              </OrbitRow>
+            </OrbitStage>
+          </View>
+        )}
+
+        <Text style={styles.sectionTitle}>Meals</Text>
+        <MealReel>
+          {meals.map((meal) => (
+            <MealReelCard
+              key={meal.id}
+              scale={mealCardScale}
+              onPress={() => onOpenMeal(meal.id)}
+              photo={<MealPhoto token={session.token} mealId={meal.id} style={StyleSheet.absoluteFill} />}
+              title={meal.title || meal.mealType || 'Meal'}
+              meta={formatMealTime(meal.mealDateTime) ?? ''}
+              kcal={meal.finalCalories ?? 0}
+            />
+          ))}
+          {!meals.length ? (
+            <GlassCard style={styles.emptyCard}>
+              <Text style={styles.noticeTitle}>No meals yet</Text>
+              <Text style={styles.noticeCopy}>Add your first meal from camera or gallery.</Text>
+            </GlassCard>
+          ) : null}
+        </MealReel>
+      </View>
 
       <GlassSheet visible={showAddChoice} onClose={() => setShowAddChoice(false)}>
         <Text style={styles.sectionTitle}>What do you want to add?</Text>
@@ -7074,15 +7110,24 @@ const styles = StyleSheet.create({
     bottom: 118,
   },
   orbitLoading: {
-    height: 344,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dashboardContent: {
     padding: 16,
     paddingTop: 20,
-    gap: 16,
-    paddingBottom: 112,
+    gap: 12,
+  },
+  dashboardFlexZone: {
+    flex: 1,
+    minHeight: 0,
+    gap: 10,
+  },
+  orbitStageWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addMealContent: {
     padding: 16,
