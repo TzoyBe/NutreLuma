@@ -102,10 +102,13 @@ export default async function DashboardPage({
           </Link>
         </div>
       ) : (
-        <div className="liquid-control flex h-12 w-full items-center justify-center gap-2 rounded-[1.15rem] text-sm font-semibold text-muted-foreground sm:h-14 sm:rounded-full sm:text-base">
+        <Link
+          href="/profile/billing"
+          className="liquid-control flex h-12 w-full items-center justify-center gap-2 rounded-[1.15rem] text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:h-14 sm:rounded-full sm:text-base"
+        >
           <Plus className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
           {t('billing.lockedAction')}
-        </div>
+        </Link>
       )}
 
       <section className="space-y-3">
