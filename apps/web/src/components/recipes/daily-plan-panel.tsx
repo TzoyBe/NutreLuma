@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { Check, ChefHat, Clock3, RefreshCw, Save, ShoppingBasket } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -51,13 +52,14 @@ type Plan = {
   };
 };
 
-export function DailyPlanPanel({ date }: { date: string }) {
+export function DailyPlanPanel({ date, canWrite }: { date: string; canWrite: boolean }) {
   const [plan, setPlan] = React.useState<Plan | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [saved, setSaved] = React.useState<string[]>([]);
   const [savingRecipe, setSavingRecipe] = React.useState<string | null>(null);
   const toast = useToast();
   const t = useT();
+  const router = useRouter();
 
   React.useEffect(() => {
     setPlan(null);
@@ -106,9 +108,12 @@ export function DailyPlanPanel({ date }: { date: string }) {
           </h2>
           <p className="text-sm text-muted-foreground">{t('recipes.description')}</p>
         </div>
-        <Button onClick={() => void generate(Boolean(plan))} loading={loading}>
+        <Button
+          onClick={canWrite ? () => void generate(Boolean(plan)) : () => router.push('/profile/billing')}
+          loading={canWrite && loading}
+        >
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
-          {plan ? t('recipes.newSuggestion') : t('recipes.createSuggestions')}
+          {canWrite ? (plan ? t('recipes.newSuggestion') : t('recipes.createSuggestions')) : t('billing.lockedAction')}
         </Button>
       </div>
 

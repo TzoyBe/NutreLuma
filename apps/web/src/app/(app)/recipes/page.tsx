@@ -4,6 +4,7 @@ import { requirePageUser } from '@/server/auth/guards';
 import { getProfile } from '@/server/services/profile';
 import { getCurrentRecipePlan } from '@/server/services/recipe-plans';
 import { listSavedRecipes } from '@/server/services/saved-recipes';
+import { getAccessState } from '@/server/services/subscription';
 import { todayISO } from '@/lib/dates';
 import { DailyPlanPanel } from '@/components/recipes/daily-plan-panel';
 import { SavedRecipes } from '@/components/recipes/saved-recipes';
@@ -26,9 +27,10 @@ export default async function RecipesPage() {
   if (!profile) redirect('/onboarding');
 
   const date = todayISO(profile.timezone);
-  const [plan, saved] = await Promise.all([
+  const [plan, saved, access] = await Promise.all([
     getCurrentRecipePlan(user.id, date),
     listSavedRecipes(user.id),
+    getAccessState(user.id),
   ]);
 
   const universeModel = buildRecipeUniverseModel({
@@ -71,7 +73,7 @@ export default async function RecipesPage() {
         </CardContent>
       </Card>
 
-      <DailyPlanPanel date={date} />
+      <DailyPlanPanel date={date} canWrite={access.canWrite} />
       <SavedRecipes />
     </div>
   );
