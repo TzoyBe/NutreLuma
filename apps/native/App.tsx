@@ -4047,6 +4047,8 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
   const [generating, setGenerating] = useState(false);
   const [savingRecipeTitle, setSavingRecipeTitle] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [canWrite, setCanWrite] = useState(true);
+  const { presentPaywall } = useRevenueCat();
 
   function extractPlanMeals(result: Awaited<ReturnType<typeof api.mealPlan>>) {
     return (
@@ -4064,9 +4066,13 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
     try {
       // Το «Today's plan» εμφανίζεται μόνο αφού ο χρήστης πατήσει «Generate plan»,
       // οπότε στο load φέρνουμε μόνο τις αποθηκευμένες συνταγές.
-      const recipesResult = await api.recipes(session.token);
+      const [recipesResult, billingRes] = await Promise.all([
+        api.recipes(session.token),
+        api.billing(session.token).catch(() => null),
+      ]);
       setRecipes(Array.isArray(recipesResult.recipes) ? recipesResult.recipes : []);
       setSavedPlanTitles(recipesResult.recipes.map((item) => item.recipe.title ?? '').filter(Boolean));
+      setCanWrite(billingRes?.state?.canWrite ?? true);
     } catch (error) {
       setMessage(apiErrorMessage(error));
     } finally {
@@ -4214,12 +4220,18 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
               <UniverseMetric label="Saved recipes" value={universeModel.journey.saved} tone="blue" />
             </View>
             <Pressable
-              onPress={generatePlan}
-              disabled={generating}
+              onPress={canWrite ? generatePlan : () => void presentPaywall()}
+              disabled={canWrite && generating}
               style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}
             >
               <Text style={styles.actionPrimaryText}>
-                {generating ? 'Generating...' : planMeals.length ? 'New suggestions' : 'Generate plan'}
+                {!canWrite
+                  ? 'Subscription Required'
+                  : generating
+                    ? 'Generating...'
+                    : planMeals.length
+                      ? 'New suggestions'
+                      : 'Generate plan'}
               </Text>
             </Pressable>
           </GlassCard>
