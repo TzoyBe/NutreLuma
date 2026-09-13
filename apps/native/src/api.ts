@@ -725,6 +725,13 @@ export const api = {
     });
   },
 
+  completeAppleMobileAuth(identityToken: string, fullName?: string | null) {
+    return request<MobileLoginResult>('/api/auth/mobile/apple/complete', {
+      method: 'POST',
+      body: JSON.stringify({ identityToken, fullName: fullName ?? null }),
+    });
+  },
+
   dashboard(token: string, date?: string) {
     const query = date ? `?date=${encodeURIComponent(date)}` : '';
     return request<DashboardResult>(`/api/dashboard${query}`, { token });

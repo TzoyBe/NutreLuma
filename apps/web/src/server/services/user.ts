@@ -138,6 +138,71 @@ export async function findOrCreateUserFromGoogle(profile: GoogleIdentityProfile)
   }
 }
 
+/**
+ * Find-or-create a user from a verified Sign in with Apple identity. The Apple
+ * identity token is already cryptographically verified by verifyAppleIdentityToken,
+ * so the email is authoritative here. Mirrors the Google flow: link by the stable
+ * Apple `sub`, else attach an APPLE identity to an existing email account, else
+ * create a passwordless account with a trial. `profile.name` only arrives on the
+ * user's first authorization.
+ */
+export async function findOrCreateUserFromApple(profile: GoogleIdentityProfile) {
+  const existingIdentity = await findUserByAuthIdentity('APPLE', profile.sub);
+  if (existingIdentity?.user) return existingIdentity.user;
+
+  const email = profile.email.toLowerCase();
+  const displayName = (profile.name?.trim() || fallbackDisplayName(email)).slice(0, 60);
+  const placeholderPassword = await hashPassword(randomBytes(24).toString('hex'));
+
+  try {
+    const user = await prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, displayName: true, role: true, lockedAt: true, deletedAt: true },
+      });
+
+      if (existingUser) {
+        await tx.authIdentity.create({
+          data: {
+            userId: existingUser.id,
+            provider: 'APPLE',
+            providerAccountId: profile.sub,
+            providerEmail: email,
+          },
+        });
+        return existingUser;
+      }
+
+      const created = await tx.user.create({
+        data: {
+          email,
+          displayName,
+          passwordHash: placeholderPassword,
+          consentAcceptedAt: new Date(),
+          emailVerifiedAt: new Date(),
+          authIdentities: {
+            create: {
+              provider: 'APPLE',
+              providerAccountId: profile.sub,
+              providerEmail: email,
+            },
+          },
+        },
+        select: { id: true, email: true, displayName: true, role: true, lockedAt: true, deletedAt: true },
+      });
+      await createTrialForUser(tx, created.id);
+      return created;
+    });
+    logger.info('apple_auth_success', { userId: user.id });
+    return user;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new ApiError('CONFLICT', 'A login account already exists for this Apple identity.');
+    }
+    throw error;
+  }
+}
+
 export async function changePassword(
   userId: string,
   currentPassword: string,

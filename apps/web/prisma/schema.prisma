@@ -18,6 +18,7 @@ enum Role {
 
 enum AuthProvider {
   GOOGLE
+  APPLE
 }
 
 enum Gender {

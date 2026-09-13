@@ -26,6 +26,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { api, apiErrorMessage, type DashboardResult, type HistoryTotalsResult, type MobileUser } from './src/api';
 import { parseGoogleAuthCallback } from './src/google-auth';
 import type {
@@ -723,6 +724,8 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const float = useRef(new Animated.Value(0)).current;
 
@@ -782,6 +785,53 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
       setMessage(error instanceof Error ? error.message : 'Google sign-in could not be opened.');
     } finally {
       setGoogleLoading(false);
+    }
+  }
+
+  // Το "Sign in with Apple" εμφανίζεται μόνο σε iOS συσκευές που το υποστηρίζουν
+  // (υποχρεωτικό από την Apple όταν προσφέρεται άλλο social login — Guideline 4.8).
+  useEffect(() => {
+    let mounted = true;
+    if (Platform.OS !== 'ios') return undefined;
+    void AppleAuthentication.isAvailableAsync().then((available) => {
+      if (mounted) setAppleAvailable(available);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function startAppleLogin() {
+    setAppleLoading(true);
+    setMessage(null);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        setMessage('Apple sign-in could not be completed.');
+        return;
+      }
+      // Το πλήρες όνομα δίνεται από την Apple μόνο στην πρώτη σύνδεση.
+      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      const result = await api.completeAppleMobileAuth(credential.identityToken, fullName || null);
+      onAuthenticated({
+        token: result.token,
+        user: result.user,
+        needsProfile: result.needsProfile,
+      });
+    } catch (error) {
+      // Ο χρήστης που ακυρώνει το popup δεν είναι σφάλμα προς εμφάνιση.
+      if ((error as { code?: string })?.code === 'ERR_REQUEST_CANCELED') return;
+      setMessage(apiErrorMessage(error));
+    } finally {
+      setAppleLoading(false);
     }
   }
 
@@ -941,11 +991,20 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) =
                 <Text style={styles.authDividerText}>or</Text>
                 <View style={styles.authDividerLine} />
               </View>
+              {appleAvailable ? (
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                  cornerRadius={24}
+                  style={styles.appleButton}
+                  onPress={() => void startAppleLogin()}
+                />
+              ) : null}
               <PillButton
                 label={googleLoading ? 'Opening Google...' : 'Continue with Google'}
                 onPress={() => void startGoogleLogin()}
                 variant="ghost"
-                disabled={googleLoading}
+                disabled={googleLoading || appleLoading}
               />
             </>
           ) : null}
@@ -6984,6 +7043,10 @@ const styles = StyleSheet.create({
     color: colors.mutedSoft,
     fontSize: 11,
     fontWeight: '700',
+  },
+  appleButton: {
+    width: '100%',
+    height: 50,
   },
   categoryCard: {
     padding: 18,
