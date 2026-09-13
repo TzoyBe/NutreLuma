@@ -177,6 +177,16 @@ function isMainTab(screen: Screen): screen is MainTab {
   return mainTabs.some((tab) => tab.screen === screen);
 }
 
+// Ο χώρος που πιάνει το πλωτό BottomNav στο κάτω μέρος της οθόνης. Κάθε main-tab
+// screen (dashboard/progress/goals/recipes/profile) πρέπει να αφήνει τόσο padding
+// στο κάτω μέρος του scroll ώστε τα κουμπιά/επιλογές να μη χώνονται από κάτω του
+// και να μένουν πατήσιμα (footprint + λίγος αέρας). Ίδιος τύπος με το
+// bottomNavFootprint του Dashboard, ώστε να μένουν συγχρονισμένα.
+function useBottomNavPad() {
+  const insets = useSafeAreaInsets();
+  return 66 + 8 + (Platform.OS === 'ios' ? insets.bottom || 26 : insets.bottom + 16) + 16;
+}
+
 const mealTypes = [
   { value: 'BREAKFAST', label: 'Breakfast' },
   { value: 'MORNING_SNACK', label: 'Morning snack' },
@@ -3037,8 +3047,13 @@ function MaintenanceScreen({ session, onBack }: { session: Session; onBack: () =
   }, []);
 
   return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.select({ ios: 'padding', android: undefined })}
+    >
     <ScrollView
       contentContainerStyle={styles.dashboardContent}
+      keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />
       }
@@ -3277,6 +3292,7 @@ function MaintenanceScreen({ session, onBack }: { session: Session; onBack: () =
         </GlassCard>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -3368,6 +3384,7 @@ function GoalsOverviewScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const bottomNavPad = useBottomNavPad();
 
   async function load(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
@@ -3589,7 +3606,14 @@ function GoalsOverviewScreen({
 
   if (milestoneView === 'editor') {
     return (
-      <ScrollView contentContainerStyle={styles.dashboardContent} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.select({ ios: 'padding', android: undefined })}
+      >
+      <ScrollView
+        contentContainerStyle={[styles.dashboardContent, { paddingBottom: bottomNavPad }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <MilestoneScreenHeaderNative
           title={editingMilestoneId ? 'Edit milestone' : 'New milestone'}
           subtitle={editingMilestoneId ? 'Update the details below, then save your changes.' : 'Create a milestone with a clear target and timeframe.'}
@@ -3626,12 +3650,13 @@ function GoalsOverviewScreen({
           </View>
         </GlassCard>
       </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
 
   if (milestoneView === 'inProgress') {
     return (
-      <ScrollView contentContainerStyle={styles.dashboardContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}>
+      <ScrollView contentContainerStyle={[styles.dashboardContent, { paddingBottom: bottomNavPad }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}>
         <MilestoneScreenHeaderNative title="In progress" subtitle="Active and paused milestones that still need your attention." onBack={() => setMilestoneView('overview')} />
         <Pressable onPress={openNewMilestone} style={[styles.actionButton, styles.actionPrimary, styles.actionFull]}>
           <Plus size={18} color={colors.white} />
@@ -3664,7 +3689,7 @@ function GoalsOverviewScreen({
   if (milestoneView === 'history') {
     const filters: MilestoneStatusFilter[] = ['COMPLETED', 'MISSED', 'CANCELLED', 'ALL'];
     return (
-      <ScrollView contentContainerStyle={styles.dashboardContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}>
+      <ScrollView contentContainerStyle={[styles.dashboardContent, { paddingBottom: bottomNavPad }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}>
         <MilestoneScreenHeaderNative title="History" subtitle="Completed, missed and cancelled milestones." onBack={() => setMilestoneView('overview')} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {filters.map((filter) => {
@@ -3686,8 +3711,13 @@ function GoalsOverviewScreen({
   }
 
   return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.select({ ios: 'padding', android: undefined })}
+    >
     <ScrollView
-      contentContainerStyle={styles.dashboardContent}
+      contentContainerStyle={[styles.dashboardContent, { paddingBottom: bottomNavPad }]}
+      keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -3954,6 +3984,7 @@ function GoalsOverviewScreen({
         </View>
       </UniverseReveal>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -4055,6 +4086,7 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
   const [message, setMessage] = useState<string | null>(null);
   const [canWrite, setCanWrite] = useState(true);
   const { presentPaywall } = useRevenueCat();
+  const bottomNavPad = useBottomNavPad();
 
   function extractPlanMeals(result: Awaited<ReturnType<typeof api.mealPlan>>) {
     return (
@@ -4172,7 +4204,7 @@ function RecipesOverviewScreen({ session }: { session: Session }) {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.dashboardContent}
+      contentContainerStyle={[styles.dashboardContent, { paddingBottom: bottomNavPad }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -4470,6 +4502,7 @@ function ProgressScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [universeModel, setUniverseModel] = useState<NativeProgressUniverseModel | null>(null);
+  const bottomNavPad = useBottomNavPad();
 
   async function load(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
@@ -4510,7 +4543,7 @@ function ProgressScreen({
 
   return (
     <ScrollView
-      contentContainerStyle={styles.dashboardContent}
+      contentContainerStyle={[styles.dashboardContent, { paddingBottom: bottomNavPad }]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />
       }
@@ -4883,6 +4916,7 @@ function ProfileOverviewScreen({
   } =
     useRevenueCat();
   const [subscribing, setSubscribing] = useState(false);
+  const bottomNavPad = useBottomNavPad();
 
   async function syncRevenueCatAccess(previousBilling: BillingOverviewResult | null) {
     try {
@@ -5316,7 +5350,14 @@ function ProfileOverviewScreen({
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.dashboardContent}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.select({ ios: 'padding', android: undefined })}
+    >
+    <ScrollView
+      contentContainerStyle={[styles.dashboardContent, { paddingBottom: bottomNavPad }]}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.dashboardHeader}>
         <View style={styles.brandRowCompact}>
           <LogoMark />
@@ -5683,6 +5724,7 @@ function ProfileOverviewScreen({
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
