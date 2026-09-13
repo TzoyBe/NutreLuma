@@ -5872,6 +5872,7 @@ function DashboardScreen({
   refreshKey: number;
 }) {
   const [dashboard, setDashboard] = useState<DashboardResult | null>(null);
+  const [canWrite, setCanWrite] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -5889,6 +5890,7 @@ function DashboardScreen({
   // η κάθετη κίνηση να αλλάζει την τιμή αντί να σκρολάρει τη σελίδα.
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const STEPS_FALLBACK = 10000;
+  const { presentPaywall } = useRevenueCat();
 
   // Τα confirmed meals έρχονται ήδη σκοπαρισμένα στην ημέρα από το backend, αλλά
   // τα drafts (pending) όχι — γι' αυτό φιλτράρουμε τα drafts στην επιλεγμένη μέρα
@@ -5905,13 +5907,15 @@ function DashboardScreen({
     else setLoading(true);
     setError(null);
     try {
-      const [dash, goalsRes, waterRes, activityRes] = await Promise.all([
+      const [dash, goalsRes, waterRes, activityRes, billingRes] = await Promise.all([
         api.dashboard(session.token, date),
         api.goals(session.token).catch(() => null),
         api.waterEntries(session.token, { limit: 50 }).catch(() => null),
         api.activityEntries(session.token, { limit: 50 }).catch(() => null),
+        api.billing(session.token).catch(() => null),
       ]);
       setDashboard(dash);
+      setCanWrite(billingRes?.state?.canWrite ?? true);
       setWaterTarget(goalsRes?.goal?.waterMl ?? null);
       setStepsTarget(goalsRes?.goal?.stepsTarget ?? null);
       setWaterMl(
@@ -6184,28 +6188,34 @@ function DashboardScreen({
             style={({ pressed }) => [styles.addChoiceCard, pressed && styles.addChoiceCardPressed]}
             onPress={() => {
               setShowAddChoice(false);
-              onAddMeal();
+              if (canWrite) onAddMeal();
+              else void presentPaywall();
             }}
           >
             <View style={[styles.addChoiceCardIcon, { backgroundColor: colors.primarySoft }]}>
               <Plus size={26} color={colors.primary} />
             </View>
-            <Text style={styles.addChoiceCardTitle}>Add meal</Text>
-            <Text style={styles.addChoiceCardSubtitle}>Photo, gallery or manual entry</Text>
+            <Text style={styles.addChoiceCardTitle}>{canWrite ? 'Add meal' : 'Subscription Required'}</Text>
+            <Text style={styles.addChoiceCardSubtitle}>
+              {canWrite ? 'Photo, gallery or manual entry' : 'Subscribe to keep logging meals'}
+            </Text>
           </Pressable>
 
           <Pressable
             style={({ pressed }) => [styles.addChoiceCard, pressed && styles.addChoiceCardPressed]}
             onPress={() => {
               setShowAddChoice(false);
-              onOpenWeight();
+              if (canWrite) onOpenWeight();
+              else void presentPaywall();
             }}
           >
             <View style={[styles.addChoiceCardIcon, { backgroundColor: colors.accentSoft }]}>
               <Scale size={26} color={colors.accent} />
             </View>
-            <Text style={styles.addChoiceCardTitle}>Add weight</Text>
-            <Text style={styles.addChoiceCardSubtitle}>Log today's weigh-in</Text>
+            <Text style={styles.addChoiceCardTitle}>{canWrite ? 'Add weight' : 'Subscription Required'}</Text>
+            <Text style={styles.addChoiceCardSubtitle}>
+              {canWrite ? "Log today's weigh-in" : 'Subscribe to keep logging weight'}
+            </Text>
           </Pressable>
         </View>
 
