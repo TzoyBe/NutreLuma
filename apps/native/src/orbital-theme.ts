@@ -1,0 +1,17 @@
+export const orbitalTheme = {
+  canvas: '#030B20',
+  canvasDeep: '#010616',
+  text: '#F5F7FF',
+  textSoft: '#AFC0E8',
+  textMuted: '#7F94C1',
+  blue: '#4C7DFF',
+  cyan: '#42D7FF',
+  violet: '#8D58FF',
+  emerald: '#45E7AE',
+  amber: '#FFD45F',
+  magenta: '#DC55FF',
+  glass: 'rgba(10, 25, 60, 0.78)',
+  glassStrong: 'rgba(8, 20, 49, 0.94)',
+  border: 'rgba(112, 154, 244, 0.38)',
+  orbit: 'rgba(81, 132, 255, 0.42)',
+} as const;

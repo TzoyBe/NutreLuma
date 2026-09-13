@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Droplet, Footprints } from 'lucide-react';
+import { Droplet, Footprints, Plus } from 'lucide-react';
 import { api, ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/toast';
@@ -217,7 +217,7 @@ export function WaterRing({
   };
 
   return (
-    <div className={cn('flex flex-col items-center', className)}>
+    <div className={cn('relative flex flex-col items-center', className)}>
       <Ring
         value={waterMl}
         scaleMax={waterScaleMax}
@@ -238,6 +238,17 @@ export function WaterRing({
           </>
         )}
       </Ring>
+      {isToday ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void commitWater(waterMl + 250)}
+          className="absolute bottom-5 right-0 grid h-11 w-11 place-items-center rounded-full border border-sky-300/70 bg-blue-700 text-white shadow-[0_0_22px_rgba(59,130,246,0.52)] transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+          aria-label="Add 250 millilitres of water"
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
+        </button>
+      ) : null}
       <p className="mt-1 text-center text-sm font-semibold">{t('dashboard.water')}</p>
     </div>
   );
@@ -282,7 +293,7 @@ export function StepsRing({
   };
 
   return (
-    <div className={cn('flex flex-col items-center', className)}>
+    <div className={cn('relative flex flex-col items-center', className)}>
       <Ring
         value={steps}
         scaleMax={stepsScaleMax}
@@ -301,6 +312,17 @@ export function StepsRing({
           </>
         )}
       </Ring>
+      {isToday ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void commitSteps(steps + 1000)}
+          className="absolute bottom-5 right-0 grid h-11 w-11 place-items-center rounded-full border border-blue-300/70 bg-blue-700 text-white shadow-[0_0_22px_rgba(59,130,246,0.52)] transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+          aria-label="Add 1,000 steps"
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
+        </button>
+      ) : null}
       <p className="mt-1 text-center text-sm font-semibold">{t('dashboard.steps')}</p>
     </div>
   );

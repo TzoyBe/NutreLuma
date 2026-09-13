@@ -63,6 +63,8 @@ import { SwipeableRow } from './src/swipeable-row';
 import { GradientFab } from './src/conic-fab';
 import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
+import { OrbitalDashboard } from './src/orbital-dashboard';
+import { buildOrbitalDashboardModel } from './src/orbital-dashboard-model';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
 import { billingAccessView } from './src/billing-state';
 import {
@@ -131,7 +133,7 @@ type Screen =
   | 'recipesOverview'
   | 'profile'
   | 'profileOverview';
-type MainTab = 'dashboard' | 'progress' | 'goals' | 'recipes' | 'profile';
+type MainTab = 'dashboard' | 'insights' | 'recipes' | 'profile';
 
 class AppErrorBoundary extends Component<
   { children: ReactNode; onReset: () => void },
@@ -166,9 +168,8 @@ class AppErrorBoundary extends Component<
 }
 
 const mainTabs: Array<{ screen: MainTab; label: string; Icon: LucideIcon }> = [
-  { screen: 'dashboard', label: 'Today', Icon: LayoutDashboard },
-  { screen: 'progress', label: 'Progress', Icon: LineChart },
-  { screen: 'goals', label: 'Goals', Icon: Target },
+  { screen: 'dashboard', label: 'Home', Icon: LayoutDashboard },
+  { screen: 'insights', label: 'Insights', Icon: BarChart3 },
   { screen: 'recipes', label: 'Recipes', Icon: ChefHat },
   { screen: 'profile', label: 'Profile', Icon: UserCircle2 },
 ];
@@ -518,20 +519,28 @@ function BottomNav({
   active,
   unreadNotifications,
   onChange,
+  onAddMeal,
 }: {
   active: Screen;
   unreadNotifications: number;
   onChange: (screen: MainTab) => void;
+  onAddMeal: () => void;
 }) {
   return (
     <View style={styles.bottomNavWrap}>
       <View style={styles.bottomNav}>
-        {mainTabs.map((tab) => {
+        {mainTabs.map((tab, index) => {
           const selected = active === tab.screen;
           const showBadge = tab.screen === 'profile' && unreadNotifications > 0;
           return (
+            <View key={tab.screen} style={styles.navSlot}>
+            {index === 2 ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Add meal" onPress={onAddMeal} style={({ pressed }) => [styles.navAddMeal, pressed && styles.buttonPressed]}>
+                <Plus size={30} color="#FFFFFF" />
+                <Text style={styles.navAddLabel}>Add Meal</Text>
+              </Pressable>
+            ) : null}
             <Pressable
-              key={tab.screen}
               onPress={() => onChange(tab.screen)}
               style={[styles.navItem, selected ? styles.navItemActive : null]}
             >
@@ -549,6 +558,7 @@ function BottomNav({
                 {tab.label}
               </Text>
             </Pressable>
+            </View>
           );
         })}
       </View>
@@ -6017,6 +6027,15 @@ function DashboardScreen({
     { key: 'fat', label: 'Fat', color: '#A855F7' },
     { key: 'fiber', label: 'Fibre', color: '#10B981' },
   ] as const;
+  const orbitalModel = buildOrbitalDashboardModel({
+    calories: { current: consumed, target },
+    protein: { current: macroMap.protein?.consumed ?? 0, target: macroMap.protein?.target ?? null },
+    carbohydrate: { current: macroMap.carbohydrate?.consumed ?? 0, target: macroMap.carbohydrate?.target ?? null },
+    fat: { current: macroMap.fat?.consumed ?? 0, target: macroMap.fat?.target ?? null },
+    fiber: { current: macroMap.fiber?.consumed ?? 0, target: macroMap.fiber?.target ?? null },
+    water: { current: waterMl, target: waterTarget },
+    steps: { current: steps, target: stepsTarget ?? STEPS_FALLBACK },
+  });
 
   return (
     <View style={styles.dashboardRoot}>
@@ -6031,28 +6050,6 @@ function DashboardScreen({
         />
       }
     >
-      <View style={styles.dashboardHeader}>
-        <View style={styles.brandRowCompact}>
-          <LogoMark />
-          <View>
-            <Text style={styles.kicker}>NutreLuma</Text>
-            <Text style={styles.headerName}>Dashboard</Text>
-          </View>
-        </View>
-        <View style={styles.headerActions}>
-          <Pressable onPress={onOpenNotifications} style={styles.bellButton}>
-            <Bell size={18} color={colors.muted} />
-            {unreadNotifications > 0 ? (
-              <View style={styles.bellBadge}>
-                <Text style={styles.bellBadgeText}>
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                </Text>
-              </View>
-            ) : null}
-          </Pressable>
-        </View>
-      </View>
-
       {session.needsProfile ? (
         <View style={styles.noticeCard}>
           <Text style={styles.noticeTitle}>Profile setup needed</Text>
@@ -6062,7 +6059,26 @@ function DashboardScreen({
         </View>
       ) : null}
 
-      <DateNav date={date} maxDate={today} onChange={setDate} />
+      <OrbitalDashboard
+        model={orbitalModel}
+        unreadNotifications={unreadNotifications}
+        dateControl={<DateNav date={date} maxDate={today} onChange={setDate} />}
+        onNotifications={onOpenNotifications}
+        onCalories={onOpenGoals}
+        onMetric={(key) => {
+          if (key === 'water' && isToday) void commitWater(waterMl + 250);
+          else if (key === 'steps' && isToday) void commitSteps(steps + 1000);
+          else onOpenGoals();
+        }}
+        onAddWater={() => {
+          if (isToday) void commitWater(waterMl + 250);
+        }}
+        onAddSteps={() => {
+          if (isToday) void commitSteps(steps + 1000);
+        }}
+      />
+
+      {loading ? <ActivityIndicator color={colors.primary} /> : null}
 
       {false && isToday ? (
         <View style={styles.progressSectionHeaderEnd}>
@@ -6073,7 +6089,7 @@ function DashboardScreen({
         </View>
       ) : null}
 
-      {loading ? (
+      {false && (loading ? (
         <View style={styles.orbitLoading}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -6164,7 +6180,7 @@ function DashboardScreen({
             </Satellite>
           </OrbitRow>
         </OrbitStage>
-      )}
+      ))}
 
       {error ? (
         <View style={styles.errorCard}>
@@ -6577,6 +6593,7 @@ export default function App() {
             active={screen}
             unreadNotifications={unreadNotifications}
             onChange={setScreen}
+            onAddMeal={() => setScreen('addMeal')}
           />
         ) : null}
         </View>
@@ -7912,7 +7929,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: 14,
-    paddingTop: 8,
+    paddingTop: 34,
     paddingBottom: Platform.select({ ios: 26, android: 16, default: 16 }),
   },
   bottomNav: {
@@ -7922,18 +7939,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: 'rgba(18, 27, 49, 0.78)',
     borderWidth: 1,
     borderColor: colors.glassBorder,
   },
   navItem: {
-    flex: 1,
+    width: '100%',
     minHeight: 54,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+  },
+  navSlot: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+  },
+  navAddMeal: {
+    position: 'absolute',
+    left: -28,
+    top: -37,
+    zIndex: 4,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#315CFF',
+    borderWidth: 2,
+    borderColor: '#7DA4FF',
+    shadowColor: '#315CFF',
+    shadowOpacity: 0.8,
+    shadowRadius: 18,
+    elevation: 14,
+  },
+  navAddLabel: {
+    position: 'absolute',
+    top: 70,
+    width: 76,
+    color: '#AFC0E8',
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   navItemActive: {
     backgroundColor: colors.primarySoft,
