@@ -150,6 +150,14 @@ export async function findOrCreateUserFromApple(profile: GoogleIdentityProfile) 
   const existingIdentity = await findUserByAuthIdentity('APPLE', profile.sub);
   if (existingIdentity?.user) return existingIdentity.user;
 
+  // A genuine Apple token proves the identity, but not that Apple confirmed this
+  // email belongs to the account. Linking-by-email (or creating) on an unverified
+  // address would let a crafted token attach an APPLE identity to — or squat — a
+  // victim's email account. Require verification, exactly like the Google flow.
+  if (!profile.emailVerified) {
+    throw new ApiError('FORBIDDEN', 'Apple did not confirm this email address.');
+  }
+
   const email = profile.email.toLowerCase();
   const displayName = (profile.name?.trim() || fallbackDisplayName(email)).slice(0, 60);
   const placeholderPassword = await hashPassword(randomBytes(24).toString('hex'));
