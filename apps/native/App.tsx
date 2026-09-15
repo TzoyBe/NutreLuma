@@ -66,6 +66,7 @@ import { LogoMark } from './src/logo';
 import { WelcomeTour } from './src/welcome-tour';
 import { RevenueCatProvider, useRevenueCat } from './src/revenuecat';
 import { billingAccessView } from './src/billing-state';
+import { getDashboardFit } from './src/dashboard-layout';
 import {
   UniverseActionTile,
   UniverseHero,
@@ -237,14 +238,6 @@ function nowLocalInput(): string {
 
 function todayLocalISO(): string {
   return nowLocalInput().slice(0, 10);
-}
-
-/** Μετατόπιση ISO ημέρας κατά `days` (UTC-safe), όπως το addDaysISO του web. */
-function addDaysISO(dayISO: string, days: number): string {
-  const [y, m, d] = dayISO.split('-').map(Number);
-  const dt = new Date(Date.UTC(y!, (m ?? 1) - 1, d ?? 1) + days * 86400000);
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
 }
 
 /** "2026-08-16" -> "Sat, 16 Aug" (ίδιο ύφος με το formatDayISOHuman του web). */
@@ -5805,68 +5798,6 @@ const CALENDAR_MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-/**
- * Πλοήγηση ανά ημέρα + date picker — αντίγραφο της λειτουργίας του web DateNav.
- * Ξεκινά στη σημερινή μέρα (maxDate) και δεν επιτρέπει μελλοντικές ημερομηνίες.
- */
-function DateNav({
-  date,
-  maxDate,
-  onChange,
-}: {
-  date: string;
-  maxDate: string;
-  onChange: (next: string) => void;
-}) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const isToday = date >= maxDate;
-  const go = (next: string) => {
-    if (next > maxDate) return;
-    onChange(next);
-  };
-
-  return (
-    <View style={styles.dateNavPill}>
-      <Pressable
-        onPress={() => go(addDaysISO(date, -1))}
-        style={styles.dateNavArrowFlat}
-        hitSlop={8}
-        accessibilityLabel="Previous day"
-      >
-        <ChevronLeft size={18} color={colors.text} />
-      </Pressable>
-
-      <Pressable onPress={() => setPickerOpen(true)} style={styles.dateNavCenterFlat} hitSlop={4}>
-        <CalendarDays size={15} color={colors.primary} />
-        <Text style={styles.dateNavLabel}>
-          {isToday ? 'Today' : formatDayISOHuman(date)}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        onPress={() => go(addDaysISO(date, 1))}
-        style={[styles.dateNavArrowFlat, isToday && styles.dateNavArrowDisabled]}
-        disabled={isToday}
-        hitSlop={8}
-        accessibilityLabel="Next day"
-      >
-        <ChevronRight size={18} color={isToday ? colors.mutedSoft : colors.text} />
-      </Pressable>
-
-      <CalendarModal
-        visible={pickerOpen}
-        value={date}
-        maxDate={maxDate}
-        onClose={() => setPickerOpen(false)}
-        onSelect={(next) => {
-          setPickerOpen(false);
-          go(next);
-        }}
-      />
-    </View>
-  );
-}
-
 /** Απλό ημερολόγιο μήνα σε καθαρό JS — χωρίς native dependency. */
 function CalendarModal({
   visible,
@@ -5997,6 +5928,7 @@ function DashboardScreen({
   const [error, setError] = useState<string | null>(null);
   const today = todayLocalISO();
   const [date, setDate] = useState(today);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const isToday = date >= today;
   const [waterMl, setWaterMl] = useState(0);
   const [waterTarget, setWaterTarget] = useState<number | null>(null);
@@ -6017,13 +5949,7 @@ function DashboardScreen({
   // πάρουν τον δικό τους χώρο, και υπολογίζουμε ένα ομοιόμορφο scale ώστε όλο
   // το dashboard να χωράει σε μία οθόνη χωρίς scroll, σε οποιοδήποτε μέγεθος.
   const [flexZoneHeight, setFlexZoneHeight] = useState<number | null>(null);
-  const GAUGE_STAGE_NATURAL_H = 578; // 2 σειρές δορυφόρων + κεντρικό ring, στο scale=1
-  const MEAL_SECTION_NATURAL_H = 156; // ύψος MealReel card, στο scale=1
-  const FLEX_ZONE_OVERHEAD_H = 50; // "Meals" τίτλος + τα κενά γύρω του
-  const FLEX_ZONE_NATURAL_H = GAUGE_STAGE_NATURAL_H + FLEX_ZONE_OVERHEAD_H + MEAL_SECTION_NATURAL_H;
-  const fitRatio = flexZoneHeight !== null ? flexZoneHeight / FLEX_ZONE_NATURAL_H : 1;
-  const gaugeScale = Math.min(1, Math.max(0.62, fitRatio));
-  const mealCardScale = Math.min(1, Math.max(0.75, fitRatio));
+  const { gaugeScale, mealCardScale } = getDashboardFit(flexZoneHeight);
   // Ο πραγματικός χώρος που πιάνει το πλωτό BottomNav κάτω — τον αφαιρούμε από
   // το scroll content ώστε το flex:1 dashboardFlexZone να μετρήσει το σωστό
   // διαθέσιμο ύψος (βλ. bottomNavWrap paddingBottom στο App()).
@@ -6168,7 +6094,20 @@ function DashboardScreen({
           </View>
         </View>
         <View style={styles.headerActions}>
-          <Pressable onPress={onOpenNotifications} style={styles.bellButton}>
+          <Pressable
+            onPress={() => setDatePickerOpen(true)}
+            style={styles.bellButton}
+            accessibilityRole="button"
+            accessibilityLabel={`Choose dashboard date. Selected ${isToday ? 'Today' : formatDayISOHuman(date)}`}
+          >
+            <CalendarDays size={18} color={colors.primary} />
+          </Pressable>
+          <Pressable
+            onPress={onOpenNotifications}
+            style={styles.bellButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open notifications"
+          >
             <Bell size={18} color={colors.muted} />
             {unreadNotifications > 0 ? (
               <View style={styles.bellBadge}>
@@ -6181,6 +6120,17 @@ function DashboardScreen({
         </View>
       </View>
 
+      <CalendarModal
+        visible={datePickerOpen}
+        value={date}
+        maxDate={today}
+        onClose={() => setDatePickerOpen(false)}
+        onSelect={(next) => {
+          setDatePickerOpen(false);
+          setDate(next);
+        }}
+      />
+
       {session.needsProfile ? (
         <View style={styles.noticeCard}>
           <Text style={styles.noticeTitle}>Profile setup needed</Text>
@@ -6189,8 +6139,6 @@ function DashboardScreen({
           </Text>
         </View>
       ) : null}
-
-      <DateNav date={date} maxDate={today} onChange={setDate} />
 
       {false && isToday ? (
         <View style={styles.progressSectionHeaderEnd}>
@@ -7579,38 +7527,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  dateNavPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    backgroundColor: colors.glassBg,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  dateNavArrowFlat: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   dateNavArrowDisabled: {
     opacity: 0.45,
-  },
-  dateNavCenterFlat: {
-    flex: 1,
-    height: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  dateNavLabel: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
   },
   modalBackdrop: {
     flex: 1,
