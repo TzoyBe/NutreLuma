@@ -280,7 +280,7 @@ export function WaterGauge({
       max={max}
       size={size}
       from="#38BDF8"
-      to="#2563EB"
+      to="#2E63FF"
       glow="#38BDF8"
       uid="water"
       interactive={!!onCommit}

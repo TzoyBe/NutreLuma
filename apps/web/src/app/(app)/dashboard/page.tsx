@@ -138,7 +138,7 @@ export default async function DashboardPage({
                 consumed={macros.carbohydrate.consumed}
                 target={macros.carbohydrate.target}
                 over={macros.carbohydrate.overTarget}
-                color="#FFB703"
+                color="#F2C14E"
               />
             </div>
           </div>

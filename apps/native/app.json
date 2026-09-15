@@ -19,7 +19,7 @@
       "package": "com.joybeedigital.nutreluma",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#0B1020",
+        "backgroundColor": "#091631",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -39,7 +39,7 @@
       [
         "expo-notifications",
         {
-          "color": "#2563EB"
+          "color": "#2E63FF"
         }
       ],
       "expo-sharing",
@@ -48,7 +48,7 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#0B1020"
+          "backgroundColor": "#091631"
         }
       ]
     ],

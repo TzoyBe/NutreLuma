@@ -68,7 +68,7 @@ export function GradientFab({
 
 const styles = StyleSheet.create({
   shadowWrap: {
-    shadowColor: '#7C3AED',
+    shadowColor: '#8B56FF',
     shadowOffset: { width: 0, height: 8 },
     elevation: 10,
   },

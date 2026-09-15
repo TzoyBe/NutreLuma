@@ -33,9 +33,9 @@ export function AiSpinner({ size = 48, stroke = 5 }: { size?: number; stroke?: n
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <Defs>
           <LinearGradient id="aiSpinnerGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#FFB703" />
-            <Stop offset="0.5" stopColor="#2563EB" />
-            <Stop offset="1" stopColor="#7C3AED" />
+            <Stop offset="0" stopColor="#F2C14E" />
+            <Stop offset="0.5" stopColor="#2E63FF" />
+            <Stop offset="1" stopColor="#8B56FF" />
           </LinearGradient>
         </Defs>
         <Circle

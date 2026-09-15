@@ -1,23 +1,23 @@
-// Brand kit v2 tokens (Nutreluma). Πηγή: nutreluma_brand_kit/09_Design_Tokens.
+// Liquid Glass brand kit tokens (Nutreluma). Πηγή: NutreLuma_Liquid_Glass_Brand_Kit.
 export const colors = {
-  background: '#0B1020', // navy
-  navy2: '#11182E',
-  surface: '#151D35',
-  surfaceSoft: '#1A2442', // surface_2
+  background: '#091631', // Midnight Navy
+  navy2: '#0D1D40',
+  surface: '#111F42',
+  surfaceSoft: '#16274E', // surface_2
   border: 'rgba(191, 210, 248, 0.24)',
   borderStrong: 'rgba(191, 210, 248, 0.42)',
-  primary: '#2563EB', // main action / product intelligence
-  primarySoft: 'rgba(37, 99, 235, 0.16)',
-  blueBright: '#3B6FF5', // calories / intelligence highlight
-  accent: '#FFB703', // gold — accent, not a general CTA
-  accentSoft: 'rgba(255, 183, 3, 0.14)',
+  primary: '#2E63FF', // Electric Blue — main action / product intelligence
+  primarySoft: 'rgba(46, 99, 255, 0.16)',
+  blueBright: '#4D7CFF', // calories / intelligence highlight
+  accent: '#F2C14E', // Solar Gold — accent, not a general CTA
+  accentSoft: 'rgba(242, 193, 78, 0.14)',
   goldSoft: '#D8AA48',
-  // Personalization / premium / selected states (brand purple & violet).
-  purple: '#7C3AED',
-  purpleSoft: 'rgba(124, 58, 237, 0.16)',
-  violet: '#6746E8',
-  cyan: '#2DD4BF',
-  text: '#F3F4F6', // light
+  // Personalization / premium / selected states.
+  purple: '#8B56FF', // Aurora Violet
+  purpleSoft: 'rgba(139, 86, 255, 0.16)',
+  violet: '#7A47F0',
+  cyan: '#8EDCFF', // Ice Cyan
+  text: '#F5F8FF', // Frost White
   muted: '#AAB3C5',
   mutedSoft: '#7D88A5',
   danger: '#EF4444',
@@ -25,13 +25,13 @@ export const colors = {
   white: '#FFFFFF',
   // Liquid glass tokens: ημιδιαφανείς επιφάνειες πάνω από το gradient backdrop,
   // με λεπτό φωτεινό περίγραμμα — ίδιο ύφος με τις .glass κλάσεις του web.
-  glassBg: 'rgba(26, 36, 66, 0.55)', // surface_2 @ 55%
-  glassBgSoft: 'rgba(26, 36, 66, 0.38)',
+  glassBg: 'rgba(22, 39, 78, 0.55)', // surface_2 @ 55%
+  glassBgSoft: 'rgba(22, 39, 78, 0.38)',
   glassBorder: 'rgba(191, 210, 248, 0.22)',
   glassHighlight: 'rgba(191, 210, 248, 0.10)',
 } as const;
 
 /** Signature gradient (gold→blue→violet) — reserve for logo/premium/achievement. */
-export const signatureGradient = ['#FFB703', '#2563EB', '#7C3AED'] as const;
+export const signatureGradient = ['#F2C14E', '#2E63FF', '#8B56FF'] as const;
 
 export const API_BASE_URL = 'https://www.nutreluma.com';

@@ -163,13 +163,13 @@ export function GoalProgressChart({
       <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" style={{ height: 'auto' }} role="img" aria-label="Weight toward goal">
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#FFB703" />
-            <stop offset="0.6" stopColor="#2563EB" />
-            <stop offset="1" stopColor={geom.reached ? '#10B981' : '#2563EB'} />
+            <stop offset="0" stopColor="#F2C14E" />
+            <stop offset="0.6" stopColor="#2E63FF" />
+            <stop offset="1" stopColor={geom.reached ? '#10B981' : '#2E63FF'} />
           </linearGradient>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#2563EB" stopOpacity={0.34} />
-            <stop offset="1" stopColor="#2563EB" stopOpacity={0} />
+            <stop offset="0" stopColor="#2E63FF" stopOpacity={0.34} />
+            <stop offset="1" stopColor="#2E63FF" stopOpacity={0} />
           </linearGradient>
         </defs>
 
@@ -178,7 +178,7 @@ export function GoalProgressChart({
           y1={geom.targetY}
           x2={W - PADX}
           y2={geom.targetY}
-          stroke="#FFB703"
+          stroke="#F2C14E"
           strokeWidth={1.4}
           strokeDasharray="5 6"
           opacity={0.7}
@@ -204,7 +204,7 @@ export function GoalProgressChart({
           cx={geom.last.x}
           cy={geom.last.y}
           r={4}
-          fill={geom.reached ? '#10B981' : '#2563EB'}
+          fill={geom.reached ? '#10B981' : '#2E63FF'}
           style={{ opacity: fade, transition: 'opacity 0.6s ease-out 0.5s' }}
         />
       </svg>

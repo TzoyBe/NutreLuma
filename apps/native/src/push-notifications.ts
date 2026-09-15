@@ -29,7 +29,7 @@ export async function registerForPushNotifications(authToken: string): Promise<s
       name: 'NutreLuma',
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 240, 240, 240],
-      lightColor: '#2563EB',
+      lightColor: '#2E63FF',
     });
   }
 

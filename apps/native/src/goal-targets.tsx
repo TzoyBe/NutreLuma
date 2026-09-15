@@ -64,7 +64,7 @@ export function GoalTargets({
     <View style={styles.grid}>
       <TargetStat label="Calories" value={calories} unit="kcal" color="#3B6FF5" />
       <TargetStat label="Protein" value={protein} unit="g" color="#38BDF8" />
-      <TargetStat label="Carbs" value={carbs} unit="g" color="#FFB703" />
+      <TargetStat label="Carbs" value={carbs} unit="g" color="#F2C14E" />
       <TargetStat label="Fat" value={fat} unit="g" color="#A855F7" />
     </View>
   );

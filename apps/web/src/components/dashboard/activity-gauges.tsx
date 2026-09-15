@@ -223,7 +223,7 @@ export function WaterRing({
         scaleMax={waterScaleMax}
         target={waterTarget ?? WATER_DEFAULT}
         from="#38BDF8"
-        to="#2563EB"
+        to="#2E63FF"
         interactive={isToday}
         onCommit={commitWater}
         size={size}

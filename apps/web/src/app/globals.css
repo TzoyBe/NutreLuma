@@ -4,34 +4,35 @@
 
 @layer base {
   :root {
-    /* Brand kit v2 surfaces: navy #0B1020 / surface #151D35 / surface_2 #1A2442 / navy_2 #11182E */
-    --background: 225 49% 8%;
-    --foreground: 220 20% 96%;
-    --card: 225 43% 15%;
-    --card-foreground: 220 20% 96%;
-    --primary: 221 83% 53%;
+    /* Liquid Glass brand surfaces: Midnight Navy #091631 / surface #111F42 / surface_2 #16274E */
+    --background: 220 69% 11%;
+    --foreground: 222 100% 98%;
+    --card: 220 60% 17%;
+    --card-foreground: 222 100% 98%;
+    --primary: 225 100% 59%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 225 43% 18%;
+    --secondary: 221 51% 21%;
     --secondary-foreground: 220 18% 93%;
-    --muted: 226 46% 12%;
+    --muted: 222 55% 14%;
     --muted-foreground: 218 18% 71%; /* #AAB3C5 */
-    /* Brand Gold #FFB703 */
-    --accent: 43 100% 51%;
+    /* Solar Gold #F2C14E */
+    --accent: 42 86% 63%;
     --accent-foreground: 225 45% 9%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 224 24% 23%;
     --input: 224 24% 23%;
-    --ring: 221 83% 53%;
+    --ring: 225 100% 59%;
     --radius: 1.5rem; /* 24px primary card radius (brand kit v2) */
 
-    /* Brand kit v2 — personalization / premium accents */
-    --brand-purple: 262 83% 58%; /* #7C3AED */
-    --brand-violet: 252 77% 59%; /* #6746E8 */
+    /* Liquid Glass — personalization / premium accents */
+    --brand-purple: 259 100% 67%; /* #8B56FF Aurora Violet */
+    --brand-violet: 259 88% 63%; /* deeper violet for gradients */
+    --brand-cyan: 199 100% 78%; /* #8EDCFF Ice Cyan */
     /* Nutrition data colors — fixed semantics across the product */
     --nutrition-calories: 222 90% 60%; /* #3B6FF5 */
     --nutrition-protein: 199 92% 60%; /* #38BDF8 */
-    --nutrition-carbs: 43 100% 51%; /* #FFB703 */
+    --nutrition-carbs: 42 86% 63%; /* #F2C14E Solar Gold */
     --nutrition-fat: 270 91% 65%; /* #A855F7 */
     --nutrition-fibre: 160 84% 39%; /* #10B981 */
 
@@ -49,24 +50,24 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 225 49% 8%; /* brand navy #0B1020 */
-      --foreground: 220 20% 96%;
-      --card: 225 43% 15%; /* surface #151D35 */
-      --card-foreground: 220 20% 96%;
-      --primary: 221 83% 56%;
+      --background: 220 69% 11%; /* Midnight Navy #091631 */
+      --foreground: 222 100% 98%;
+      --card: 220 60% 17%; /* surface #111F42 */
+      --card-foreground: 222 100% 98%;
+      --primary: 225 100% 62%;
       --primary-foreground: 0 0% 100%;
-      --secondary: 225 43% 18%; /* surface_2 #1A2442 */
+      --secondary: 221 51% 21%; /* surface_2 #16274E */
       --secondary-foreground: 220 18% 93%;
-      --muted: 226 46% 12%; /* navy_2 #11182E */
+      --muted: 222 55% 14%;
       --muted-foreground: 218 18% 71%; /* #AAB3C5 */
-      /* Brand Gold #FFB703 */
-      --accent: 43 100% 51%;
+      /* Solar Gold #F2C14E */
+      --accent: 42 86% 63%;
       --accent-foreground: 225 45% 9%;
       --destructive: 0 62% 52%;
       --destructive-foreground: 0 0% 100%;
       --border: 224 24% 20%;
       --input: 224 24% 20%;
-      --ring: 221 83% 56%;
+      --ring: 225 100% 62%;
 
       --glass-bg: 225 43% 15%;
       --glass-tint: 225 43% 18%;
@@ -99,7 +100,7 @@
     background:
       radial-gradient(circle at top center, hsl(var(--accent) / 0.08), transparent 24%),
       radial-gradient(circle at 82% 12%, hsl(var(--primary) / 0.16), transparent 28%),
-      linear-gradient(118deg, hsl(225 58% 4%) 0%, hsl(var(--background)) 36%, hsl(225 49% 8%) 100%),
+      linear-gradient(118deg, hsl(220 72% 5%) 0%, hsl(var(--background)) 36%, hsl(220 69% 11%) 100%),
       linear-gradient(180deg, hsl(var(--primary) / 0.08), transparent 34%),
       linear-gradient(90deg, transparent 10%, hsl(var(--liquid-depth) / 0.08) 52%, transparent 100%);
   }
@@ -153,7 +154,7 @@
   background:
     radial-gradient(circle at 82% 4%, hsl(var(--brand-purple) / 0.16), transparent 30rem),
     radial-gradient(circle at 42% 36%, hsl(var(--primary) / 0.09), transparent 34rem),
-    linear-gradient(145deg, #070b16 0%, hsl(var(--background)) 46%, #0d1022 100%);
+    linear-gradient(145deg, #050c1e 0%, hsl(var(--background)) 46%, #0a1636 100%);
 }
 
 .universe-page-glow {
@@ -1354,7 +1355,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #ffb703, #2563eb, #7c3aed);
+    background: linear-gradient(135deg, #f2c14e, #2e63ff, #8b56ff);
     box-shadow: 0 8px 20px rgba(124, 58, 237, 0.45);
     color: white;
   }

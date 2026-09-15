@@ -23,9 +23,9 @@ export function AiLoader({
       <svg viewBox="0 0 48 48" className="h-12 w-12 animate-spin" aria-hidden="true">
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#FFB703" />
-            <stop offset="0.5" stopColor="#2563EB" />
-            <stop offset="1" stopColor="#7C3AED" />
+            <stop offset="0" stopColor="#F2C14E" />
+            <stop offset="0.5" stopColor="#2E63FF" />
+            <stop offset="1" stopColor="#8B56FF" />
           </linearGradient>
         </defs>
         <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--secondary))" strokeWidth="5" opacity="0.5" />

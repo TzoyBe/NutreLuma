@@ -19,8 +19,8 @@ import { LogoMark } from './logo';
  * αντίστοιχης οθόνης, pagination dots, back/next και swipe.
  */
 
-const PRIMARY = '#2563EB';
-const ACCENT = '#FFB703';
+const PRIMARY = '#2E63FF';
+const ACCENT = '#F2C14E';
 const TRACK = 'hsl(224, 30%, 16%)';
 
 type Slide = { id: string; title: (name: string) => string; body: string; Preview: () => ReactNode };
@@ -304,7 +304,7 @@ function GoalsPreview() {
           <Trophy size={30} color={colors.white} />
         </View>
         <View style={styles.goalsSpark}>
-          <Sparkles size={15} color="#0B1020" />
+          <Sparkles size={15} color="#091631" />
         </View>
       </View>
     </PreviewCard>
