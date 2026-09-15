@@ -65,10 +65,10 @@ export function GoalTargets({
   const t = useT();
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <TargetStat label={t('goals.calories')} value={calories} unit="kcal" color="#3B6FF5" />
-      <TargetStat label={t('goals.protein')} value={protein} unit="g" color="#38BDF8" />
+      <TargetStat label={t('goals.calories')} value={calories} unit="kcal" color="#2E63FF" />
+      <TargetStat label={t('goals.protein')} value={protein} unit="g" color="#8EDCFF" />
       <TargetStat label={t('goals.carbohydrate')} value={carbs} unit="g" color="#F2C14E" />
-      <TargetStat label={t('goals.fat')} value={fat} unit="g" color="#A855F7" />
+      <TargetStat label={t('goals.fat')} value={fat} unit="g" color="#8B56FF" />
     </div>
   );
 }

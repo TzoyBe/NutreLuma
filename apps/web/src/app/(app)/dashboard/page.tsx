@@ -121,7 +121,7 @@ export default async function DashboardPage({
                 consumed={macros.protein.consumed}
                 target={macros.protein.target}
                 over={macros.protein.overTarget}
-                color="#38BDF8"
+                color="#8EDCFF"
               />
             </div>
             <WaterRing
@@ -167,7 +167,7 @@ export default async function DashboardPage({
                 consumed={macros.fat.consumed}
                 target={macros.fat.target}
                 over={macros.fat.overTarget}
-                color="#A855F7"
+                color="#8B56FF"
               />
             </div>
             <StepsRing

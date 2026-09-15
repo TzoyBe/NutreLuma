@@ -185,16 +185,16 @@ export function buildEmailVerificationEmail(params: {
 
   const html = `<!doctype html>
 <html lang="${params.locale}">
-<body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#091631;">
+<body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#081020;">
   <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;">
     <tr>
-      <td style="background:#091631;padding:20px 24px;color:#ffffff;font-size:18px;font-weight:700;">
+      <td style="background:#081020;padding:20px 24px;color:#ffffff;font-size:18px;font-weight:700;">
         Nutre<span style="color:#f2c14e;">Luma</span>
       </td>
     </tr>
     <tr>
       <td style="padding:28px 24px;">
-        <h1 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#091631;">${escapeHtml(copy.heading)}</h1>
+        <h1 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#081020;">${escapeHtml(copy.heading)}</h1>
         <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${copy.greeting(safeName)}</p>
         <p style="margin:0 0 24px;font-size:15px;line-height:1.6;">${escapeHtml(copy.intro)}</p>
 
@@ -246,16 +246,16 @@ export function buildNotificationEmail(params: {
 
   const html = `<!doctype html>
 <html lang="en">
-<body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#091631;">
+<body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#081020;">
   <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;">
     <tr>
-      <td style="background:#091631;padding:20px 24px;color:#ffffff;font-size:18px;font-weight:700;">
+      <td style="background:#081020;padding:20px 24px;color:#ffffff;font-size:18px;font-weight:700;">
         Nutre<span style="color:#f2c14e;">Luma</span>
       </td>
     </tr>
     <tr>
       <td style="padding:28px 24px;">
-        <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#091631;">${safeTitle}</h1>
+        <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#081020;">${safeTitle}</h1>
         <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">${safeBody}</p>
         <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
           <tr>

@@ -1,7 +1,7 @@
 import { Image } from 'react-native';
 
 /**
- * Το επίσημο NutreLuma logo mark (brand kit v2) — το master mark PNG
+ * Το επίσημο NutreLuma logo mark (brand kit v4) — το master mark PNG
  * (gold→blue→violet, διάφανο background) που ζει στο assets/logo-mark.png.
  * Χρησιμοποιείται σε headers, splash/startup και ως avatar/branding στοιχείο.
  */

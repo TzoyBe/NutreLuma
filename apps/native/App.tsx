@@ -6135,11 +6135,11 @@ function DashboardScreen({
   );
   const overTarget = dashboard?.summary?.overTarget ?? (remaining !== null && remaining < 0);
   const macroMap = dashboardMacroMap(dashboard?.macros);
-  // Brand kit v2 nutrition data colors (σταθερά semantics σε όλες τις οθόνες).
+  // Brand kit v4 nutrition data colors (σταθερά semantics σε όλες τις οθόνες).
   const macroConfig = [
-    { key: 'protein', label: 'Protein', color: '#38BDF8' },
-    { key: 'carbohydrate', label: 'Carbohydrates', color: '#FFB703' },
-    { key: 'fat', label: 'Fat', color: '#A855F7' },
+    { key: 'protein', label: 'Protein', color: '#8EDCFF' },
+    { key: 'carbohydrate', label: 'Carbohydrates', color: '#F2C14E' },
+    { key: 'fat', label: 'Fat', color: '#8B56FF' },
     { key: 'fiber', label: 'Fibre', color: '#10B981' },
   ] as const;
 
@@ -7745,7 +7745,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   waterAddTextGhost: {
-    color: '#38BDF8',
+    color: '#8EDCFF',
     fontWeight: '800',
     fontSize: 13,
   },

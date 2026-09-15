@@ -304,7 +304,7 @@ function GoalsPreview() {
           <Trophy size={30} color={colors.white} />
         </View>
         <View style={styles.goalsSpark}>
-          <Sparkles size={15} color="#091631" />
+          <Sparkles size={15} color="#081020" />
         </View>
       </View>
     </PreviewCard>

@@ -62,10 +62,10 @@ export function GoalTargets({
 }) {
   return (
     <View style={styles.grid}>
-      <TargetStat label="Calories" value={calories} unit="kcal" color="#3B6FF5" />
-      <TargetStat label="Protein" value={protein} unit="g" color="#38BDF8" />
+      <TargetStat label="Calories" value={calories} unit="kcal" color="#2E63FF" />
+      <TargetStat label="Protein" value={protein} unit="g" color="#8EDCFF" />
       <TargetStat label="Carbs" value={carbs} unit="g" color="#F2C14E" />
-      <TargetStat label="Fat" value={fat} unit="g" color="#A855F7" />
+      <TargetStat label="Fat" value={fat} unit="g" color="#8B56FF" />
     </View>
   );
 }

@@ -1,0 +1,6 @@
+:root {
+ --nl-midnight-navy:#081020; --nl-deep-navy:#0A1631; --nl-surface:#111827; --nl-glass-dark:#1E293B;
+ --nl-electric-blue:#2E63FF; --nl-luma-blue:#3882F6; --nl-ice-cyan:#8EDCFF; --nl-aqua:#22C3EE;
+ --nl-aurora-violet:#8B56FF; --nl-luma-purple:#885CF6; --nl-solar-gold:#F2C14E; --nl-frost-white:#F5F8FF;
+ --nl-radius-card:24px; --nl-radius-control:16px; --nl-blur-glass:24px; --nl-shadow-glow:0 0 28px rgba(46,99,255,.28);
+}

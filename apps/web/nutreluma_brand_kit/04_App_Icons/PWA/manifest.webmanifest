@@ -1,0 +1,12 @@
+{
+  "name": "NutreLuma",
+  "short_name": "NutreLuma",
+  "theme_color": "#081020",
+  "background_color": "#081020",
+  "display": "standalone",
+  "icons": [
+    {"src":"nutreluma-pwa-192x192.png","sizes":"192x192","type":"image/png"},
+    {"src":"nutreluma-pwa-512x512.png","sizes":"512x512","type":"image/png"},
+    {"src":"nutreluma-maskable-512x512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
+}

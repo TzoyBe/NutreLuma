@@ -279,16 +279,16 @@ export function WaterGauge({
       value={consumedMl}
       max={max}
       size={size}
-      from="#38BDF8"
+      from="#8EDCFF"
       to="#2E63FF"
-      glow="#38BDF8"
+      glow="#8EDCFF"
       uid="water"
       interactive={!!onCommit}
       onCommit={onCommit}
       onDragStateChange={onDragStateChange}
       renderCenter={(display) => (
         <>
-          <Droplet size={18} color="#38BDF8" />
+          <Droplet size={18} color="#8EDCFF" />
           <Text style={styles.value}>{display.toLocaleString()}</Text>
           <Text style={styles.caption}>{target ? `of ${target.toLocaleString()} ml` : 'ml today'}</Text>
         </>

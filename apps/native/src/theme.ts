@@ -1,9 +1,9 @@
-// Liquid Glass brand kit tokens (Nutreluma). Πηγή: NutreLuma_Liquid_Glass_Brand_Kit.
+// NutreLuma v4 Liquid Glass design tokens.
 export const colors = {
-  background: '#091631', // Midnight Navy
-  navy2: '#0D1D40',
-  surface: '#111F42',
-  surfaceSoft: '#16274E', // surface_2
+  background: '#081020', // Midnight Navy
+  navy2: '#0A1631', // Deep Navy
+  surface: '#111827',
+  surfaceSoft: '#1E293B', // Glass Dark
   border: 'rgba(191, 210, 248, 0.24)',
   borderStrong: 'rgba(191, 210, 248, 0.42)',
   primary: '#2E63FF', // Electric Blue — main action / product intelligence
@@ -25,8 +25,8 @@ export const colors = {
   white: '#FFFFFF',
   // Liquid glass tokens: ημιδιαφανείς επιφάνειες πάνω από το gradient backdrop,
   // με λεπτό φωτεινό περίγραμμα — ίδιο ύφος με τις .glass κλάσεις του web.
-  glassBg: 'rgba(22, 39, 78, 0.55)', // surface_2 @ 55%
-  glassBgSoft: 'rgba(22, 39, 78, 0.38)',
+  glassBg: 'rgba(30, 41, 59, 0.55)', // Glass Dark @ 55%
+  glassBgSoft: 'rgba(30, 41, 59, 0.38)',
   glassBorder: 'rgba(191, 210, 248, 0.22)',
   glassHighlight: 'rgba(191, 210, 248, 0.10)',
 } as const;

@@ -1,7 +1,6 @@
 import { cn } from '@/lib/utils';
 
-// Brand kit v2 master mark (gold→blue→violet). Το παλιό vector αντικαταστάθηκε
-// από το επίσημο PNG mark ώστε το in-app logo να είναι 100% πιστό στο artwork.
+// Official NutreLuma v4 Liquid Glass mark.
 export function LogoMark({
   className,
   monochrome = false,
@@ -39,7 +38,7 @@ export function Logo({
     <span className={cn('inline-flex items-center gap-2', className)}>
       <LogoMark className={markClassName} monochrome={monochrome} />
       <span className="font-semibold tracking-tight">
-        Nutre<span className="text-primary">luma</span>
+        Nutre<span className="text-primary">Luma</span>
       </span>
     </span>
   );
